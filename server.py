@@ -8,6 +8,24 @@ from fastmcp import FastMCP
 from pydantic import Field
 
 from salesforce_client import SalesforceClient, SalesforceError
+from prompts import (
+    quarterly_pipeline_analysis,
+    closed_won_partner_analysis,
+    partner_engagement_health,
+    partner_sourced_pipeline,
+    at_risk_pipeline,
+    new_vs_existing_business,
+    lead_conversion_analysis,
+    stalled_opportunities,
+    country_pipeline_dashboard,
+    forecast_vs_actuals,
+    partner_scorecard,
+    weekly_briefing,
+    partner_qbr_prep,
+    competitive_analysis,
+    COUNTRIES,
+    QUARTERS,
+)
 
 # Load environment variables
 load_dotenv()
@@ -103,6 +121,127 @@ async def salesforce_describe(
         client = get_client()
         result = await client.describe(object_name)
         return format_result(result)
+    except SalesforceError as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def salesforce_describe_fields(
+    object_name: Annotated[
+        str,
+        Field(
+            description="The name of the Salesforce object (e.g., Account, Contact, Opportunity)"
+        ),
+    ],
+    field_filter: Annotated[
+        str | None,
+        Field(
+            description="Optional: filter fields by name pattern (case-insensitive, e.g., 'partner', 'amount')"
+        ),
+    ] = None,
+    field_types: Annotated[
+        list[str] | None,
+        Field(
+            description="Optional: filter by field types (e.g., ['reference', 'picklist', 'currency'])"
+        ),
+    ] = None,
+) -> str:
+    """Get field metadata for a Salesforce object with optional filtering.
+
+    Use this instead of salesforce_describe when you only need field information,
+    especially for objects with many fields like Opportunity.
+    """
+    try:
+        client = get_client()
+        result = await client.describe(object_name)
+
+        fields = result.get("fields", [])
+        filtered_fields = []
+
+        for field in fields:
+            # Apply name filter
+            if field_filter:
+                if field_filter.lower() not in field.get("name", "").lower():
+                    continue
+
+            # Apply type filter
+            if field_types:
+                if field.get("type") not in field_types:
+                    continue
+
+            # Return only essential field metadata
+            filtered_fields.append({
+                "name": field.get("name"),
+                "label": field.get("label"),
+                "type": field.get("type"),
+                "referenceTo": field.get("referenceTo"),
+                "picklistValues": [
+                    {"value": pv.get("value"), "label": pv.get("label")}
+                    for pv in field.get("picklistValues", [])[:20]  # Limit picklist values
+                ] if field.get("type") == "picklist" else None,
+                "required": not field.get("nillable", True),
+                "updateable": field.get("updateable"),
+            })
+
+        return format_result({
+            "object": object_name,
+            "fieldCount": len(filtered_fields),
+            "filter": field_filter,
+            "typeFilter": field_types,
+            "fields": filtered_fields,
+        })
+    except SalesforceError as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def salesforce_find_partner(
+    search_term: Annotated[
+        str,
+        Field(
+            description="Partner name to search for (e.g., 'Adaptit', 'Acme')"
+        ),
+    ],
+) -> str:
+    """Find a partner account by name and return its ID for use in opportunity queries.
+
+    Partner accounts typically have '(Partner)' in their name.
+    Returns the Account ID which can be used to filter opportunities by Partner__c field.
+    """
+    try:
+        client = get_client()
+
+        # Search for partner accounts
+        query = f"""
+            SELECT Id, Name, BillingCountry, Type, Partner_Status__c
+            FROM Account
+            WHERE Name LIKE '%{search_term}%'
+            ORDER BY Name
+            LIMIT 10
+        """
+        result = await client.query(query.strip())
+
+        records = result.get("records", [])
+        if not records:
+            return format_result({
+                "message": f"No accounts found matching '{search_term}'",
+                "suggestion": "Try a different search term or partial name",
+            })
+
+        return format_result({
+            "message": f"Found {len(records)} account(s) matching '{search_term}'",
+            "accounts": [
+                {
+                    "id": r.get("Id"),
+                    "name": r.get("Name"),
+                    "country": r.get("BillingCountry"),
+                    "type": r.get("Type"),
+                    "partnerStatus": r.get("Partner_Status__c"),
+                    "useInQuery": f"Partner__c = '{r.get('Id')}'",
+                }
+                for r in records
+            ],
+        })
     except SalesforceError as e:
         return f"Error: {e}"
 
@@ -437,6 +576,198 @@ async def salesforce_lead_funnel(
         return format_result(result)
     except SalesforceError as e:
         return f"Error: {e}"
+
+
+# =============================================================================
+# Channel Director Prompts (14 prompts)
+# =============================================================================
+
+
+@mcp.prompt(
+    name="quarterly_pipeline",
+    description="Analyze open pipeline for a specific quarter with partner breakdown",
+    tags={"pipeline", "quarterly", "channel-director"},
+)
+def prompt_quarterly_pipeline(
+    quarter: Annotated[
+        str,
+        Field(description="Fiscal quarter: Q1, Q2, Q3, or Q4 (FY27: Feb 2026 - Jan 2027)"),
+    ] = "Q1",
+) -> str:
+    """Quarterly open pipeline analysis with country and partner breakdown."""
+    return quarterly_pipeline_analysis(quarter)
+
+
+@mcp.prompt(
+    name="closed_won_partners",
+    description="Analyze Closed-Won deals with partner contribution metrics",
+    tags={"revenue", "partners", "channel-director"},
+)
+def prompt_closed_won_partners(
+    quarter: Annotated[
+        str, Field(description="Specific quarter (Q1-Q4) or leave empty for full year")
+    ] = "",
+    full_year: Annotated[
+        bool, Field(description="Analyze full fiscal year FY27")
+    ] = True,
+) -> str:
+    """Closed-Won partner contribution analysis."""
+    return closed_won_partner_analysis(quarter, full_year)
+
+
+@mcp.prompt(
+    name="partner_health",
+    description="Health check on partner engagement across active opportunities",
+    tags={"partners", "engagement", "channel-director"},
+)
+def prompt_partner_health() -> str:
+    """Partner engagement health check - identifies gaps and late-stage alerts."""
+    return partner_engagement_health()
+
+
+@mcp.prompt(
+    name="partner_sourced",
+    description="Analyze top partner-sourced opportunities",
+    tags={"partners", "sourcing", "channel-director"},
+)
+def prompt_partner_sourced(
+    limit: Annotated[
+        int, Field(description="Number of top deals to show")
+    ] = 10,
+) -> str:
+    """Top partner-sourced pipeline analysis."""
+    return partner_sourced_pipeline(limit)
+
+
+@mcp.prompt(
+    name="at_risk_pipeline",
+    description="Identify at-risk opportunities: late stage but low probability",
+    tags={"risk", "pipeline", "channel-director"},
+)
+def prompt_at_risk() -> str:
+    """At-risk pipeline analysis - late stage with low probability."""
+    return at_risk_pipeline()
+
+
+@mcp.prompt(
+    name="new_vs_existing",
+    description="Analyze pipeline split between new and existing business",
+    tags={"pipeline", "business-type", "channel-director"},
+)
+def prompt_new_vs_existing(
+    quarter: Annotated[
+        str, Field(description="Specific quarter (Q1-Q4) or leave empty for full year")
+    ] = "",
+) -> str:
+    """New vs Existing business analysis with partner coverage."""
+    return new_vs_existing_business(quarter)
+
+
+@mcp.prompt(
+    name="lead_conversion",
+    description="Analyze lead funnel with partner attribution tracking",
+    tags={"leads", "conversion", "channel-director"},
+)
+def prompt_lead_conversion() -> str:
+    """Lead conversion and partner attribution analysis."""
+    return lead_conversion_analysis()
+
+
+@mcp.prompt(
+    name="stalled_deals",
+    description="Identify opportunities that haven't progressed recently",
+    tags={"risk", "pipeline", "channel-director"},
+)
+def prompt_stalled_deals(
+    days_stalled: Annotated[
+        int, Field(description="Number of days without activity to flag as stalled")
+    ] = 60,
+) -> str:
+    """Stalled opportunities analysis."""
+    return stalled_opportunities(days_stalled)
+
+
+@mcp.prompt(
+    name="country_dashboard",
+    description="Generate a country-level pipeline dashboard",
+    tags={"dashboard", "regional", "channel-director"},
+)
+def prompt_country_dashboard(
+    quarter: Annotated[
+        str, Field(description="Specific quarter (Q1-Q4) or leave empty for full year")
+    ] = "",
+) -> str:
+    """Country-level pipeline dashboard with partner coverage."""
+    return country_pipeline_dashboard(quarter)
+
+
+@mcp.prompt(
+    name="forecast_vs_actuals",
+    description="Compare forecast (weighted pipeline) vs actual closed revenue",
+    tags={"forecast", "quarterly", "channel-director"},
+)
+def prompt_forecast_vs_actuals(
+    quarter: Annotated[
+        str, Field(description="Fiscal quarter: Q1, Q2, Q3, or Q4")
+    ] = "Q1",
+) -> str:
+    """Quarterly forecast vs actuals analysis."""
+    return forecast_vs_actuals(quarter)
+
+
+@mcp.prompt(
+    name="partner_scorecard",
+    description="Generate a performance scorecard for partners",
+    tags={"partners", "performance", "channel-director"},
+)
+def prompt_partner_scorecard(
+    partner_name: Annotated[
+        str, Field(description="Specific partner name or leave empty for all partners")
+    ] = "",
+) -> str:
+    """Partner performance scorecard - individual or leaderboard."""
+    return partner_scorecard(partner_name)
+
+
+@mcp.prompt(
+    name="weekly_briefing",
+    description="Generate a weekly briefing for the Channel Director",
+    tags={"briefing", "weekly", "channel-director"},
+)
+def prompt_weekly_briefing() -> str:
+    """Weekly Channel Director briefing - quick overview of key metrics."""
+    return weekly_briefing()
+
+
+@mcp.prompt(
+    name="partner_qbr",
+    description="Prepare data for a Quarterly Business Review with a partner",
+    tags={"partners", "qbr", "channel-director"},
+)
+def prompt_partner_qbr(
+    partner_name: Annotated[
+        str, Field(description="Partner name for QBR preparation")
+    ],
+    quarter: Annotated[
+        str, Field(description="Fiscal quarter: Q1, Q2, Q3, or Q4")
+    ] = "Q1",
+) -> str:
+    """QBR preparation report for a specific partner."""
+    return partner_qbr_prep(partner_name, quarter)
+
+
+@mcp.prompt(
+    name="competitive_analysis",
+    description="Analyze deals where competitors are involved",
+    tags={"competitive", "win-loss", "channel-director"},
+)
+def prompt_competitive(
+    competitor: Annotated[
+        str, Field(description="Specific competitor name or leave empty for all")
+    ] = "",
+) -> str:
+    """Competitive deal analysis with partner impact."""
+    return competitive_analysis(competitor)
 
 
 # =============================================================================

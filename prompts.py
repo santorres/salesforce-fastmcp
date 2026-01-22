@@ -7,8 +7,6 @@ Region: Portugal, Spain, Italy, Greece, Cyprus
 Fiscal Year FY27: Feb 1, 2026 – Jan 31, 2027
 """
 
-from fastmcp.prompts import Message, PromptResult
-
 # =============================================================================
 # Configuration Constants
 # =============================================================================

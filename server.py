@@ -59,7 +59,24 @@ def format_result(data: Any) -> str:
 async def salesforce_query(
     q: Annotated[str, Field(description="The SOQL query to execute")],
 ) -> str:
-    """Execute SOQL queries against Salesforce."""
+    """Execute SOQL queries against Salesforce.
+
+    IMPORTANT - Querying Lookup/Reference Fields:
+    Lookup fields (like Partner__c, Account__c, etc.) store record IDs, not names.
+    To query by name, use the relationship syntax with __r:
+      ❌ WRONG:   WHERE Partner__c = 'Inetum - Spain (Partner)'
+      ✅ CORRECT: WHERE Partner__r.Name = 'Inetum - Spain (Partner)'
+
+    To SELECT lookup field names, use:
+      ✅ SELECT Partner__r.Name, Account__r.Name FROM Opportunity
+
+    Common lookup fields in Opportunity:
+      - Partner__c → use Partner__r.Name for partner name
+      - Account__c → use Account.Name or Account__r.Name
+      - Owner__c → use Owner.Name
+
+    For custom lookup fields ending in __c, use __r.Name to access the related record's name.
+    """
     try:
         client = get_client()
         result = await client.query(q)
@@ -572,6 +589,64 @@ async def salesforce_lead_funnel(
         client = get_client()
         result = await client.get_lead_funnel_analysis(
             source, timeframe, conversion_stage
+        )
+        return format_result(result)
+    except SalesforceError as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def salesforce_opportunities_by_partner(
+    partner_name: Annotated[
+        str,
+        Field(
+            description='The partner name to search for (e.g., "Inetum - Spain (Partner)", "Accenture", "Deloitte")'
+        ),
+    ],
+    is_closed: Annotated[
+        bool | None,
+        Field(
+            description="Optional: Filter by IsClosed status (true for closed deals, false for open pipeline, omit for all)"
+        ),
+    ] = None,
+    stage_name: Annotated[
+        str | None,
+        Field(
+            description='Optional: Filter by specific stage (e.g., "Prospecting", "Negotiation", "Closed Won")'
+        ),
+    ] = None,
+    min_amount: Annotated[
+        float | None,
+        Field(description="Optional: Minimum opportunity amount to include"),
+    ] = None,
+    start_date: Annotated[
+        str | None,
+        Field(description="Optional: Start date filter (YYYY-MM-DD format)"),
+    ] = None,
+    end_date: Annotated[
+        str | None,
+        Field(description="Optional: End date filter (YYYY-MM-DD format)"),
+    ] = None,
+    limit: Annotated[
+        int, Field(description="Maximum number of results (default: 100)")
+    ] = 100,
+) -> str:
+    """Find opportunities by partner name. This tool automatically handles the lookup relationship syntax (Partner__r.Name) so you can just provide the partner name directly.
+
+    Use this instead of manually constructing SOQL queries with Partner__c fields.
+
+    Example: To find deals with "Inetum - Spain (Partner)", just pass that as the partner_name parameter.
+    """
+    try:
+        client = get_client()
+        result = await client.get_opportunities_by_partner(
+            partner_name=partner_name,
+            is_closed=is_closed,
+            stage_name=stage_name,
+            min_amount=min_amount,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
         )
         return format_result(result)
     except SalesforceError as e:

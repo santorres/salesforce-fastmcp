@@ -702,3 +702,78 @@ class SalesforceClient:
             "qualityAnalysis": quality_response.json().get("records", []),
             "topOpportunities": opportunity_response.json().get("records", []),
         }
+
+    async def get_opportunities_by_partner(
+        self,
+        partner_name: str,
+        is_closed: bool | None = None,
+        stage_name: str | None = None,
+        min_amount: float | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        date_field: str = "CloseDate",
+        limit: int = 100,
+    ) -> dict[str, Any]:
+        """Find opportunities by partner name using relationship lookup syntax.
+
+        This method automatically handles the Partner__r.Name syntax, eliminating
+        "invalid ID field" errors when querying by partner name.
+
+        Args:
+            partner_name: Partner name to search for (e.g., "Inetum - Spain (Partner)")
+            is_closed: Filter by closed status (True/False/None for all)
+            stage_name: Filter by specific stage name
+            min_amount: Minimum opportunity amount
+            start_date: Start date filter (YYYY-MM-DD)
+            end_date: End date filter (YYYY-MM-DD)
+            date_field: Date field to filter on (default: CloseDate)
+            limit: Maximum number of results (default: 100)
+
+        Returns:
+            Dictionary with query, filters, and results
+        """
+        client = await self._get_client()
+
+        # Build WHERE conditions using relationship syntax
+        conditions = [f"Partner__r.Name = '{partner_name}'"]
+
+        if is_closed is not None:
+            conditions.append(f"IsClosed = {str(is_closed).lower()}")
+        if stage_name:
+            conditions.append(f"StageName = '{stage_name}'")
+        if min_amount is not None:
+            conditions.append(f"Amount >= {min_amount}")
+        if start_date:
+            conditions.append(f"{date_field} >= {start_date}")
+        if end_date:
+            conditions.append(f"{date_field} <= {end_date}")
+
+        where_clause = " AND ".join(conditions)
+
+        query = f"""
+            SELECT Id, Name, Amount, StageName, CloseDate, Probability,
+                   Account.Name, Account.BillingCountry,
+                   Partner__r.Name, Partner_Source_Influence__c,
+                   Owner.Name, IsClosed, IsWon
+            FROM Opportunity
+            WHERE {where_clause}
+            ORDER BY Amount DESC NULLS LAST
+            LIMIT {limit}
+        """.strip()
+
+        response = await client.get(f"/query?q={quote(query)}")
+        self._handle_error(response)
+
+        return {
+            "query": query,
+            "partnerName": partner_name,
+            "filters": {
+                "isClosed": is_closed,
+                "stageName": stage_name,
+                "minAmount": min_amount,
+                "startDate": start_date,
+                "endDate": end_date,
+                "dateField": date_field,
+            },
+            "results": response.json(),
+        }

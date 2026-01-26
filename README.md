@@ -1,6 +1,6 @@
 # Salesforce FastMCP Connector
 
-A FastMCP server providing 22 tools for interacting with Salesforce. This is a Python port of the Node.js Salesforce MCP connector, designed for deployment to FastMCP Cloud.
+A FastMCP server providing 23 tools for interacting with Salesforce. This is a Python port of the Node.js Salesforce MCP connector, designed for deployment to FastMCP Cloud.
 
 ## Features
 
@@ -24,10 +24,11 @@ A FastMCP server providing 22 tools for interacting with Salesforce. This is a P
 - `salesforce_reports` - Access Salesforce reports
 - `salesforce_trend_analysis` - Time-based trend analysis
 
-### Business Intelligence (3 tools)
+### Business Intelligence (4 tools)
 - `salesforce_pipeline` - Sales pipeline analysis
 - `salesforce_case_insights` - Support case metrics
 - `salesforce_lead_funnel` - Lead conversion funnel
+- `salesforce_opportunities_by_partner` - Find opportunities by partner name (handles lookup syntax automatically)
 
 ## Setup
 
@@ -154,6 +155,50 @@ object_name: "Opportunity"
 aggregates: [{"function": "SUM", "field": "Amount", "alias": "TotalValue"}]
 group_by: "StageName"
 ```
+
+### Find Opportunities by Partner
+```
+Use the salesforce_opportunities_by_partner tool with:
+partner_name: "Inetum - Spain (Partner)"
+is_closed: false
+start_date: "2026-01-01"
+```
+
+## Working with Lookup Fields (IMPORTANT)
+
+Salesforce lookup fields (like `Partner__c`, `Account__c`) store **record IDs**, not names. When querying by name, you must use the **relationship syntax** with `__r`:
+
+### ❌ WRONG - This will fail with "invalid ID field" error:
+```sql
+SELECT Id, Name FROM Opportunity WHERE Partner__c = 'Inetum - Spain (Partner)'
+```
+
+### ✅ CORRECT - Use the relationship syntax:
+```sql
+SELECT Id, Name FROM Opportunity WHERE Partner__r.Name = 'Inetum - Spain (Partner)'
+```
+
+### Common Lookup Fields in Opportunity:
+- `Partner__c` → use `Partner__r.Name` for partner name
+- `Account__c` → use `Account.Name` or `Account__r.Name`
+- `Owner__c` → use `Owner.Name`
+
+### Helper Tool: salesforce_opportunities_by_partner
+
+Instead of manually constructing SOQL queries with relationship syntax, use the dedicated helper tool:
+
+```
+Use the salesforce_opportunities_by_partner tool with:
+partner_name: "Inetum - Spain (Partner)"
+is_closed: false
+stage_name: "Negotiation"
+min_amount: 50000
+start_date: "2026-01-01"
+end_date: "2026-12-31"
+limit: 50
+```
+
+This tool automatically handles the lookup relationship syntax and provides additional filtering options.
 
 ## Authentication Notes
 

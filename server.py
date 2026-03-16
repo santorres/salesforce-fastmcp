@@ -852,7 +852,23 @@ def prompt_competitive(
 
 def main():
     """Run the MCP server."""
-    mcp.run()
+    import os
+    transport = os.getenv("MCP_TRANSPORT", "stdio")
+    host = os.getenv("MCP_HOST", "0.0.0.0")
+    port = int(os.getenv("MCP_PORT", "8000"))
+    ssl_certfile = os.getenv("MCP_SSL_CERTFILE")
+    ssl_keyfile = os.getenv("MCP_SSL_KEYFILE")
+
+    if transport == "stdio":
+        mcp.run()
+    else:
+        kwargs = {"transport": transport, "host": host, "port": port}
+        if ssl_certfile and ssl_keyfile:
+            kwargs["uvicorn_config"] = {
+                "ssl_certfile": ssl_certfile,
+                "ssl_keyfile": ssl_keyfile,
+            }
+        mcp.run(**kwargs)
 
 
 if __name__ == "__main__":

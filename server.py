@@ -8,6 +8,7 @@ from fastmcp import FastMCP
 from pydantic import Field
 
 from salesforce_client import SalesforceClient, SalesforceError
+import channel_intelligence as ci
 from prompts import (
     quarterly_pipeline_analysis,
     closed_won_partner_analysis,
@@ -843,6 +844,408 @@ def prompt_competitive(
 ) -> str:
     """Competitive deal analysis with partner impact."""
     return competitive_analysis(competitor)
+
+
+# =============================================================================
+# Southern Europe Channel Intelligence Tools
+# =============================================================================
+
+
+@mcp.tool
+async def get_revenue(
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR, Q1, Q2, Q3, Q4, THIS_QUARTER, LAST_QUARTER, LAST_FISCAL_YEAR, NEXT_60_DAYS, LAST_30_DAYS)")],
+    breakdown: Annotated[str, Field(description="Aggregation breakdown: total | country | quarter | partner")] = "total",
+    limit: Annotated[int, Field(description="Max rows for grouped breakdowns (default 10, max 50)")] = 10,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c value (leave blank for all)")] = None,
+    partner_name: Annotated[str | None, Field(description="Filter by partner name (partial match)")] = None,
+    country: Annotated[str | None, Field(description="Filter by billing country (exact match)")] = None,
+) -> str:
+    """Closed-Won revenue analytics for Southern Europe (Italy, Spain, Portugal, Greece, Cyprus, Malta)."""
+    try:
+        result = await ci.get_revenue(
+            get_client(), period, breakdown, limit,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+            partner_name, country,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_pipeline(
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR, Q1, THIS_QUARTER, NEXT_QUARTER, CURRENT_AND_NEXT_QUARTER)")],
+    breakdown: Annotated[str, Field(description="Aggregation breakdown: total | country | stage | quarter | partner")] = "total",
+    limit: Annotated[int, Field(description="Max rows for grouped breakdowns (default 10, max 50)")] = 10,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c (leave blank for all)")] = None,
+    partner_name: Annotated[str | None, Field(description="Filter by partner name (partial match)")] = None,
+    country: Annotated[str | None, Field(description="Filter by billing country")] = None,
+) -> str:
+    """Open pipeline analytics for Southern Europe. Excludes Closed Won and Closed Lost."""
+    try:
+        result = await ci.get_pipeline(
+            get_client(), period, breakdown, limit,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+            partner_name, country,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_top_partners(
+    metric: Annotated[str, Field(description="Metric to rank by: revenue | pipeline")],
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_QUARTER, THIS_FISCAL_YEAR)")],
+    limit: Annotated[int, Field(description="Number of top partners to return (default 10, max 50)")] = 10,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c (leave blank for all)")] = None,
+) -> str:
+    """Top partners ranked by closed-won revenue or open pipeline for Southern Europe."""
+    try:
+        result = await ci.get_top_partners(
+            get_client(), metric, period, limit,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_partner_detail(
+    partner_name: Annotated[str, Field(description="Partner name (partial match supported)")],
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR, THIS_QUARTER)")],
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c (leave blank for all)")] = None,
+    open_opp_limit: Annotated[int, Field(description="Max open opportunities to list (default 20)")] = 20,
+) -> str:
+    """Detailed scorecard for a single partner: revenue, pipeline, win rate, open deals."""
+    try:
+        result = await ci.get_partner_detail(
+            get_client(), partner_name, period,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+            open_opp_limit,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_partner_pipeline(
+    partner_name: Annotated[str, Field(description="Partner name (partial match supported)")],
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR, THIS_QUARTER)")],
+    open_opp_limit: Annotated[int, Field(description="Max open opportunities to list (default 20)")] = 20,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c (leave blank for all)")] = None,
+) -> str:
+    """Partner-specific open pipeline summary with opportunity list in markdown format."""
+    try:
+        result = await ci.get_partner_pipeline(
+            get_client(), partner_name, period, open_opp_limit,
+            channel_manager if channel_manager is not None else "",
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def search_opportunities(
+    query: Annotated[str, Field(description="Name fragment to search for in opportunity names")],
+    period: Annotated[str, Field(description="Fiscal period to scope the search")] = "THIS_FISCAL_YEAR",
+    partner_name: Annotated[str | None, Field(description="Optional partner name filter")] = None,
+    limit: Annotated[int, Field(description="Max results (default 10, max 50)")] = 10,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Search opportunities by name fragment in Southern Europe, with optional partner and period filters."""
+    try:
+        result = await ci.search_opportunities(
+            get_client(), query, partner_name, period, limit,
+            channel_manager if channel_manager is not None else "",
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_opportunity_detail(
+    opportunity_id: Annotated[str | None, Field(description="Salesforce opportunity ID (15/18 chars)")] = None,
+    opportunity_name: Annotated[str | None, Field(description="Opportunity name (partial match)")] = None,
+    partner_name: Annotated[str | None, Field(description="Optional partner name filter")] = None,
+    period: Annotated[str | None, Field(description="Optional fiscal period filter")] = None,
+    channel_manager: Annotated[str | None, Field(description="Optional Channel_Manager__c filter")] = None,
+) -> str:
+    """Full detail for a specific opportunity by ID or name. Returns markdown summary plus raw data."""
+    try:
+        result = await ci.get_opportunity_detail(
+            get_client(), opportunity_id, opportunity_name, partner_name, period,
+            channel_manager if channel_manager is not None else "",
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_deal_registrations(
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR, THIS_QUARTER)")],
+) -> str:
+    """Count deal registrations (Deal_Registration__c) for the given period."""
+    try:
+        result = await ci.get_deal_registrations(get_client(), period)
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_growth(
+    metric: Annotated[str, Field(description="Metric to compare: revenue | pipeline")],
+    period_a: Annotated[str, Field(description="Period A (the 'current' or 'newer' period)")],
+    period_b: Annotated[str, Field(description="Period B (the 'prior' or 'comparison' period)")],
+    breakdown: Annotated[str, Field(description="Aggregation: total | country | partner | quarter")] = "total",
+    limit: Annotated[int, Field(description="Max rows for grouped breakdowns")] = 10,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Growth comparison between two fiscal periods (absolute and percentage change)."""
+    try:
+        result = await ci.get_growth(
+            get_client(), metric, period_a, period_b, breakdown, limit,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_orphan_hygiene(
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_QUARTER, THIS_FISCAL_YEAR)")],
+    limit: Annotated[int, Field(description="Max orphan opportunities to list (default 20)")] = 20,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Open opportunities missing a primary partner (Partner__c = null). Breakdown by stage and country."""
+    try:
+        result = await ci.get_orphan_hygiene(
+            get_client(), period, limit,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_kpi_snapshot(
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR, THIS_QUARTER)")],
+    revenue_target: Annotated[float | None, Field(description="Optional revenue target for coverage ratio calculation")] = None,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Core KPI bundle: revenue, pipeline, win rate, avg deal size, partner coverage, orphan %, concentration."""
+    try:
+        result = await ci.get_kpi_snapshot(
+            get_client(), period, revenue_target,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def route_slash_command(
+    input: Annotated[str, Field(description="Slash command string (e.g. /pipeline, /revenue, /top_partners revenue, /orphans, /pipeline partner Accenture)")],
+    channel_manager: Annotated[str | None, Field(description="Default channel manager filter")] = None,
+) -> str:
+    """Deterministic slash command router. Supported: /pipeline, /revenue, /top_partners, /orphans, /pipeline partner <name>."""
+    try:
+        result = await ci.route_slash_command(
+            get_client(), input,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def run_exploratory_analysis(
+    intent: Annotated[str, Field(description="Natural language intent (e.g. 'show pipeline for Q2', 'top partners by revenue this quarter')")],
+    channel_manager: Annotated[str | None, Field(description="Default channel manager filter")] = None,
+) -> str:
+    """Maps natural-language intents to canonical tools deterministically. Not a free-form AI query."""
+    try:
+        result = await ci.run_exploratory_analysis(
+            get_client(), intent,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_opportunity_list(
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR, THIS_QUARTER)")] = "THIS_FISCAL_YEAR",
+    partner_name: Annotated[str | None, Field(description="Filter by partner name (partial match)")] = None,
+    country: Annotated[str | None, Field(description="Filter by billing country")] = None,
+    stage: Annotated[str | None, Field(description="Filter by stage name (exact)")] = None,
+    min_amount: Annotated[float | None, Field(description="Minimum opportunity amount")] = None,
+    limit: Annotated[int, Field(description="Max results (default 20, max 100)")] = 20,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Paginated open opportunity list with filters for partner, country, stage, and amount."""
+    try:
+        result = await ci.get_opportunity_list(
+            get_client(), partner_name, country, stage, min_amount, period, limit,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_partner_scorecard(
+    partner_name: Annotated[str, Field(description="Partner name (exact or partial match)")],
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR)")] = "THIS_FISCAL_YEAR",
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Deep-dive partner scorecard: revenue, pipeline, deal count, avg deal size, countries, stages, quarterly trend."""
+    try:
+        result = await ci.get_partner_scorecard(
+            get_client(), partner_name, period,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def list_available_metrics() -> str:
+    """List all available tools, supported periods, metrics, and runtime configuration."""
+    return format_result(ci.list_available_metrics())
+
+
+@mcp.tool
+async def admin_discover_targets(
+    admin_key: Annotated[str, Field(description="Admin key (must match ADMIN_KEY env var)")],
+    limit: Annotated[int, Field(description="Max records per query (default 30)")] = 30,
+) -> str:
+    """Admin-only: discover quota/target fields and objects in the Salesforce org."""
+    try:
+        result = await ci.admin_discover_targets(get_client(), admin_key, limit)
+        return format_result(result)
+    except (ValueError, PermissionError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_weighted_pipeline(
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR, THIS_QUARTER)")] = "THIS_FISCAL_YEAR",
+    breakdown: Annotated[str, Field(description="Aggregation: total | country | partner | stage")] = "total",
+    limit: Annotated[int, Field(description="Max rows for breakdown (default 20)")] = 20,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+    min_probability: Annotated[float, Field(description="Minimum probability % to include (default 0)")] = 0,
+) -> str:
+    """Open pipeline weighted by probability (Amount × Probability / 100). Provides coverage ratio."""
+    try:
+        result = await ci.get_weighted_pipeline(
+            get_client(), period, breakdown, limit,
+            channel_manager if channel_manager is not None else "",
+            min_probability,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_channel_manager_performance(
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR)")] = "THIS_FISCAL_YEAR",
+    metric: Annotated[str, Field(description="Metric filter: revenue | pipeline | both")] = "both",
+    limit: Annotated[int, Field(description="Max managers to return (default 20)")] = 20,
+    channel_manager: Annotated[str | None, Field(description="Scope to specific manager (leave blank for all)")] = None,
+) -> str:
+    """Channel manager performance leaderboard: revenue, pipeline, deal count, and win rate."""
+    try:
+        result = await ci.get_channel_manager_performance(
+            get_client(), period, metric, limit,
+            channel_manager if channel_manager is not None else "",
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_multi_period_trend(
+    metric: Annotated[str, Field(description="Metric: revenue | pipeline")] = "revenue",
+    periods: Annotated[list[str] | None, Field(description="List of fiscal periods to compare (max 8, e.g. ['Q1','Q2','Q3','Q4'])")] = None,
+    breakdown: Annotated[str, Field(description="Aggregation: total | country | partner")] = "total",
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Multi-period trend analysis — compare revenue or pipeline across up to 8 fiscal periods."""
+    try:
+        result = await ci.get_multi_period_trend(
+            get_client(), metric, periods, breakdown,
+            channel_manager if channel_manager is not None else "",
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_deal_registrations_breakdown(
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR)")] = "THIS_FISCAL_YEAR",
+    breakdown: Annotated[str, Field(description="Aggregation: total | partner | country")] = "total",
+    limit: Annotated[int, Field(description="Max rows for breakdown (default 20)")] = 20,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Deal registration count with optional breakdown by partner or country."""
+    try:
+        result = await ci.get_deal_registrations_breakdown(
+            get_client(), period, breakdown, limit,
+            channel_manager if channel_manager is not None else "",
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_win_rate_by_country(
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR)")] = "THIS_FISCAL_YEAR",
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Win rate analysis by country: won deals, total deals, revenue, and average deal size."""
+    try:
+        result = await ci.get_win_rate_by_country(
+            get_client(), period,
+            channel_manager if channel_manager is not None else "",
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_time_to_close_stats(
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR)")] = "THIS_FISCAL_YEAR",
+    breakdown: Annotated[str, Field(description="Aggregation: total | country | partner | stage")] = "total",
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Time-to-close statistics for Closed Won deals: avg, median, min, max days from creation to close."""
+    try:
+        result = await ci.get_time_to_close_stats(
+            get_client(), period, breakdown,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
 
 
 # =============================================================================

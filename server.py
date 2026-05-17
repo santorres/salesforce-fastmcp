@@ -1,7 +1,11 @@
 """FastMCP server for Salesforce integration."""
 
 import json
+import logging
+import os
+import sys
 from typing import Annotated, Any
+from logging.handlers import RotatingFileHandler
 
 from dotenv import load_dotenv
 from fastmcp import FastMCP
@@ -30,6 +34,20 @@ from prompts import (
 
 # Load environment variables
 load_dotenv()
+
+# Setup request logger
+def _setup_logger() -> logging.Logger:
+    log_file = os.getenv("MCP_LOG_FILE", "mcp_requests.log")
+    fmt = "%(asctime)s | %(message)s"
+    datefmt = "%Y-%m-%d %H:%M:%S"
+    handlers = [
+        logging.StreamHandler(sys.stderr),
+        RotatingFileHandler(log_file, maxBytes=5_000_000, backupCount=3),
+    ]
+    logging.basicConfig(level=logging.INFO, format=fmt, datefmt=datefmt, handlers=handlers)
+    return logging.getLogger("mcp.requests")
+
+logger = _setup_logger()
 
 # Initialize FastMCP server
 mcp = FastMCP("Salesforce Connector")
@@ -1249,13 +1267,42 @@ async def get_time_to_close_stats(
 
 
 # =============================================================================
+# Request logging middleware
+# =============================================================================
+
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
+
+
+class RequestLoggerMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: StarletteRequest, call_next):
+        if request.method == "POST":
+            client_ip = (
+                request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+                or (request.client.host if request.client else "unknown")
+            )
+            try:
+                body_bytes = await request.body()
+                body = json.loads(body_bytes)
+                method = body.get("method", "?")
+                if method == "tools/call":
+                    tool = body.get("params", {}).get("name", "?")
+                    logger.info(f"{client_ip} | {method} | tool={tool}")
+                else:
+                    logger.info(f"{client_ip} | {method}")
+            except Exception:
+                logger.info(f"{client_ip} | [unparseable request]")
+
+        return await call_next(request)
+
+
+# =============================================================================
 # Main entry point
 # =============================================================================
 
 
 def main():
     """Run the MCP server."""
-    import os
     transport = os.getenv("MCP_TRANSPORT", "stdio")
     host = os.getenv("MCP_HOST", "0.0.0.0")
     port = int(os.getenv("MCP_PORT", "8000"))
@@ -1271,6 +1318,8 @@ def main():
                 "ssl_certfile": ssl_certfile,
                 "ssl_keyfile": ssl_keyfile,
             }
+        # Attach request logging middleware
+        mcp.http_app().add_middleware(RequestLoggerMiddleware)
         mcp.run(**kwargs)
 
 

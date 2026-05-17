@@ -51,3 +51,9 @@ dmypy.json
 # OS
 .DS_Store
 Thumbs.db
+
+# SSL certificates and keys (contains private key material)
+*.pem
+
+# Package manager locks
+uv.lock

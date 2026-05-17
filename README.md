@@ -107,6 +107,80 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
+## Two-Laptop Setup (Remote Connection)
+
+If you can't run LLMs on the Salesforce-authenticated laptop, you can run the server on that laptop and connect from another machine via Tailscale/VPN:
+
+### Server Laptop (where Salesforce authentication works)
+
+1. **Get a fresh Salesforce Session ID (SID)**:
+   ```bash
+   # Method 1: Extract from Chrome cookies
+   cd /path/to/salesforce-fastmcp
+   node Scripts/extract-sid.js
+   
+   # Method 2: Or use Salesforce CLI
+   sf org display --target-org your-org
+   ```
+
+2. **Test the SID**:
+   ```bash
+   node Scripts/test-token.js <your-sid>
+   ```
+
+3. **Update .env** with the working SID:
+   ```bash
+   cp .env.example .env
+   # Edit .env with SALESFORCE_BASE_URL and SALESFORCE_SID
+   ```
+
+4. **Run the server** (ensures MCP_TRANSPORT is streamable-http):
+   ```bash
+   # Option A: Default streamable-http on port 8000
+   python3 server.py
+   
+   # Option B: Explicit configuration
+   MCP_TRANSPORT=streamable-http MCP_PORT=8000 python3 server.py
+   ```
+
+### AI Laptop (where Claude Desktop runs)
+
+The server is now accessible via your Tailscale IP (e.g., `100.121.106.95:8000`). Two options to connect Claude Desktop:
+
+**Option 1: Using wrapper.sh (recommended)**
+```json
+{
+  "mcpServers": {
+    "salesforce": {
+      "command": "/path/to/salesforce-fastmcp/wrapper.sh"
+    }
+  }
+}
+```
+
+The wrapper converts Claude Desktop's stdio to HTTP requests to the remote server. Customize the server IP via environment variable:
+```bash
+# In your shell environment or Claude settings:
+export SALESFORCE_MCP_URL="http://<server-ip>:8000/mcp"
+```
+
+**Option 2: Direct HTTP connection** (if your Claude Desktop version supports it)
+```json
+{
+  "mcpServers": {
+    "salesforce": {
+      "url": "http://<server-ip>:8000/mcp"
+    }
+  }
+}
+```
+
+### Troubleshooting Remote Connection
+
+- **"Connection refused" in wrapper.sh**: Ensure server is running on the other laptop and port 8000 is accessible via Tailscale
+- **Tailscale IP changed**: Update `wrapper.sh` or the `SALESFORCE_MCP_URL` environment variable
+- **Token expired**: Run `Scripts/extract-sid.js` again on the server laptop, update `.env`, and restart `server.py`
+
 ## Deploying to FastMCP Cloud
 
 1. Push this project to a GitHub repository

@@ -1266,6 +1266,36 @@ async def get_time_to_close_stats(
         return f"Error: {e}"
 
 
+@mcp.tool
+async def generate_partner_qbr(
+    partner_name: Annotated[str, Field(description="Partner name (partial match supported, e.g. 'Inetum Spain')")],
+    period: Annotated[str, Field(description="Review period (e.g. THIS_QUARTER, LAST_QUARTER, FY27_Q1, FY26_Q4)")] = "THIS_QUARTER",
+    prior_period: Annotated[str | None, Field(description="Comparison period for YoY (auto-calculated as same quarter 1 FY back if not provided)")] = None,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c (leave blank for all)")] = None,
+    revenue_target: Annotated[float | None, Field(description="Optional revenue target — enables attainment % and pipeline coverage % in the report")] = None,
+    top_opps_limit: Annotated[int, Field(description="Number of top open opportunities to include (default 10, max 20)")] = 10,
+) -> str:
+    """Generate a complete QBR document for a partner.
+
+    Returns a structured markdown report covering:
+    - Business Performance: closed-won revenue, YoY growth, win rate, avg deal size, time to close, deal registrations
+    - Pipeline Health: open pipeline by stage with top opportunities list
+    - Geography: revenue and pipeline breakdown by country
+    - Forward Looking: next quarter pipeline and deals closing in 60 days
+
+    Example: generate_partner_qbr(partner_name='Inetum Spain', period='FY27_Q1', revenue_target=500000)
+    """
+    try:
+        result = await ci.generate_partner_qbr(
+            get_client(), partner_name, period, prior_period,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+            revenue_target, top_opps_limit,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
 # =============================================================================
 # Request logging middleware
 # =============================================================================

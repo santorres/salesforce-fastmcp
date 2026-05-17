@@ -227,8 +227,11 @@ def _normalize_period(value: str) -> str:
 
 
 def _assert_enum(value: str, allowed: list[str], name: str) -> None:
-    if value not in allowed:
-        raise ValueError(f"Invalid {name}. Allowed: {', '.join(allowed)}")
+    if value in allowed:
+        return
+    if name == "period" and re.match(r"^FY\d{2}_Q[1-4]$", value):
+        return
+    raise ValueError(f"Invalid {name}. Allowed: {', '.join(allowed)}")
 
 
 def _summarize_period(period: str) -> dict[str, Any]:
@@ -1146,6 +1149,275 @@ async def get_partner_scorecard(
     }
 
 
+async def generate_partner_qbr(
+    sf,
+    partner_name: str,
+    period: str = "THIS_QUARTER",
+    prior_period: str | None = None,
+    channel_manager: str = DEFAULT_CHANNEL_MANAGER,
+    revenue_target: float | None = None,
+    top_opps_limit: int = 10,
+) -> dict[str, Any]:
+    """Generate a full QBR document for a partner with all relevant metrics."""
+    period = _normalize_period(period)
+    range_ = _get_period_range(period)
+
+    # Auto-compute prior period (same quarter, 1 FY back)
+    if prior_period is None:
+        m_fl = re.match(r"^FY(\d{2})_(Q[1-4])$", range_.get("fiscal_label", ""))
+        if m_fl:
+            prior_period = f"FY{int(m_fl.group(1)) - 1:02d}_{m_fl.group(2)}"
+    else:
+        prior_period = _normalize_period(prior_period)
+
+    safe_limit = min(max(int(top_opps_limit), 1), 20)
+    today = date.today()
+
+    # Partner condition for direct SOQL (lost-deals query)
+    escaped_partner = _escape_soql(str(partner_name).strip())
+    partner_cond = f"Partner__r.Name LIKE '%{escaped_partner}%'"
+    where_review = _build_opp_where(
+        closed_mode=None, range_=range_, channel_manager=channel_manager,
+        extra_conditions=[partner_cond],
+    )
+
+    results = await asyncio.gather(
+        # 0: review period detail (revenue, win rate, won count)
+        get_partner_detail(sf, partner_name, period, channel_manager=channel_manager),
+        # 1: time to close
+        get_time_to_close_stats(sf, period, "total", channel_manager=channel_manager),
+        # 2: deal registrations
+        get_deal_registrations_breakdown(sf, period, "total", channel_manager=channel_manager),
+        # 3: revenue by country
+        get_revenue(sf, period, "country", channel_manager=channel_manager, partner_name=partner_name),
+        # 4: open pipeline total
+        get_pipeline(sf, "THIS_FISCAL_YEAR", "total", channel_manager=channel_manager, partner_name=partner_name),
+        # 5: open pipeline by stage
+        get_pipeline(sf, "THIS_FISCAL_YEAR", "stage", channel_manager=channel_manager, partner_name=partner_name),
+        # 6: open pipeline by country
+        get_pipeline(sf, "THIS_FISCAL_YEAR", "country", channel_manager=channel_manager, partner_name=partner_name),
+        # 7: top open opportunities
+        get_opportunity_list(sf, partner_name=partner_name, period="THIS_FISCAL_YEAR", limit=safe_limit, channel_manager=channel_manager),
+        # 8: next quarter pipeline
+        get_pipeline(sf, "NEXT_QUARTER", "total", channel_manager=channel_manager, partner_name=partner_name),
+        # 9: lost deal count for review period
+        sf.query(f"SELECT COUNT(Id) lostCount FROM Opportunity WHERE {where_review} AND IsClosed = true AND IsWon = false"),
+        # 10: prior period revenue (or noop)
+        get_revenue(sf, prior_period, "total", channel_manager=channel_manager, partner_name=partner_name) if prior_period else asyncio.sleep(0),
+        return_exceptions=True,
+    )
+
+    def _safe(val, default=None):
+        return default if isinstance(val, Exception) or val is None else val
+
+    review          = _safe(results[0], {})
+    ttc_result      = _safe(results[1], {})
+    deal_regs_res   = _safe(results[2], {})
+    rev_ctry_res    = _safe(results[3], {})
+    pipe_total_res  = _safe(results[4], {})
+    pipe_stage_res  = _safe(results[5], {})
+    pipe_ctry_res   = _safe(results[6], {})
+    opps_res        = _safe(results[7], {})
+    next_q_res      = _safe(results[8], {})
+    lost_res        = _safe(results[9])
+    prior_rev_res   = _safe(results[10], {})
+
+    # --- Business Performance ---
+    review_data = review.get("data", {})
+    revenue     = review_data.get("revenue", 0) or 0
+    won_count   = int(review_data.get("closedWonCount", 0) or 0)
+    win_rate    = (review_data.get("winRate", 0) or 0) * 100
+    avg_deal    = (revenue / won_count) if won_count > 0 else 0
+
+    lost_count = 0
+    if isinstance(lost_res, dict):
+        lost_count = int(_num((lost_res.get("records") or [{}])[0], "lostCount", "expr0"))
+
+    ttc_list    = ttc_result.get("data", [])
+    avg_days    = ttc_list[0].get("avgDays") if ttc_list else None
+
+    deal_reg_count = (deal_regs_res.get("data") or {}).get("total", 0)
+
+    prior_revenue = 0.0
+    if isinstance(prior_rev_res.get("data"), dict):
+        prior_revenue = prior_rev_res["data"].get("totalRevenue", 0) or 0
+
+    growth_pct = ((revenue - prior_revenue) / prior_revenue * 100) if prior_revenue > 0 else None
+    attainment = (revenue / float(revenue_target) * 100) if revenue_target and float(revenue_target) > 0 else None
+
+    # --- Pipeline Health ---
+    pipe_total  = (pipe_total_res.get("data") or {})
+    open_pipe   = pipe_total.get("totalPipeline", 0) or 0
+    open_deals  = int(pipe_total.get("dealCount", 0) or 0)
+    pipe_stages = pipe_stage_res.get("data") or []
+    top_opps    = opps_res.get("data") or []
+    coverage    = (open_pipe / float(revenue_target) * 100) if revenue_target and float(revenue_target) > 0 else None
+
+    # --- Geography ---
+    rev_by_ctry  = rev_ctry_res.get("data") or []
+    pipe_by_ctry = pipe_ctry_res.get("data") or []
+
+    # --- Forward Looking ---
+    next_q       = (next_q_res.get("data") or {})
+    nq_pipeline  = next_q.get("totalPipeline", 0) or 0
+    nq_deals     = int(next_q.get("dealCount", 0) or 0)
+
+    sixty_days = today + timedelta(days=60)
+    closing_soon = [
+        o for o in top_opps
+        if o.get("closeDate") and o["closeDate"][:10] <= sixty_days.isoformat()
+    ]
+    closing_value = sum(o.get("amount", 0) or 0 for o in closing_soon)
+
+    # --- Period labels ---
+    period_summary = _summarize_period(period)
+    fiscal_label   = period_summary.get("fiscalLabel", period)
+    start_str      = period_summary.get("startDate", "")
+    end_str        = period_summary.get("endDate", "")
+    prior_label    = prior_period or "N/A"
+
+    def _fmt(d: str) -> str:
+        try:
+            return date.fromisoformat(d).strftime("%b %Y")
+        except Exception:
+            return d
+
+    period_display = f"{fiscal_label} ({_fmt(start_str)} – {_fmt(end_str)})"
+
+    # --- Markdown report ---
+    def _m(v: float) -> str:
+        return f"{int(v):,}"
+
+    def _p(v: float) -> str:
+        return f"{v:.1f}%"
+
+    md: list[str] = [
+        f"# QBR: {partner_name}",
+        f"**Period:** {period_display}",
+        f"**Prepared:** {today.isoformat()}",
+        "",
+        "---",
+        "## Business Performance",
+        "",
+        "### Revenue",
+        f"- Closed-Won: {_m(revenue)}",
+    ]
+
+    if growth_pct is not None:
+        sign = "+" if growth_pct >= 0 else ""
+        md.append(f"- vs {prior_label}: {sign}{_p(growth_pct)} ({_m(prior_revenue)} → {_m(revenue)})")
+
+    if attainment is not None:
+        md.append(f"- Attainment: {_p(attainment)} of {_m(float(revenue_target))} target")
+
+    md += [
+        "",
+        "### Deals",
+        f"- Won: {won_count} | Lost: {lost_count} | Win Rate: {_p(win_rate)}",
+        f"- Avg Deal Size: {_m(avg_deal)}",
+    ]
+    if avg_days is not None:
+        md.append(f"- Avg Time to Close: {avg_days:.0f} days")
+    md.append(f"- Deal Registrations: {deal_reg_count}")
+
+    md += [
+        "",
+        "---",
+        "## Pipeline Health",
+        f"- Open Pipeline: {_m(open_pipe)} ({open_deals} deals)",
+    ]
+    if coverage is not None:
+        md.append(f"- Pipeline Coverage: {_p(coverage)} of target")
+
+    if pipe_stages:
+        parts = [f"{s.get('stage', '?')} {_m(s.get('totalPipeline', 0) or 0)}" for s in pipe_stages[:6]]
+        md.append(f"- By Stage: {' | '.join(parts)}")
+
+    if top_opps:
+        md += [
+            "",
+            "### Top Open Opportunities",
+            "| Opportunity | Amount | Stage | Close Date |",
+            "|-------------|--------|-------|------------|",
+        ]
+        for o in top_opps[:safe_limit]:
+            name  = (o.get("name") or "-")[:45]
+            amt   = _m(o.get("amount", 0) or 0)
+            stage = (o.get("stage") or "-")[:20]
+            cd    = o.get("closeDate", "-") or "-"
+            md.append(f"| {name} | {amt} | {stage} | {cd} |")
+
+    if rev_by_ctry or pipe_by_ctry:
+        md += [
+            "",
+            "---",
+            "## Geography",
+            "| Country | Revenue | Pipeline |",
+            "|---------|---------|----------|",
+        ]
+        ctry_rev  = {r.get("country", "Unknown"): r.get("totalRevenue", 0) or 0 for r in rev_by_ctry}
+        ctry_pipe = {r.get("country", "Unknown"): r.get("totalPipeline", 0) or 0 for r in pipe_by_ctry}
+        all_ctry  = sorted(
+            set(list(ctry_rev) + list(ctry_pipe)),
+            key=lambda c: (ctry_rev.get(c, 0) or 0) + (ctry_pipe.get(c, 0) or 0),
+            reverse=True,
+        )
+        for c in all_ctry[:6]:
+            md.append(f"| {c} | {_m(ctry_rev.get(c, 0) or 0)} | {_m(ctry_pipe.get(c, 0) or 0)} |")
+
+    md += [
+        "",
+        "---",
+        "## Forward Looking",
+        f"- Next Quarter Pipeline: {_m(nq_pipeline)} ({nq_deals} deals)",
+    ]
+    if closing_soon:
+        md.append(f"- Closing in 60 days: {len(closing_soon)} deals, {_m(closing_value)}")
+
+    return {
+        "tool": "generate_partner_qbr",
+        "partner": partner_name,
+        "period": period_summary,
+        "priorPeriod": prior_label,
+        "channelManager": channel_manager or None,
+        "revenueTarget": float(revenue_target) if revenue_target is not None else None,
+        "sections": {
+            "businessPerformance": {
+                "revenue": revenue,
+                "priorRevenue": prior_revenue,
+                "growthPct": round(growth_pct, 1) if growth_pct is not None else None,
+                "wonDeals": won_count,
+                "lostDeals": lost_count,
+                "winRate": round(win_rate, 1),
+                "avgDealSize": round(avg_deal),
+                "avgDaysToClose": avg_days,
+                "dealRegistrations": deal_reg_count,
+                "attainmentPct": round(attainment, 1) if attainment is not None else None,
+            },
+            "pipelineHealth": {
+                "openPipeline": open_pipe,
+                "openDealCount": open_deals,
+                "coveragePct": round(coverage, 1) if coverage is not None else None,
+                "byStage": pipe_stages,
+                "topOpportunities": top_opps,
+            },
+            "geography": {
+                "revenueByCountry": rev_by_ctry,
+                "pipelineByCountry": pipe_by_ctry,
+            },
+            "forwardLooking": {
+                "nextQuarterPipeline": nq_pipeline,
+                "nextQuarterDeals": nq_deals,
+                "closingIn60Days": [
+                    {"name": o.get("name"), "amount": o.get("amount"), "closeDate": o.get("closeDate")}
+                    for o in closing_soon
+                ],
+            },
+        },
+        "markdown_report": "\n".join(md),
+    }
+
+
 def list_available_metrics() -> dict[str, Any]:
     return {
         "tool": "list_available_metrics",
@@ -1172,6 +1444,7 @@ def list_available_metrics() -> dict[str, Any]:
             {"name": "get_deal_registrations_breakdown", "purpose": "Deal registrations with breakdown", "keyParams": ["period", "breakdown"]},
             {"name": "get_win_rate_by_country", "purpose": "Win rate by country", "keyParams": ["period"]},
             {"name": "get_time_to_close_stats", "purpose": "Time to close statistics", "keyParams": ["period", "breakdown"]},
+            {"name": "generate_partner_qbr", "purpose": "Full QBR document for a partner (markdown report)", "keyParams": ["partner_name", "period", "revenue_target"]},
         ],
         "adminTools": [
             {"name": "admin_discover_targets", "purpose": "Admin metadata diagnostics for quota/target fields", "keyParams": ["admin_key", "limit"]},

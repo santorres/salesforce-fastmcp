@@ -25,6 +25,7 @@ PERIODS: list[str] = [
     "Q1", "Q2", "Q3", "Q4",
     "THIS_QUARTER", "NEXT_QUARTER", "CURRENT_AND_NEXT_QUARTER",
     "LAST_QUARTER", "LAST_30_DAYS", "NEXT_60_DAYS",
+    "FY##_Q#",  # Historical year + quarter, e.g. FY26_Q1, FY25_Q2
 ]
 
 METRICS: list[str] = ["revenue", "pipeline"]
@@ -151,6 +152,29 @@ def _get_period_range(period: str, now: date | None = None) -> dict[str, Any]:
             fy = _fiscal_year_label(today)
             return {"start": today, "end": end, "label": "NEXT_60_DAYS", "fiscal_label": f"{fy}_ROLLING_60D"}
         case _:
+            # Try to match historical FY##_Q# pattern (e.g. FY26_Q1, FY25_Q3)
+            m = re.match(r"^FY(\d{2})_Q([1-4])$", period)
+            if m:
+                fy_short = int(m.group(1))
+                quarter_num = int(m.group(2))
+                fy_year = 2000 + fy_short
+                q_name = f"Q{quarter_num}"
+
+                if quarter_num == 1:
+                    start, end = date(fy_year, 2, 1), date(fy_year, 4, 30)
+                elif quarter_num == 2:
+                    start, end = date(fy_year, 5, 1), date(fy_year, 7, 31)
+                elif quarter_num == 3:
+                    start, end = date(fy_year, 8, 1), date(fy_year, 10, 31)
+                else:  # Q4
+                    start, end = date(fy_year, 11, 1), date(fy_year + 1, 1, 31)
+
+                return {
+                    "start": start,
+                    "end": end,
+                    "label": period,
+                    "fiscal_label": f"FY{fy_short:02d}_{q_name}",
+                }
             raise ValueError(f"Unsupported period: {period}")
 
 # ---------------------------------------------------------------------------
@@ -186,12 +210,16 @@ def _normalize_period(value: str) -> str:
     }
     if cleaned in aliases:
         return aliases[cleaned]
-    m = re.match(r"^FY\d{2}_Q([1-4])$", cleaned)
+    # Handle FY##_Q# pattern (and variations like FY26Q1, FY26_QUARTER1)
+    m = re.match(r"^FY(\d{2})_?Q([1-4])$", cleaned)
     if m:
-        return f"Q{m.group(1)}"
-    m = re.match(r"^Q([1-4])_FY\d{2}$", cleaned)
+        return f"FY{m.group(1)}_Q{m.group(2)}"
+    m = re.match(r"^FY(\d{2})_QUARTER_?([1-4])$", cleaned)
     if m:
-        return f"Q{m.group(1)}"
+        return f"FY{m.group(1)}_Q{m.group(2)}"
+    m = re.match(r"^Q([1-4])_FY(\d{2})$", cleaned)
+    if m:
+        return f"FY{m.group(2)}_Q{m.group(1)}"
     m = re.match(r"^QUARTER_?([1-4])$", cleaned)
     if m:
         return f"Q{m.group(1)}"

@@ -1,153 +1,243 @@
 # Salesforce FastMCP Connector
 
-A FastMCP server providing 23 tools for interacting with Salesforce. This is a Python port of the Node.js Salesforce MCP connector, designed for deployment to FastMCP Cloud.
+FastMCP server providing Salesforce analytics and CRUD tools, purpose-built for Southern Europe channel management (Italy, Spain, Portugal, Greece, Cyprus, Malta).
 
-## Features
+---
 
-### Basic CRUD (8 tools)
-- `salesforce_query` - Execute SOQL queries
-- `salesforce_sobjects` - List available objects
-- `salesforce_recent` - Fetch recent records
-- `salesforce_search` - Execute SOSL searches
-- `salesforce_describe` - Get object metadata
-- `salesforce_create` - Create records
-- `salesforce_update` - Update records
-- `salesforce_delete` - Delete records
+## Tools Overview
 
-### Navigation & Relationships (3 tools)
-- `salesforce_relationships` - Get related records
-- `salesforce_lookup` - Search records by field
-- `salesforce_hierarchy` - Navigate parent/child relationships
+### Salesforce CRUD (8 tools)
+| Tool | Purpose |
+|------|---------|
+| `salesforce_query` | Execute raw SOQL queries |
+| `salesforce_sobjects` | List available Salesforce objects |
+| `salesforce_recent` | Fetch recently accessed records |
+| `salesforce_search` | Execute SOSL searches |
+| `salesforce_describe` | Get object/field metadata |
+| `salesforce_create` | Create a record |
+| `salesforce_update` | Update a record |
+| `salesforce_delete` | Delete a record |
+
+### Navigation & Relationships (4 tools)
+| Tool | Purpose |
+|------|---------|
+| `salesforce_relationships` | Get related records (e.g. Contacts for an Account) |
+| `salesforce_lookup` | Search records by name or field |
+| `salesforce_hierarchy` | Navigate parent/child relationships |
+| `salesforce_find_partner` | Find a partner account by name and return its ID |
 
 ### Analytics (3 tools)
-- `salesforce_aggregate` - Statistical analysis (COUNT, SUM, AVG, etc.)
-- `salesforce_reports` - Access Salesforce reports
-- `salesforce_trend_analysis` - Time-based trend analysis
+| Tool | Purpose |
+|------|---------|
+| `salesforce_aggregate` | COUNT, SUM, AVG, MAX, MIN aggregations |
+| `salesforce_reports` | Access existing Salesforce reports |
+| `salesforce_trend_analysis` | Time-based trend analysis |
 
 ### Business Intelligence (4 tools)
-- `salesforce_pipeline` - Sales pipeline analysis
-- `salesforce_case_insights` - Support case metrics
-- `salesforce_lead_funnel` - Lead conversion funnel
-- `salesforce_opportunities_by_partner` - Find opportunities by partner name (handles lookup syntax automatically)
+| Tool | Purpose |
+|------|---------|
+| `salesforce_pipeline` | Sales pipeline analysis with forecasting |
+| `salesforce_case_insights` | Support case metrics |
+| `salesforce_lead_funnel` | Lead conversion funnel |
+| `salesforce_opportunities_by_partner` | Find opportunities by partner name (handles lookup syntax) |
+
+### Southern Europe Channel Intelligence (21 tools)
+| Tool | Purpose |
+|------|---------|
+| `get_revenue` | Closed-Won revenue — total, by country, by partner, by quarter |
+| `get_pipeline` | Open pipeline — total, by stage, by country, by partner |
+| `get_top_partners` | Top partners ranked by revenue or pipeline |
+| `get_partner_detail` | Full scorecard for a single partner |
+| `get_partner_pipeline` | Partner-specific open pipeline with opportunity list |
+| `get_partner_scorecard` | Deep-dive: revenue, pipeline, deal count, countries, stages |
+| `get_opportunity_list` | Paginated open opportunity list with filters |
+| `search_opportunities` | Search opportunities by name fragment |
+| `get_opportunity_detail` | Full detail for a specific opportunity |
+| `get_deal_registrations` | Deal registration count by period |
+| `get_deal_registrations_breakdown` | Deal registrations broken down by partner or country |
+| `get_growth` | Growth comparison between two periods (absolute + %) |
+| `get_orphan_hygiene` | Open deals missing a partner assignment |
+| `get_kpi_snapshot` | Core KPI bundle: revenue, pipeline, win rate, coverage |
+| `get_weighted_pipeline` | Pipeline weighted by probability (Amount × Probability%) |
+| `get_channel_manager_performance` | Channel manager leaderboard |
+| `get_multi_period_trend` | Compare up to 8 fiscal periods side by side |
+| `get_win_rate_by_country` | Win rate by country with revenue and deal counts |
+| `get_time_to_close_stats` | Avg/median/min/max days from creation to close |
+| `route_slash_command` | Slash command router (`/pipeline`, `/revenue`, etc.) |
+| `run_exploratory_analysis` | Natural-language intent mapping to canonical tools |
+| `generate_partner_qbr` | **Full QBR document for a partner (see below)** |
+| `list_available_metrics` | List all tools, periods, and runtime config |
+
+---
+
+## QBR Tool
+
+`generate_partner_qbr` fetches all relevant partner metrics in parallel and returns a formatted markdown document covering four sections.
+
+### What it includes
+
+| Section | Data |
+|---------|------|
+| **Business Performance** | Closed-Won revenue, YoY growth %, attainment % vs target, deals won/lost, win rate, avg deal size, avg time to close, deal registrations |
+| **Pipeline Health** | Open pipeline amount and count, by stage breakdown, top open opportunities table |
+| **Geography** | Revenue and pipeline split by country |
+| **Forward Looking** | Next quarter pipeline, deals closing in 60 days |
+
+### Parameters
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `partner_name` | Yes | — | Partner name (partial match, e.g. `"Inetum Spain"`) |
+| `period` | No | `THIS_QUARTER` | Review period: `THIS_QUARTER`, `LAST_QUARTER`, `FY27_Q1`, `FY26_Q4`, etc. |
+| `prior_period` | No | auto | Comparison period — auto-calculated as same quarter 1 FY back |
+| `revenue_target` | No | — | Quota/target amount — enables attainment % and coverage % |
+| `top_opps_limit` | No | `10` | Number of open opportunities to list (max 20) |
+| `channel_manager` | No | env default | Filter by `Channel_Manager__c` |
+
+### Example prompts
+
+```
+Generate QBR for Inetum Spain for Q1 FY27
+```
+```
+Generate a partner QBR for Accenture, this quarter
+```
+```
+QBR for NTT Spain, period FY27_Q1, revenue target 500000
+```
+```
+Generate QBR for Deloitte Italy for last quarter with a target of 800000
+```
+
+### Example output structure
+
+```markdown
+# QBR: Inetum Spain
+**Period:** FY27_Q1 (Feb 2026 – Apr 2026)
+**Prepared:** 2026-05-17
+
+---
+## Business Performance
+
+### Revenue
+- Closed-Won: 320,000
+- vs FY26_Q1: +14.3% (280,000 → 320,000)
+- Attainment: 64.0% of 500,000 target
+
+### Deals
+- Won: 4 | Lost: 2 | Win Rate: 66.7%
+- Avg Deal Size: 80,000
+- Avg Time to Close: 45 days
+- Deal Registrations: 7
+
+---
+## Pipeline Health
+- Open Pipeline: 1,240,000 (11 deals)
+- By Stage: Negotiation 480,000 | Validation 390,000 | Prospecting 370,000
+
+### Top Open Opportunities
+| Opportunity | Amount | Stage | Close Date |
+|-------------|--------|-------|------------|
+| Telefonica Digital Transformation | 250,000 | Negotiation | 2026-06-30 |
+| ...
+
+---
+## Geography
+| Country | Revenue | Pipeline |
+|---------|---------|----------|
+| Spain   | 320,000 | 1,240,000 |
+
+---
+## Forward Looking
+- Next Quarter Pipeline: 890,000 (8 deals)
+- Closing in 60 days: 3 deals, 480,000
+```
+
+---
+
+## Supported Fiscal Periods
+
+The fiscal year runs **Feb – Jan** (FY27 = Feb 2026 – Jan 2027).
+
+| Period | Dates |
+|--------|-------|
+| `THIS_QUARTER` / `CURRENT` | Current fiscal quarter |
+| `LAST_QUARTER` | Previous fiscal quarter |
+| `NEXT_QUARTER` | Next fiscal quarter |
+| `THIS_FISCAL_YEAR` | Feb 1 – Jan 31 of current FY |
+| `LAST_FISCAL_YEAR` | Prior full fiscal year |
+| `Q1` / `Q2` / `Q3` / `Q4` | Named quarter in current FY |
+| `FY27_Q1` | Feb – Apr 2026 |
+| `FY27_Q2` | May – Jul 2026 |
+| `FY27_Q3` | Aug – Oct 2026 |
+| `FY27_Q4` | Nov 2026 – Jan 2027 |
+| `FY26_Q1` … `FY26_Q4` | Same quarters in prior FY |
+| `LAST_30_DAYS` | Rolling 30 days back |
+| `NEXT_60_DAYS` | Rolling 60 days forward |
+
+---
 
 ## Setup
 
 ### Prerequisites
 - Python 3.10+
-- A Salesforce org with API access
-- Salesforce Session ID (SID) or Access Token
+- Salesforce Session ID (SID) — obtained from browser cookies
 
 ### Installation
 
-1. Clone or download this directory
-
-2. Create a virtual environment:
-   ```bash
-   cd salesforce-fastmcp
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Configure environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your Salesforce credentials
-   ```
-
-### Getting Salesforce Credentials
-
-#### Option 1: Session ID from Browser
-1. Log into Salesforce in your browser
-2. Open Developer Tools > Application > Cookies
-3. Find the `sid` cookie value
-4. Your base URL is: `https://your-instance.my.salesforce.com/services/data/v59.0`
-
-#### Option 2: Salesforce CLI
 ```bash
-sf org display --target-org your-org
-# Use the "Access Token" and "Instance URL" values
+git clone git@github.com:santorres/salesforce-fastmcp.git
+cd salesforce-fastmcp
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env with SALESFORCE_BASE_URL and SALESFORCE_SID
 ```
 
-#### Option 3: OAuth 2.0 (Recommended for Production)
-Use a Salesforce Connected App with OAuth 2.0 flow to obtain refresh tokens for automatic token renewal.
+### Getting a Salesforce Session ID
+
+1. Log into Salesforce in Chrome
+2. Run: `node Scripts/extract-sid.js`
+3. Test it: `node Scripts/test-token.js <sid>`
+4. Paste into `.env` as `SALESFORCE_SID`
+
+Session IDs expire after ~24 hours of inactivity. Repeat when you get `INVALID_SESSION_ID` errors.
+
+---
 
 ## Running the Server
 
-### Local stdio Mode (for Claude Desktop)
 ```bash
-python server.py
+# HTTP mode (for remote/two-laptop setup) — default
+python3 server.py
+
+# Explicit configuration
+MCP_TRANSPORT=streamable-http MCP_PORT=8000 python3 server.py
+
+# stdio mode (for local Claude Desktop without proxy)
+MCP_TRANSPORT=stdio python3 server.py
 ```
 
-### Local HTTP Mode (for testing)
+Request logs are written to `mcp_requests.log` (and stderr), rotating at 5 MB.
+
+---
+
+## Two-Laptop Setup
+
+Run the server on the Salesforce-authenticated laptop and connect from the AI laptop via Tailscale.
+
+### Server laptop
+
 ```bash
-fastmcp run server.py:mcp --transport http --port 8000
+# Get fresh SID, update .env, then:
+python3 server.py
+# Server runs on port 8000
 ```
 
-### Claude Desktop Configuration
+### AI laptop (Claude Desktop)
 
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
-
-```json
-{
-  "mcpServers": {
-    "salesforce": {
-      "command": "python",
-      "args": ["/path/to/salesforce-fastmcp/server.py"],
-      "env": {
-        "SALESFORCE_BASE_URL": "https://your-instance.my.salesforce.com/services/data/v59.0",
-        "SALESFORCE_SID": "your-session-id"
-      }
-    }
-  }
-}
-```
-
-## Two-Laptop Setup (Remote Connection)
-
-If you can't run LLMs on the Salesforce-authenticated laptop, you can run the server on that laptop and connect from another machine via Tailscale/VPN:
-
-### Server Laptop (where Salesforce authentication works)
-
-1. **Get a fresh Salesforce Session ID (SID)**:
-   ```bash
-   # Method 1: Extract from Chrome cookies
-   cd /path/to/salesforce-fastmcp
-   node Scripts/extract-sid.js
-   
-   # Method 2: Or use Salesforce CLI
-   sf org display --target-org your-org
-   ```
-
-2. **Test the SID**:
-   ```bash
-   node Scripts/test-token.js <your-sid>
-   ```
-
-3. **Update .env** with the working SID:
-   ```bash
-   cp .env.example .env
-   # Edit .env with SALESFORCE_BASE_URL and SALESFORCE_SID
-   ```
-
-4. **Run the server** (ensures MCP_TRANSPORT is streamable-http):
-   ```bash
-   # Option A: Default streamable-http on port 8000
-   python3 server.py
-   
-   # Option B: Explicit configuration
-   MCP_TRANSPORT=streamable-http MCP_PORT=8000 python3 server.py
-   ```
-
-### AI Laptop (where Claude Desktop runs)
-
-The server is now accessible via your Tailscale IP (e.g., `100.121.106.95:8000`). Two options to connect Claude Desktop:
-
-**Option 1: Using wrapper.sh (recommended)**
+`~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
@@ -158,139 +248,49 @@ The server is now accessible via your Tailscale IP (e.g., `100.121.106.95:8000`)
 }
 ```
 
-The wrapper converts Claude Desktop's stdio to HTTP requests to the remote server. Customize the server IP via environment variable:
+`wrapper.sh` converts Claude Desktop's stdio to HTTP and handles MCP session management. Server IP is configured via:
 ```bash
-# In your shell environment or Claude settings:
-export SALESFORCE_MCP_URL="http://<server-ip>:8000/mcp"
+export SALESFORCE_MCP_URL="http://100.x.x.x:8000/mcp"
 ```
 
-**Option 2: Direct HTTP connection** (if your Claude Desktop version supports it)
-```json
-{
-  "mcpServers": {
-    "salesforce": {
-      "url": "http://<server-ip>:8000/mcp"
-    }
-  }
-}
+### AI laptop (Claude Code)
+
+```bash
+claude mcp add salesforce "/path/to/salesforce-fastmcp/wrapper.sh"
 ```
 
-### Troubleshooting Remote Connection
+### Pulling updates on the server laptop
 
-- **"Connection refused" in wrapper.sh**: Ensure server is running on the other laptop and port 8000 is accessible via Tailscale
-- **Tailscale IP changed**: Update `wrapper.sh` or the `SALESFORCE_MCP_URL` environment variable
-- **Token expired**: Run `Scripts/extract-sid.js` again on the server laptop, update `.env`, and restart `server.py`
-
-## Deploying to FastMCP Cloud
-
-1. Push this project to a GitHub repository
-
-2. Visit [fastmcp.cloud](https://fastmcp.cloud) and sign in
-
-3. Connect your GitHub repository
-
-4. Set environment variables in the FastMCP Cloud dashboard:
-   - `SALESFORCE_BASE_URL`
-   - `SALESFORCE_SID` (or `SALESFORCE_ACCESS_TOKEN`)
-
-5. Deploy and get your cloud URL
-
-### Using the Cloud-Hosted Server
-
-Once deployed, you can connect to your server via the cloud URL provided by FastMCP.
-
-## Example Usage
-
-### Query Accounts
-```
-Use the salesforce_query tool with:
-q: "SELECT Id, Name, Industry FROM Account LIMIT 10"
+```bash
+git pull origin main
+# Then restart the server
 ```
 
-### Search for Contacts
-```
-Use the salesforce_lookup tool with:
-object_name: "Contact"
-search_term: "John"
-search_fields: ["Name", "Email"]
-```
+---
 
-### Get Pipeline Analysis
-```
-Use the salesforce_pipeline tool with:
-timeframe: "THIS_QUARTER"
-include_forecasting: true
-```
+## Working with Lookup Fields
 
-### Aggregate Opportunity Data
-```
-Use the salesforce_aggregate tool with:
-object_name: "Opportunity"
-aggregates: [{"function": "SUM", "field": "Amount", "alias": "TotalValue"}]
-group_by: "StageName"
-```
+Salesforce lookup fields store record IDs, not names. Use relationship syntax:
 
-### Find Opportunities by Partner
-```
-Use the salesforce_opportunities_by_partner tool with:
-partner_name: "Inetum - Spain (Partner)"
-is_closed: false
-start_date: "2026-01-01"
-```
-
-## Working with Lookup Fields (IMPORTANT)
-
-Salesforce lookup fields (like `Partner__c`, `Account__c`) store **record IDs**, not names. When querying by name, you must use the **relationship syntax** with `__r`:
-
-### ❌ WRONG - This will fail with "invalid ID field" error:
 ```sql
-SELECT Id, Name FROM Opportunity WHERE Partner__c = 'Inetum - Spain (Partner)'
+-- WRONG:
+WHERE Partner__c = 'Inetum - Spain (Partner)'
+
+-- CORRECT:
+WHERE Partner__r.Name = 'Inetum - Spain (Partner)'
+-- or partial match:
+WHERE Partner__r.Name LIKE '%Inetum%'
 ```
 
-### ✅ CORRECT - Use the relationship syntax:
-```sql
-SELECT Id, Name FROM Opportunity WHERE Partner__r.Name = 'Inetum - Spain (Partner)'
-```
+Use `salesforce_find_partner` to look up a partner's ID before writing raw SOQL.
 
-### Common Lookup Fields in Opportunity:
-- `Partner__c` → use `Partner__r.Name` for partner name
-- `Account__c` → use `Account.Name` or `Account__r.Name`
-- `Owner__c` → use `Owner.Name`
-
-### Helper Tool: salesforce_opportunities_by_partner
-
-Instead of manually constructing SOQL queries with relationship syntax, use the dedicated helper tool:
-
-```
-Use the salesforce_opportunities_by_partner tool with:
-partner_name: "Inetum - Spain (Partner)"
-is_closed: false
-stage_name: "Negotiation"
-min_amount: 50000
-start_date: "2026-01-01"
-end_date: "2026-12-31"
-limit: 50
-```
-
-This tool automatically handles the lookup relationship syntax and provides additional filtering options.
-
-## Authentication Notes
-
-- Session IDs expire after ~24 hours of inactivity
-- For production use, consider implementing OAuth 2.0 with refresh tokens
-- Never commit your `.env` file to version control
+---
 
 ## Troubleshooting
 
-### "INVALID_SESSION_ID" Error
-Your session has expired. Obtain a new session ID and update your `.env` file.
-
-### "Missing required environment variables"
-Ensure both `SALESFORCE_BASE_URL` and `SALESFORCE_SID` (or `SALESFORCE_ACCESS_TOKEN`) are set.
-
-### API Version Errors
-Update the API version in your base URL (e.g., `v59.0` to `v60.0`) to match your Salesforce org.
-
-## License
-
-MIT
+| Error | Fix |
+|-------|-----|
+| `INVALID_SESSION_ID` | SID expired — run `extract-sid.js`, update `.env`, restart server |
+| `Connection refused` in wrapper | Server not running on the other laptop |
+| `Missing session ID` (HTTP 400) | proxy.py session tracking issue — restart Claude Desktop |
+| Tool not found after update | Pull latest on server laptop and restart `server.py` |

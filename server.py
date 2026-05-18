@@ -877,13 +877,20 @@ async def get_revenue(
     channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c value (leave blank for all)")] = None,
     partner_name: Annotated[str | None, Field(description="Filter by partner name (partial match)")] = None,
     country: Annotated[str | None, Field(description="Filter by billing country (exact match)")] = None,
+    territory: Annotated[str | None, Field(description="Territory name for target lookup (e.g. 'South_Europe' from config)")] = None,
+    revenue_target: Annotated[int | None, Field(description="Override revenue target (if not using config-based lookup)")] = None,
 ) -> str:
-    """Closed-Won revenue analytics for Southern Europe (Italy, Spain, Portugal, Greece, Cyprus, Malta)."""
+    """Closed-Won revenue analytics for Southern Europe (Italy, Spain, Portugal, Greece, Cyprus, Malta).
+
+    Now with optional territory/revenue_target parameters to fetch targets from config and calculate attainment %.
+    Example: get_revenue(period="THIS_FISCAL_YEAR", territory="South_Europe", country="Italy")
+    → Returns revenue + target from config + attainment %
+    """
     try:
         result = await ci.get_revenue(
             get_client(), period, breakdown, limit,
             channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
-            partner_name, country,
+            partner_name, country, territory, revenue_target,
         )
         return format_result(result)
     except (ValueError, Exception) as e:

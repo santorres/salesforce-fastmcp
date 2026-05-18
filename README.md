@@ -2,6 +2,8 @@
 
 FastMCP server providing Salesforce analytics and CRUD tools, purpose-built for Southern Europe channel management (Italy, Spain, Portugal, Greece, Cyprus, Malta).
 
+**Total: 60 tools** across CRUD, navigation, analytics, BI, and specialized channel intelligence. Includes Phase 1 activity/risk/velocity analytics with config-based revenue targets.
+
 ---
 
 ## Tools Overview
@@ -44,7 +46,7 @@ FastMCP server providing Salesforce analytics and CRUD tools, purpose-built for 
 ### Southern Europe Channel Intelligence (21 tools)
 | Tool | Purpose |
 |------|---------|
-| `get_revenue` | Closed-Won revenue — total, by country, by partner, by quarter |
+| `get_revenue` | Closed-Won revenue — total, by country, by partner, by quarter (now with targets & attainment %) |
 | `get_pipeline` | Open pipeline — total, by stage, by country, by partner |
 | `get_top_partners` | Top partners ranked by revenue or pipeline |
 | `get_partner_detail` | Full scorecard for a single partner |
@@ -67,6 +69,64 @@ FastMCP server providing Salesforce analytics and CRUD tools, purpose-built for 
 | `run_exploratory_analysis` | Natural-language intent mapping to canonical tools |
 | `generate_partner_qbr` | **Full QBR document for a partner (see below)** |
 | `list_available_metrics` | List all tools, periods, and runtime config |
+
+### Phase 1: Activity, Risk & Velocity Tools (9 tools)
+| Tool | Purpose |
+|------|---------|
+| `get_stalled_deals` | Find opportunities not modified in X days (default 60) — bottleneck detection |
+| `get_partner_activity_summary` | Partner engagement summary: open pipeline, deal count, last activity date |
+| `get_opportunity_recency` | Individual deal modification history and days since activity |
+| `get_lost_deals` | Lost deal analysis: count, amount, grouped by stage/partner/country |
+| `get_new_vs_existing` | Revenue/pipeline split by Type (New Business vs. Renewal/Expansion) |
+| `get_stage_risk_profile` | Probability distribution and confidence level by stage |
+| `get_deal_aging_by_stage` | Deal count and age by stage — identifies pipeline bottlenecks |
+| `get_high_risk_deals` | Alerts on low-probability deals closing within 30 days (early intervention) |
+| `get_stage_progression_velocity` | Historical stage velocity from closed-won deals vs. current aging |
+
+---
+
+## Revenue Targets Configuration
+
+Revenue targets are defined in `config/sales_targets.yaml` (no Salesforce custom fields needed).
+
+### Features
+
+- **Multi-level targets**: Territory → Countries → specific overrides
+- **Partner targets**: Global + country-specific with 100k default
+- **Account targets**: Optional enterprise-level targets
+- **Version-controlled**: Git history of all quota changes
+
+### Example
+
+```yaml
+territories:
+  South_Europe:
+    revenue_target:
+      fy27: 2000000
+    countries:
+      Spain:
+        revenue_target:
+          fy27: 700000
+
+partners:
+  Accenture:
+    revenue_target:
+      fy27: 900000
+    countries:
+      Spain:
+        revenue_target:
+          fy27: 400000
+```
+
+### Usage in Tools
+
+```
+get_revenue(period="THIS_QUARTER", territory="South_Europe")
+→ Returns revenue + target + attainment %
+
+get_revenue(period="THIS_QUARTER", partner="Accenture", country="Spain")
+→ Returns revenue + target + attainment %
+```
 
 ---
 
@@ -151,6 +211,45 @@ Generate QBR for Deloitte Italy for last quarter with a target of 800000
 ## Forward Looking
 - Next Quarter Pipeline: 890,000 (8 deals)
 - Closing in 60 days: 3 deals, 480,000
+```
+
+---
+
+## Phase 1 Tools: Activity & Risk Analytics
+
+The 9 Phase 1 tools provide activity tracking, risk detection, and stage velocity analysis without requiring Salesforce custom fields. They use **LastModifiedDate** as a proxy for engagement and include simple but effective risk scoring.
+
+### Key Features
+
+- **Activity Tracking**: Identify stalled deals (aging) and partner engagement level
+- **Risk Detection**: High-risk alerts on low-probability deals closing soon
+- **Stage Analysis**: Bottleneck detection, risk profile, and historical velocity
+- **Loss Analysis**: Understand where deals are being lost (by stage, partner, country)
+- **New vs Existing**: Split revenue and pipeline by business type
+
+### Documentation
+
+- **[PHASE_1_IMPLEMENTATION.md](PHASE_1_IMPLEMENTATION.md)** — Full usage guide with examples for all 9 tools
+- **[CHANNEL_DIRECTOR_CAPABILITY_MAP.md](CHANNEL_DIRECTOR_CAPABILITY_MAP.md)** — Assessment of 60+ channel director questions vs tool coverage
+- **[SCALING_PRIORITIZATION.md](SCALING_PRIORITIZATION.md)** — Gap analysis, roadmap for Phase 2+ custom fields
+
+### Example Queries
+
+```
+"Which partners are most active?"
+→ get_partner_activity_summary()
+
+"Which deals are at high risk of slipping?"
+→ get_high_risk_deals(probability_threshold=40)
+
+"Where's our biggest pipeline bottleneck?"
+→ get_deal_aging_by_stage(days_threshold=60)
+
+"Are we on quota this quarter?"
+→ get_revenue(period="THIS_QUARTER", territory="South_Europe")
+
+"What's our historical stage velocity?"
+→ get_stage_progression_velocity()
 ```
 
 ---

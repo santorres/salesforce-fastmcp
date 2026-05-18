@@ -1266,6 +1266,163 @@ async def get_time_to_close_stats(
         return f"Error: {e}"
 
 
+# =============================================================================
+# PHASE 1: Activity, Risk, Lost Deals, Stage Velocity Tools
+# =============================================================================
+
+@mcp.tool
+async def get_stalled_deals(
+    period: Annotated[str, Field(description="Time period (e.g., THIS_QUARTER, THIS_FISCAL_YEAR)")] = "THIS_QUARTER",
+    days_threshold: Annotated[int, Field(description="Days without modification (default 60)")] = 60,
+    stage_filter: Annotated[str | None, Field(description="Filter by stage name (e.g., Prospecting)")] = None,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Find deals that haven't been modified in X days.
+
+    Identifies stalled/at-risk opportunities by modification age. Useful for bottleneck detection.
+    """
+    try:
+        result = await ci.get_stalled_deals(get_client(), period, days_threshold, stage_filter, channel_manager)
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_partner_activity_summary(
+    period: Annotated[str, Field(description="Time period (e.g., THIS_QUARTER)")] = "THIS_QUARTER",
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Partner activity summary based on deal modification frequency.
+
+    Shows open pipeline, deal count, and last deal activity for each partner.
+    Proxy for engagement level (who's active vs. who's gone quiet).
+    """
+    try:
+        result = await ci.get_partner_activity_summary(get_client(), period, channel_manager)
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_opportunity_recency(
+    opportunity_id_or_name: Annotated[str, Field(description="Opportunity ID or name fragment")],
+) -> str:
+    """Get opportunity details including modification recency.
+
+    Shows last modified date and days since activity for a specific deal.
+    """
+    try:
+        result = await ci.get_opportunity_recency(get_client(), opportunity_id_or_name)
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_lost_deals(
+    period: Annotated[str, Field(description="Time period (e.g., THIS_QUARTER)")] = "THIS_QUARTER",
+    group_by: Annotated[str | None, Field(description="Group by: 'stage', 'partner', 'country', or None for total")] = None,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Analyze lost deals by count, amount, and grouping.
+
+    Shows loss rate and identifies where deals are being lost (stage, partner, country).
+    """
+    try:
+        result = await ci.get_lost_deals(get_client(), period, group_by, channel_manager)
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_new_vs_existing(
+    period: Annotated[str, Field(description="Time period (e.g., THIS_QUARTER)")] = "THIS_QUARTER",
+    breakdown: Annotated[str | None, Field(description="Breakdown by: 'partner', 'country', or None for total")] = None,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """New business vs. existing/renewal business split.
+
+    Shows revenue and pipeline breakdown by Type (New Business vs. Renewal/Expansion).
+    """
+    try:
+        result = await ci.get_new_vs_existing(get_client(), period, breakdown, channel_manager)
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_stage_risk_profile(
+    period: Annotated[str, Field(description="Time period (e.g., THIS_QUARTER)")] = "THIS_QUARTER",
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Stage risk profile: probability distribution and confidence by stage.
+
+    Identifies high-risk stages (avg prob < 40%), medium (40-60%), low (> 60%).
+    Useful for forecast confidence assessment.
+    """
+    try:
+        result = await ci.get_stage_risk_profile(get_client(), period, channel_manager)
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_deal_aging_by_stage(
+    period: Annotated[str, Field(description="Time period (e.g., THIS_QUARTER)")] = "THIS_QUARTER",
+    days_threshold: Annotated[int, Field(description="Aging threshold in days (default 60)")] = 60,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Bottleneck detection: deal aging by stage.
+
+    Shows how many deals are stalled in each stage (aged beyond threshold).
+    """
+    try:
+        result = await ci.get_deal_aging_by_stage(get_client(), period, days_threshold, channel_manager)
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_high_risk_deals(
+    period: Annotated[str, Field(description="Time period (e.g., THIS_QUARTER)")] = "THIS_QUARTER",
+    probability_threshold: Annotated[int, Field(description="Probability threshold % (default 40)")] = 40,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """High-risk deals: low probability + closing soon.
+
+    Alerts on deals with probability < threshold AND closing within 30 days.
+    Useful for early intervention.
+    """
+    try:
+        result = await ci.get_high_risk_deals(get_client(), period, probability_threshold, channel_manager)
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_stage_progression_velocity(
+    lookback_period: Annotated[str, Field(description="Historical period for velocity (default LAST_FISCAL_YEAR)")] = "LAST_FISCAL_YEAR",
+    lookback_periods: Annotated[int, Field(description="Number of periods to analyze (default 4)")] = 4,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Historical stage progression velocity and current deal aging.
+
+    Shows average days in each stage (from closed-won deals) and identifies current deals that are aged vs. historical norms.
+    """
+    try:
+        result = await ci.get_stage_progression_velocity(get_client(), lookback_period, lookback_periods, channel_manager)
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
 @mcp.tool
 async def generate_partner_qbr(
     partner_name: Annotated[str, Field(description="Partner name (partial match supported, e.g. 'Inetum Spain')")],

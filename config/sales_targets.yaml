@@ -1,0 +1,159 @@
+# Sales Targets Configuration
+# This file defines revenue targets at territory, country, and partner levels.
+#
+# HIERARCHY:
+# 1. Specific partner + country → Partner target for that country
+# 2. Partner (global) → Partner target across all countries
+# 3. Country-specific → Country target within territory
+# 4. Territory → Territory-wide fallback target
+# 5. Default → 100,000 per partner/year if none specified
+
+# ============================================================================
+# TERRITORIES (regional groupings with multi-level targets)
+# ============================================================================
+
+territories:
+  South_Europe:
+    # Main territory target — used if no country-specific breakdown provided
+    revenue_target:
+      fy27: 2000000
+      fy26: 1850000
+
+    # Country-level targets (if defined, used instead of territory-wide)
+    countries:
+      Italy:
+        revenue_target:
+          fy27: 600000
+          fy26: 550000
+      Spain:
+        revenue_target:
+          fy27: 700000
+          fy26: 650000
+      Portugal:
+        revenue_target:
+          fy27: 350000
+          fy26: 325000
+      Greece:
+        revenue_target:
+          fy27: 200000
+          fy26: 175000
+      Cyprus:
+        revenue_target:
+          fy27: 100000
+          fy26: 90000
+      Malta:
+        revenue_target:
+          fy27: 50000
+          fy26: 45000
+
+  # Example: Add additional territories as needed
+  # Northern_Europe:
+  #   revenue_target:
+  #     fy27: 3000000
+  #   countries:
+  #     Germany:
+  #       revenue_target:
+  #         fy27: 1200000
+  #     ...
+
+
+# ============================================================================
+# PARTNERS (with optional per-country/global targets)
+# ============================================================================
+
+partners:
+  Accenture:
+    # Country-specific targets (optional)
+    countries:
+      Spain:
+        revenue_target:
+          fy27: 400000
+          fy26: 350000
+      Italy:
+        revenue_target:
+          fy27: 350000
+          fy26: 300000
+    # Global fallback (if no country match or not specified)
+    revenue_target:
+      fy27: 900000
+      fy26: 800000
+
+  Inetum_Spain:
+    countries:
+      Spain:
+        revenue_target:
+          fy27: 500000
+          fy26: 450000
+    revenue_target:
+      fy27: 500000
+      fy26: 450000
+
+  Deloitte:
+    countries:
+      Italy:
+        revenue_target:
+          fy27: 300000
+          fy26: 275000
+    revenue_target:
+      fy27: 450000
+      fy26: 400000
+
+  NTT_Data:
+    revenue_target:
+      fy27: 600000
+      fy26: 550000
+
+  # Partners without explicit targets will default to 100,000 per year
+  # Example: If "LocalPartner XYZ" has no entry below, it gets 100,000 FY27 target
+
+
+# ============================================================================
+# ACCOUNTS (optional: enterprise-level targets)
+# ============================================================================
+
+accounts:
+  Telefonica:
+    revenue_target:
+      fy27: 300000
+      fy26: 280000
+
+  Vodafone:
+    revenue_target:
+      fy27: 250000
+      fy26: 230000
+
+  Orange:
+    revenue_target:
+      fy27: 200000
+      fy26: 180000
+
+
+# ============================================================================
+# CONFIGURATION NOTES
+# ============================================================================
+
+# - All amounts in EUR (or local currency — specify in your Salesforce org)
+# - Fiscal year labels: fy27, fy26, fy25, etc.
+# - Current fiscal year: FY27 (Feb 2026 - Jan 2027)
+# - When querying targets:
+#   1. Check if partner + country combination exists
+#   2. Fall back to partner global target
+#   3. Fall back to territory/country target
+#   4. Fall back to partner default (100,000)
+#
+# - Territory structure allows flexibility:
+#   - Use territory-wide target if country breakdown isn't available
+#   - Add country-specific targets as needed
+#   - Mix granularity (some countries detailed, others use territory fallback)
+
+# Example queries:
+# - get_revenue("THIS_QUARTER", territory="South_Europe")
+#   → Uses South_Europe main target (2,000,000 FY27) if no country filter
+# - get_revenue("THIS_QUARTER", territory="South_Europe", country="Spain")
+#   → Uses Spain-specific target (700,000 FY27)
+# - get_revenue("THIS_QUARTER", partner="Accenture")
+#   → Uses Accenture global target (900,000 FY27)
+# - get_revenue("THIS_QUARTER", partner="Accenture", country="Spain")
+#   → Uses Accenture Spain target (400,000 FY27)
+# - get_revenue("THIS_QUARTER", partner="UnknownPartner")
+#   → Uses default (100,000 FY27)

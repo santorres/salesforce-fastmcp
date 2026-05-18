@@ -1057,18 +1057,20 @@ async def get_deal_registrations(
         f"FROM Opportunity WHERE {where} GROUP BY Partner_Registration_Approval__c"
     )
 
-    # Query 2: Approved DRs that became Closed Won
+    # Queries 2-4: Conversion rates (run in parallel)
     approved_where = f"{where} AND Partner_Registration_Approval__c = 'Approved'"
-    closed_res = await sf.query(
-        f"SELECT COUNT(Id) cnt_approved, COUNT(CASE WHEN IsWon = true THEN Id ELSE null END) cnt_closed_won "
-        f"FROM Opportunity WHERE {approved_where}"
+    trackable_where = f"{where} AND Partner_Registration_Approval__c IN ('Submitted', 'In Review', 'Approved', 'Rejected')"
+
+    approved_count_res, approved_won_res, trackable_res = await asyncio.gather(
+        sf.query(f"SELECT COUNT(Id) cnt FROM Opportunity WHERE {approved_where}"),
+        sf.query(f"SELECT COUNT(Id) cnt FROM Opportunity WHERE {approved_where} AND IsWon = true"),
+        sf.query(f"SELECT COUNT(Id) cnt FROM Opportunity WHERE {trackable_where}"),
     )
 
-    # Parse results
+    # Parse status breakdown results
     by_status = []
     total_count = 0
     total_amount = 0
-    statuses_for_approval = {}  # Track counts for approval rate calculation
 
     for r in status_res.get("records", []):
         status = r.get("Partner_Registration_Approval__c", "Unknown")
@@ -1077,21 +1079,14 @@ async def get_deal_registrations(
         by_status.append({"status": status, "count": count, "amount": amount})
         total_count += count
         total_amount += amount
-        statuses_for_approval[status] = count
 
-    # Calculate conversion rates
-    approved_count = statuses_for_approval.get("Approved", 0)
-    submitted_count = statuses_for_approval.get("Submitted", 0)
-    in_review_count = statuses_for_approval.get("In Review", 0)
-    rejected_count = statuses_for_approval.get("Rejected", 0)
+    # Parse conversion rate results
+    approved_total = _num(approved_count_res.get("records", [{}])[0], "cnt", "expr0")
+    approved_won = _num(approved_won_res.get("records", [{}])[0], "cnt", "expr0")
+    trackable_total = _num(trackable_res.get("records", [{}])[0], "cnt", "expr0")
 
-    total_trackable = submitted_count + in_review_count + approved_count + rejected_count
-    approval_rate = (approved_count / total_trackable * 100) if total_trackable > 0 else 0
-
-    closed_rec = closed_res.get("records", [{}])[0]
-    approved_total = _num(closed_rec, "cnt_approved", "expr0")
-    closed_won = _num(closed_rec, "cnt_closed_won", "expr1")
-    close_rate = (closed_won / approved_total * 100) if approved_total > 0 else 0
+    approval_rate = (approved_total / trackable_total * 100) if trackable_total > 0 else 0
+    close_rate = (approved_won / approved_total * 100) if approved_total > 0 else 0
 
     by_status.sort(key=lambda x: {"Approved": 1, "Submitted": 2, "In Review": 3, "Rejected": 4}.get(x["status"], 5))
 
@@ -2013,39 +2008,29 @@ async def get_deal_registrations_breakdown(
 
     base_where = " AND ".join(where_conditions)
 
-    # Query 1: Total stats
-    total_res = await sf.query(
-        f"SELECT COUNT(Id) cnt_total, SUM(Amount) amt_total FROM Opportunity WHERE {base_where}"
+    # Run conversion stats queries in parallel
+    total_res, approved_res, approved_won_res, trackable_res = await asyncio.gather(
+        sf.query(f"SELECT COUNT(Id) cnt_total, SUM(Amount) amt_total FROM Opportunity WHERE {base_where}"),
+        sf.query(f"SELECT COUNT(Id) cnt FROM Opportunity WHERE {base_where} AND Partner_Registration_Approval__c = 'Approved'"),
+        sf.query(f"SELECT COUNT(Id) cnt FROM Opportunity WHERE {base_where} AND Partner_Registration_Approval__c = 'Approved' AND IsWon = true"),
+        sf.query(f"SELECT COUNT(Id) cnt FROM Opportunity WHERE {base_where} AND Partner_Registration_Approval__c IN ('Submitted', 'In Review', 'Approved', 'Rejected')"),
     )
+
     total_count = _num(total_res.get("records", [{}])[0], "cnt_total", "expr0")
     total_amount = _num(total_res.get("records", [{}])[0], "amt_total", "expr1")
+    approved_total = _num(approved_res.get("records", [{}])[0], "cnt", "expr0")
+    approved_won = _num(approved_won_res.get("records", [{}])[0], "cnt", "expr0")
+    trackable_total = _num(trackable_res.get("records", [{}])[0], "cnt", "expr0")
 
-    # Query 2: Conversion stats (for all)
-    approved_res = await sf.query(
-        f"SELECT COUNT(Id) cnt_approved, COUNT(CASE WHEN IsWon = true THEN Id ELSE null END) cnt_closed_won "
-        f"FROM Opportunity WHERE {base_where} AND Partner_Registration_Approval__c = 'Approved'"
-    )
-    approved_total = _num(approved_res.get("records", [{}])[0], "cnt_approved", "expr0")
-    closed_won = _num(approved_res.get("records", [{}])[0], "cnt_closed_won", "expr1")
-
-    # Calculate rates
-    submitted_res = await sf.query(
-        f"SELECT COUNT(Id) cnt_submitted FROM Opportunity WHERE {base_where} "
-        f"AND Partner_Registration_Approval__c IN ('Submitted', 'In Review', 'Approved', 'Rejected')"
-    )
-    submitted_total = _num(submitted_res.get("records", [{}])[0], "cnt_submitted", "expr0")
-
-    approval_rate = (approved_total / submitted_total * 100) if submitted_total > 0 else 0
-    close_rate = (closed_won / approved_total * 100) if approved_total > 0 else 0
+    approval_rate = (approved_total / trackable_total * 100) if trackable_total > 0 else 0
+    close_rate = (approved_won / approved_total * 100) if approved_total > 0 else 0
 
     # Query 3: Breakdown
     breakdown_data = []
 
     if breakdown == "partner":
         pres = await sf.query(
-            f"SELECT Partner__r.Name partnerName, COUNT(Id) cnt_dr, SUM(Amount) amt_dr, "
-            f"COUNT(CASE WHEN Partner_Registration_Approval__c = 'Approved' THEN Id ELSE null END) cnt_approved, "
-            f"COUNT(CASE WHEN Partner_Registration_Approval__c = 'Approved' AND IsWon = true THEN Id ELSE null END) cnt_closed_won "
+            f"SELECT Partner__r.Name partnerName, COUNT(Id) cnt_dr, SUM(Amount) amt_dr "
             f"FROM Opportunity WHERE {base_where} GROUP BY Partner__r.Name ORDER BY COUNT(Id) DESC LIMIT {safe_limit}"
         )
         breakdown_data = [
@@ -2053,17 +2038,13 @@ async def get_deal_registrations_breakdown(
                 "label": r.get("partnerName") or "Unknown",
                 "count": _num(r, "cnt_dr", "expr0"),
                 "amount": _num(r, "amt_dr", "expr1"),
-                "approved": _num(r, "cnt_approved", "expr2"),
-                "closed_won": _num(r, "cnt_closed_won", "expr3"),
             }
             for r in pres.get("records", [])
         ]
 
     elif breakdown == "country":
         cres = await sf.query(
-            f"SELECT Account.BillingCountry country, COUNT(Id) cnt_dr, SUM(Amount) amt_dr, "
-            f"COUNT(CASE WHEN Partner_Registration_Approval__c = 'Approved' THEN Id ELSE null END) cnt_approved, "
-            f"COUNT(CASE WHEN Partner_Registration_Approval__c = 'Approved' AND IsWon = true THEN Id ELSE null END) cnt_closed_won "
+            f"SELECT Account.BillingCountry country, COUNT(Id) cnt_dr, SUM(Amount) amt_dr "
             f"FROM Opportunity WHERE {base_where} GROUP BY Account.BillingCountry ORDER BY COUNT(Id) DESC LIMIT {safe_limit}"
         )
         breakdown_data = [
@@ -2071,8 +2052,6 @@ async def get_deal_registrations_breakdown(
                 "label": r.get("country") or "Unknown",
                 "count": _num(r, "cnt_dr", "expr0"),
                 "amount": _num(r, "amt_dr", "expr1"),
-                "approved": _num(r, "cnt_approved", "expr2"),
-                "closed_won": _num(r, "cnt_closed_won", "expr3"),
             }
             for r in cres.get("records", [])
         ]

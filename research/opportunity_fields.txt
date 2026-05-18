@@ -1,0 +1,528 @@
+Id | Opportunity ID | id
+IsDeleted | Deleted | boolean
+AccountId | Account ID | reference
+Name | Name | string
+Description | Description | textarea
+StageName | Stage | picklist
+Amount | Amount | currency
+Probability | Probability (%) | percent
+CloseDate | Close Date | date
+Type | Opportunity Type | picklist
+NextStep | Next Step | string
+LeadSource | Lead Source | picklist
+IsClosed | Closed | boolean
+IsWon | Won | boolean
+ForecastCategory | Forecast Category | picklist
+ForecastCategoryName | Forecast Category | picklist
+CurrencyIsoCode | Opportunity Currency | picklist
+CampaignId | Campaign ID | reference
+HasOpportunityLineItem | Has Line Item | boolean
+IsSplit | Is Split | boolean
+Pricebook2Id | Price Book ID | reference
+OwnerId | Owner ID | reference
+Territory2Id | Territory ID | reference
+IsExcludedFromTerritory2Filter | Exclude from the territory assignment filter logic | boolean
+CreatedDate | Created Date | datetime
+CreatedById | Created By ID | reference
+LastModifiedDate | Last Modified Date | datetime
+LastModifiedById | Last Modified By ID | reference
+SystemModstamp | System Modstamp | datetime
+LastActivityDate | Last Activity | date
+PushCount | Push Count | int
+LastStageChangeDate | Last Stage Change Date | datetime
+ContactId | Contact ID | reference
+LastViewedDate | Last Viewed Date | datetime
+LastReferencedDate | Last Referenced Date | datetime
+PartnerAccountId | Partner Account ID | reference
+SyncedQuoteId | Quote ID | reference
+ContractId | Contract ID | reference
+HasOpenActivity | Has Open Activity | boolean
+HasOverdueTask | Has Overdue Task | boolean
+LastAmountChangedHistoryId | Opportunity History ID | reference
+LastCloseDateChangedHistoryId | Opportunity History ID | reference
+Budget_Confirmed__c | Budget Confirmed | boolean
+Discovery_Completed__c | Discovery Completed | boolean
+ROI_Analysis_Completed__c | ROI Analysis Completed | boolean
+Send_me_a_Next_Steps_Reminder__c | Send me a Next Steps Reminder | boolean
+Lost_Reason__c | Lost Reason | picklist
+Lead_Source_Sub_Detail__c | Lead Source Sub Detail | string
+Lost_Reason_Description__c | Lost Reason Description | textarea
+Payment_Terms__c | Payment Terms | picklist
+Payment_Terms_Detail__c | Payment Terms Detail | textarea
+Billing_Terms__c | Billing Terms | picklist
+Billing_Terms_Detail__c | Billing Terms Detail | textarea
+Partner__c | Primary Partner | reference
+Contract_Effective_Date__c | Contract Effective Date | date
+Contract_End_Date__c | Contract End Date | date
+Renewal_Terms__c | Renewal Terms | picklist
+Term_for_Convenience__c | Term for Convenience | picklist
+Partner_Source_Influence__c | Primary Partner Deal  Type | picklist
+Type_Detail__c | Type Detail | picklist
+Stage_Detail__c | Stage Detail | picklist
+Commissionable_SDR__c | Commissionable BDR | reference
+Owner_Manager__c | Owner Manager | reference
+ARR__c | Net New Annual Recurring Revenue (ARR) | currency
+NRR__c | Non-Recurring Revenue | currency
+Perpetual_Revenue__c | Perpetual Revenue | currency
+ABC_Forecast__c | ABC Forecast | picklist
+ARR_ABC_Weighted__c | ARR (ABC Weighted) | double
+NRR_ABC_Weighted__c | NRR (ABC Weighted) | double
+Perpetual_ABC_Weighted__c | Perpetual (ABC Weighted) | double
+Perpetual_Stage_Weighted__c | Perpetual (Stage Weighted) | double
+ARR_Stage_Weighted__c | ARR (Stage Weighted) | double
+NRR_Stage_Weighted__c | NRR (Stage Weighted) | double
+Perpetual_License_Approval__c | Perpetual License Approval | picklist
+Term_Years_Calculated__c | Term (Years Calculated) | double
+Previous_Opportunity__c | Previous Opportunity | reference
+Next_Opportunity__c | Next Opportunity | reference
+Opportunity_is_Active__c | Contract is Active | picklist
+Opportunity_Locked__c | Opportunity Locked | boolean
+TCV__c | Net New Total Contract Value (TCV) | currency
+Previous_Opportunity_Stage__c | Previous Opportunity Stage | string
+Date_Entering_Current_Stage__c | Date Entering Current Stage | date
+Discovery_Stage_Converted__c | Discovery Stage Converted | boolean
+Demo_Stage_Converted__c | Assessment Stage Converted | boolean
+Solution_Validation_Stage_Converted__c | Solution Validation Stage Converted | boolean
+In_Evaluation_POV_Stage_Converted__c | Business Case Stage Converted | boolean
+Post_POV_Stage_Converted__c | Close Plan Stage Converted | boolean
+Negotiation_on_Pricing_Stage_Converted__c | Contracts Stage Converted | boolean
+Decision_Rendered_Stage_Converted__c | Submitted to Finance Stage Converted | boolean
+Current_Stage_Number__c | Current Stage Number | double
+Previous_Opportunity_Stage_Number__c | Previous Opportunity Stage Number | double
+ADMIN_Immediate_Workflow_DateTime__c | ADMIN Immediate Workflow DateTime | datetime
+Custom_Opportunity_ID__c | Custom Opportunity ID | string
+SQL_d_Contact__c | SAL'd Contact | reference
+Contact_is_SQL_d__c | Contact is SQL'd | boolean
+Terminated_Reason__c | Terminated Reason | textarea
+Next_Steps_Date__c | Next Steps Date | date
+Amount_Hubspot_Temp_Field__c | Amount (Hubspot Temp Field) | double
+Hubspot_Associated_Company_ID__c | Hubspot Associated Company ID | string
+SQL_d_Contact_Admin_Override__c | Qualification Admin Override | boolean
+Hubspot_Opportunity_Owner_Text__c | Hubspot Opportunity Owner (Text) | string
+License_Type_Hubspot_Temp_Field__c | License Type (Hubspot Temp Field) | string
+Lead_Source_Type__c | Lead Source Type | string
+Users_Hubspot_Temp_Field__c | Users (Hubspot Temp Field) | double
+Hubspot_Deal_ID__c | Hubspot Deal ID | string
+Amount_Stage_Weighted__c | Amount (Stage Weighted) | double
+Term_Years__c | Term (Years) | double
+AD_Owner__c | AD Owner | picklist
+AD_Owner_Details__c | AD Owner Details | textarea
+Current_Methods_Products__c | Current Methods/Products | multipicklist
+Current_Methods_Products_Details__c | Current Methods/Products Details | textarea
+Competitors__c | Competitors | multipicklist
+Competitor_Details__c | Competitor Details | textarea
+Notable_Technologies_Services__c | Notable Technologies/Services | multipicklist
+Notable_Technologies_Services_Details__c | Notable Technologies/Services Details | textarea
+SIEM__c | SIEM | multipicklist
+SIEM_Details__c | SIEM Details | textarea
+Opportunity_Has_No_Partnerships__c | Opportunity Has No Partnerships | boolean
+Microsoft_Partner_Portal__c | Microsoft Partner Portal | string
+Partner_Reseller_Percentage__c | Primary Partner Year 1 Percentage | percent
+Legal_Contract_Review_Notes__c | Legal Contract Review Notes | textarea
+Opportunity_Has_A_Tech_Alliance_Partner__c | Opportunity Has A Tech Alliance Partner? | picklist
+Tech_Alliance_Partner__c | Tech Alliance Partner | reference
+Lead_Source_Detail__c | Lead Source Detail | picklist
+Tech_Alliance_Contact__c | Tech Alliance Contact | reference
+Tech_Alliance_External__c | Tech Alliance External ID | string
+Secondary_Partner_Custom_Account_ID__c | Secondary Partner Custom Account ID | string
+Next_Opportunity_Custom_ID__c | Next Opportunity Custom ID | string
+Primary_Partner_Total__c | Primary Partner Total | currency
+Days_Since_Description_Updated__c | Days Since Description Updated | double
+Lead_Source_Attribution__c | Lead Source Attribution | picklist
+Days_SAL_to_SQL__c | Days SAL to SQL | double
+Days_MQL_to_SAL__c | Days MQL to SAL | double
+Created_Month__c | Created Month | double
+Presales_Owner__c | Presales Owner | picklist
+Presales_Notes__c | Presales Notes | textarea
+Presales_POC_Status__c | Presales POC Status | picklist
+Opportunity_Owner_Custom_ID__c | Opportunity Owner Custom ID | string
+Opportunity_Owner_FY20_Goal__c | Opportunity Owner FY20 Goal | currency
+Opportunity_Owner_Department__c | Opportunity Owner Department | string
+Opportunity_Owner_Division__c | Opportunity Owner Division | string
+Date_Entering_Late_Pipeline__c | Date Entering Late Pipeline | date
+TCV_Net__c | TCV (Partner) | currency
+SQL_d_Contact_Converted_Date__c | SQL'd Contact Converted Date | date
+Description_Field_Change_Date__c | Description Field Change Date | date
+Commissionable_BDR_Cohort__c | Commissionable BDR Cohort | string
+Lost__c | Lost | boolean
+Other_Contract_Terms__c | Other Contract Terms | textarea
+Partner_Opportunity_Registration_Date__c | Partner Opportunity Registration Date | datetime
+Partner_Registration_Approval__c | Partner Registration Approval | picklist
+Partner_Contact__c | Primary Partner Contact | reference
+ARR_Commit_to_Quarter__c | ARR (Commit to Quarter) | double
+Owner_Start_Date__c | Owner Start Date | date
+Contact_SAL_Converted_SQLd_Contact__c | Contact SAL Converted (SQLd Contact) | boolean
+Partner_Representative_Name__c | Customer Contact Name | string
+Partner_Representative_Email__c | Customer Contact Email | email
+Partner_Representative_Phone_Number__c | Customer Contact Phone Number | phone
+Close_Plan__c | Close Plan | textarea
+ARR_Net__c | Net New ARR (Partner) | currency
+Opportunity_Owner_Cohort__c | Opportunity Owner Cohort | string
+Close_Date_FQ__c | Close Date FQ | string
+LID__CurrentGenerators__c | Current Generator(s) | string
+Sum_of_Identities__c | Sum of Identities | double
+TEI_Report_Sent__c | TEI Report Sent | picklist
+Account_Max_Renewal_Uplift__c | Account Max Renewal Uplift% | percent
+Executive_Sponsor__c | Executive Sponsor | reference
+LID__DeliveryInstallationStatus__c | Delivery/Installation Status | picklist
+LID__Is_Influenced__c | Is_Influenced | boolean
+LID__LinkedIn_Company_Id__c | LinkedIn Company Id | string
+LID__MainCompetitors__c | Main Competitor(s) | string
+LID__My_DateTime__c | My DateTime | datetime
+LID__My_Geolocation__Latitude__s | My Geolocation (Latitude) | double
+LID__My_Geolocation__Longitude__s | My Geolocation (Longitude) | double
+LID__My_Geolocation__c | My Geolocation | location
+LID__OrderNumber__c | Order Number | string
+LID__TrackingNumber__c | Tracking Number | string
+Outreach_Attributed_Finished_Sequences__c | Attributed Finished Sequences | string
+Outreach_Last_Touch_Contact__c | Last Touch Contact | reference
+Outreach_Last_Touch_Sequence__c | Last Touch Sequence | string
+Outreach_Sequence_Attributed__c | Sequence Attributed? | string
+Contract_Renewal_Term__c | Contract Renewal Term | double
+Contracted_Uplift__c | Contracted Uplift % | percent
+New_Logo__c | New Logo | boolean
+Next_Renewal_Uplift__c | Next Renewal Uplift % | percent
+Renewal_Quote_Button_Visible__c | Renewal Quote Button Visible | boolean
+Renewal_Quote_Click_Time__c | Renewal Quote Click Time | datetime
+Secondary_Partner_Total__c | Secondary Partner Total | currency
+Amendment_Created_by_Flow__c | Amendment Created by Flow | boolean
+Billing_Contact__c | Billing Contact | string
+Billing_Email__c | Billing Email | string
+Overall_Partner_Discount__c | Overall Partner Discount% | percent
+Primary_Override_Discount_Licenses__c | Primary Override Discount - Licenses | percent
+Primary_Override_Discount_Services__c | Primary Override Discount - Services | percent
+Primary_Override_Discount_Support__c | Primary Override Discount - Support | percent
+Primary_Partner_Average_Discount__c | Primary Partner Average Discount% | percent
+Quote_Type__c | Quote Type | string
+Renewal_Churn_ARR__c | Renewal Churn ARR | currency
+Secondary_Override_Discount_Licenses__c | Secondary Override Discount - Licenses | percent
+Secondary_Override_Discount_Services__c | Secondary Override Discount - Services | percent
+Secondary_Override_Discount_Support__c | Secondary Override Discount - Support | percent
+Secondary_Partner_Average_Discount__c | Secondary Partner Average Discount% | percent
+Segment__c | Product Book | picklist
+Swap_In_ARR_DSP_Advanced__c | Swap In ARR - DSP Advanced | currency
+Swap_In_ARR_DSP_Essential__c | Swap In ARR - DSP Essential | currency
+Swap_In_ARR_DSP_Intelligence__c | Swap In ARR - DSP Intelligence | currency
+Swap_Out_ARR_DSP_Advanced__c | Swap Out ARR - DSP Advanced | currency
+Swap_Out_ARR_DSP_Essential__c | Swap Out ARR - DSP Essential | currency
+Swap_Out_ARR_DSP_Intelligence__c | Swap Out ARR - DSP Intelligence | currency
+Total_Number_of_Forests_from_Contract__c | Total Number of Forests from Contract | double
+Net_DSP_Expansion__c | Net DSP Expansion | currency
+Total_Churn_ARR_Amendment_Only__c | Total Churn ARR (Amendment Only) | currency
+Total_Cross_Sell_ARR__c | Total Cross Sell ARR | currency
+Total_Downsell_ARR__c | Total Downsell ARR | currency
+Total_MRR__c | Total MRR | currency
+Total_New_Business_ARR__c | Total New Business ARR | currency
+Total_Renewed_ARR__c | Total Renewed ARR | currency
+Total_Terminated_for_Restructure_ARR__c | Total Terminated for Restructure ARR | currency
+Total_Upsell_ARR__c | Total Upsell ARR | currency
+Total_ARR_CPQ__c | Total ARR | currency
+Total_Churn_ARR__c | Total Churn ARR | currency
+Channel_Manager__c | Channel Manager | reference
+Secondary_Partner__c | Secondary Partner | reference
+Secondary_Partner_Source_Influence__c | Secondary Partner Deal Type | picklist
+Secondary_Partner_Contact__c | Secondary Partner Contact | reference
+Primary_Partner__c | Primary Partner Type | picklist
+Secondary_Partner_Type__c | Secondary Partner Type | picklist
+Days_from_Late_Pipeline_to_Closed__c | Days from Late Pipeline to Closed | double
+Finance_Approval_Date__c | Finance Approval Date | date
+Operations_Approval__c | Operations Approval | date
+SLA__c | SLA | picklist
+Overall_Source_Attribution__c | Overall Source Attribution | string
+Customer_Success_Manager__c | Customer Success Manager/Team Lead | reference
+Secondary_Partner_Reseller_Percentage__c | Secondary Partner Year 1 Percentage | percent
+Presale_Owner__c | Presale Owner | reference
+All_Opportunity_Products__c | All Opportunity Products | textarea
+Account_Owner__c | Account Owner | string
+Commissionable_BDR_Category__c | Commissionable BDR Category | string
+Company_Name__c | Company Name | string
+bizible2__Bizible_Opportunity_Amount__c | Bizible Opportunity Amount | currency
+Number_of_Users__c | Number of Users | double
+Days_Lead_Created_to_MQL__c | Days Lead Created to MQL | double
+Days_from_Lead_to_Closed__c | Days from Lead to Closed | double
+PO_Date__c | PO Date | date
+Allow_Recontract__c | Allow Recontract | boolean
+Recontracted_Start_Date__c | Recontracted Start Date | date
+Select_for_Termination_for_Recontract__c | Select for Termination for Recontract | boolean
+Overall_Partner_Deal_Type__c | Overall Partner Deal Type | string
+CSM__c | CSM | reference
+Days_in_Current_Stage__c | Days in Current Stage | double
+mkto_si__Current_Sales_Campaign__c | Current Sales Campaign | string
+mkto_si__Last_Activity_By_Sales__c | Last Activity by Sales | datetime
+mkto_si__Last_Sales_Engagement__c | Last Sales Engagement | datetime
+mkto_si__MarketoAnalyzer__c | Marketo Opportunity Analysis | string
+mkto_si__Sales_Insight__c | Sales Insight | string
+mkto_si__Sales_Last_Replied__c | Sales Last Replied | datetime
+Opportunity_Owner_Role__c | Opportunity Owner Role | string
+Close_Date_FY__c | Close Date FY | string
+Microsoft_Co_sell_Status__c | Microsoft Co-Sell Status | picklist
+Toggle__c | Toggle | boolean
+Bizible_ARR__c | Bizible ARR | currency
+Previous_Opportunity_Stage_Detail__c | Previous Opportunity Stage Detail | string
+Microsoft_Registration_ID__c | Microsoft Referral ID | string
+Commissionable_Date__c | Commissionable Date | date
+Number_of_Sold_Forests__c | Number of Sold Forests | textarea
+Presales_PoC_Type__c | Presales PoC Type | picklist
+Technical_Team_Location__c | Technical Team Location | textarea
+Allbound_ID__c | Allbound ID | string
+Contract_Status__c | Contract Status | picklist
+Deployment_Deadlines__c | Deployment Deadlines | textarea
+Demos_Info__c | Demos Info | textarea
+Term_Status__c | Term Status | picklist
+Meeting_Date__c | Meeting Date | date
+General_Comments__c | General Comments | textarea
+Renewal_ARR__c | Renewal ARR | currency
+Total_ARR__c | Total Combined ARR | currency
+Renewal_Quantity__c | Renewal Quantity | double
+Renewal_CV__c | Renewal TCV | currency
+Total_Contract_Value__c | Total Combined TCV | currency
+Renewal_ARR_Partner__c | Renewal ARR (Partner) | currency
+Combined_ARR_Partner__c | Combined ARR (Partner) | currency
+Stamped_Combined_ARR_Partner__c | Stamped Combined ARR (Partner) | currency
+Sales_Order_Document_Number__c | Sales Order Document Number | string
+PO_Number__c | PO Number | string
+Non_Recurring_Revenue_Net_Total__c | Non-Recurring Revenue Net Total | currency
+Lost_to_Competitor__c | Lost to Competitor | picklist
+Other_Competitor_Lost_to__c | Other Competitor Lost to | string
+Closed_Lost_Competitor_Reason__c | Closed Lost Competitor Reason | picklist
+Primary_Partner_Name__c | Primary Partner Name | string
+Previous_Opportunities_Combined_ARR__c | Previous Opportunities Combined ARR | currency
+Count_of_Opportunity_Products__c | Count of Opportunity Products | double
+Budget__c | Budget | boolean
+Budget_Summary__c | Budget Summary | textarea
+Authority__c | Authority | boolean
+Authority_Summary__c | Authority Summary | textarea
+Need__c | Need | boolean
+Need_Summary__c | Need Summary | textarea
+Technical_Fit__c | Technical Fit | boolean
+Technical_Fit_Summary__c | Technical Fit Summary | textarea
+Nominate_for_Microsoft_Co_Sell__c | Nominate for Microsoft Co-Sell | picklist
+Timing_Summary__c | Timing Summary | textarea
+Timing__c | Timing | boolean
+Marketplace_Private_Offer_Candidate__c | Nominate for Marketplace | picklist
+Closed_Owner_id__c | Closed Owner id | string
+Are_we_Replacing_Existing_AD_Solution__c | Are we Replacing Existing AD Solution? | picklist
+Promises_By_Semperis__c | Promises By Semperis | multipicklist
+Promises_By_Customer__c | Promises By Customer | multipicklist
+Free_Services__c | Free Services | textarea
+Customer_s_Project_Manager__c | Customer's Project Manager | reference
+Customer_s_Technical_Team_Level__c | Customer's Technical Team Level | picklist
+Red_Flags__c | Red Flags | multipicklist
+Installations_Priorities__c | Installations Priorities | picklist
+Drivers_for_the_Semperis_Purchase__c | Drivers for the Semperis Purchase | multipicklist
+Partner_Involvement_in_Installation__c | Partner Involvement in Installation | picklist
+MEDDPIC_Review_Attached__c | MEDDPIC Review Attached? | picklist
+Products_Installed__c | Products Installed | multipicklist
+Number_of_Dev_Forests__c | Number of Dev Forests | textarea
+Challenges_in_POC__c | Challenges in POC | picklist
+POC_Success_Criteria_Attached__c | POC Success Criteria Attached? | picklist
+Production_or_Non_Production__c | Production or Non-Production | textarea
+Microsoft_Co_Sell_Status_Change_Date__c | Microsoft Co-Sell Status Change Date | date
+Status__c | Status | string
+Net_New_ARR_License__c | Net New ARR (License) | currency
+Renewal_ARR_License__c | Renewal ARR (License) | currency
+Total_Combined_ARR_License__c | Total Combined ARR (License) | currency
+Ready_for_Update__c | Ready for Update | boolean
+Primary_Partner_Year_2_Percentage__c | Primary Partner Year 2 Percentage | percent
+Term_Test__c | Term Test | string
+Allbound_Partner__c | Allbound Partner | reference
+Allbound_Partner_Contact__c | Allbound Partner Contact | reference
+Renewal_Manager__c | Renewal Manager | reference
+Subsidiary__c | Subsidiary | picklist
+Sales_Order_Number__c | Sales Order Number | textarea
+Territory__c | Territory | picklist
+Territory_Region__c | Territory Region | picklist
+Territory_Segment__c | Territory Segment | picklist
+Location__c | Location | string
+Days_PO_Received_After_Effective_Date__c | Days PO Received After Effective Date | double
+Partner_Notes__c | Partner Notes | textarea
+Channel_Manager_Notes__c | Channel Manager Notes | textarea
+Potential_Products__c | Potential Products | multipicklist
+Partner_Registration_Approval_Notes__c | Partner Registration Approval Notes | textarea
+Date_Entering_Stage_1__c | Date Entering Stage 1 | date
+Date_Entering_Stage_2__c | Date Entering Stage 2 | date
+Date_Entering_Stage_3__c | Date Entering Stage 3 | date
+Date_Entering_Stage_4__c | Date Entering Stage 4 | date
+Date_Entering_Stage_5__c | Date Entering Stage 5 | date
+Date_Entering_Stage_6__c | Date Entering Stage 6 | date
+Date_Entering_Stage_7__c | Date Entering Stage 7 | date
+Date_Entering_Stage_8__c | Date Entering Stage 8 | date
+Date_Entering_Stage_9__c | Date Entering Stage 9 | date
+Potential_Identities__c | Potential Identities | double
+Include_Secondary_Partner_Percentage__c | Include Secondary Partner Percentage | boolean
+Partner_End_Client__c | Partner End Client | reference
+Customer_Contact_Job_Title__c | Customer Contact Job Title | string
+Partner_Deal_Registration_Region__c | Partner Deal Registration Region | picklist
+Days_Old__c | Days Old | double
+Price_per_Identity__c | Price per Identity | currency
+Converted_ARR__c | Converted ARR | currency
+Customer_Name__c | Customer Name | string
+Unique_Opportunities__c | Unique Opportunities | double
+Conversion_Rate__c | Conversion Rate | double
+Custom_Primary_Partner_Account_ID__c | Primary Partner Custom Account ID | string
+Primary_Partner_Target_Account_Status__c | Primary Partner Target Account Status | string
+Adjusted_Contract_End_Date__c | Adjusted Contract End Date | date
+Primary_Partner_Year_3_Percentage__c | Primary Partner Year 3 Percentage | percent
+Secondary_Partner_Year_2_Percentage__c | Secondary Partner Year 2 Percentage | percent
+Secondary_Partner_Year_3_Percentage__c | Secondary Partner Year 3 Percentage | percent
+Renewal_Status__c | Renewal Status | picklist
+Other_Promises_By_Semperis__c | Other Promises By Semperis | textarea
+Other_Promises_By_Customer__c | Other Promises By Customer | textarea
+Primary_Partner_Account_Type_Detail__c | Primary Partner Account Type Detail | string
+Opportunity_Qualification__c | Opportunity Qualification | reference
+Primary_Partner_Billing_Address__c | Primary Partner Billing Address | string
+Primary_Partner_Year_4_Percentage__c | Primary Partner Year 4 Percentage | percent
+Primary_Partner_Year_5_Percentage__c | Primary Partner Year 5 Percentage | percent
+Secondary_Partner_Year_4_Percentage__c | Secondary Partner Year 4 Percentage | percent
+Secondary_Partner_Year_5_Percentage__c | Secondary Partner Year 5 Percentage | percent
+Effective_Primary_Partner_Percentage__c | Effective Primary Partner Percentage | percent
+Effective_Secondary_Partner_Percentage__c | Effective Secondary Partner Percentage | percent
+Year_1_Price__c | Year 1 Price | currency
+Year_2_Price__c | Year 2 Price | currency
+Year_3_Price__c | Year 3 Price | currency
+Year_4_Price__c | Year 4 Price | currency
+Year_5_Price__c | Year 5 Price | currency
+Secondary_Partner_Year_1_Price__c | Secondary Partner Year 1 Price | currency
+Secondary_Partner_Year_2_Price__c | Secondary Partner Year 2 Price | currency
+Secondary_Partner_Year_3_Price__c | Secondary Partner Year 3 Price | currency
+Secondary_Partner_Year_4_Price__c | Secondary Partner Year 4 Price | currency
+Secondary_Partner_Year_5_Price__c | Secondary Partner Year 5 Price | currency
+Primary_Partner_Total_Contract_Value__c | Primary Partner Total Contract Value | currency
+Secondary_Partner_Total_Contract_Value__c | Secondary Partner Total Contract Value | currency
+Combined_ARR_Partner_test_field__c | Combined ARR Partner test field | currency
+Year_1_Non_Recurring_Price__c | Year 1 Non Recurring Partner Price | currency
+Primary_Partner_Average_Percentage__c | Primary Partner Average Percentage | percent
+Secondary_Partner_Average_Percent__c | Secondary Partner Average Percent | percent
+Overall_Partner_Average_Percentage__c | Overall Partner Average Percentage | percent
+Channel_VP_Approval_Reason__c | Channel VP Approval Reason | textarea
+BDR_and_Channel_Source_Approval_Reason__c | BDR and Channel Source Approval Reason | textarea
+Semperis_Address__c | Semperis Address | string
+Why_is_this_a_CSQL__c | Why is this a CSQL? | textarea
+What_products_are_they_interested_in__c | What products are they interested in? | textarea
+CSQL_Submitted_By__c | CSQL Submitted By | reference
+Share_Information__c | Share Information | boolean
+Automatic_Updates__c | Automatic Updates | boolean
+Legal_Approval_Date__c | Legal Approval Date | datetime
+Legal_Approval_Status__c | Legal Approval Status | picklist
+Is_There_a_Custom_MSA__c | Is There a Custom MSA? | picklist
+CS_Contact__c | Send License Keys to: | reference
+Trigger__c | Trigger | picklist
+CSQL_Contact__c | CSQL Contact | reference
+Metrics_Semperis__c | Metrics | textarea
+Economic_Buyer_Semperis__c | Economic Buyer | textarea
+Decision_Process_Semperis__c | Decision Process | textarea
+Decision_Criteria_Semperis__c | Decision Criteria | textarea
+Paper_Process_Semperis__c | Paper Process | textarea
+Identify_Pain_Semperis__c | Identify Pain | textarea
+Champion_Semperis__c | Champion | textarea
+Competition_Semperis__c | Competition | textarea
+Customer_Netsuite_Internal_ID__c | Customer Netsuite Internal ID | string
+Customer_Netsuite_URL__c | Customer Netsuite URL | url
+Partner_Netsuite_Internal_ID__c | Partner Netsuite Internal ID | string
+Partner_Netsuite_URL__c | Partner Netsuite URL | url
+Net_New_ARR_in_USD__c | Net New ARR in USD | double
+sbaa__ApprovalStatus__c | Approval Status | picklist
+sbaa__ApprovalStep__c | Approval Step | double
+sbaa__Approver__c | Approver | reference
+sbaa__StepApproved__c | Step Approved | boolean
+sbaa__SubmittedDate__c | Submitted Date | date
+sbaa__SubmittedUser__c | Submitted User | reference
+SBQQ__AmendedContract__c | Amended Contract | reference
+SBQQ__Contracted__c | Contracted | boolean
+SBQQ__CreateContractedPrices__c | Create Contracted Prices | boolean
+SBQQ__OrderGroupID__c | Order Group ID | string
+SBQQ__Ordered__c | Ordered | boolean
+SBQQ__PrimaryQuote__c | Primary Quote | reference
+SBQQ__QuotePricebookId__c | Quote Pricebook Id | string
+SBQQ__Renewal__c | Renewal | boolean
+SBQQ__RenewedContract__c | Renewed Contract | reference
+BDR_Commissionable_Date__c | BDR Commissionable Date | date
+Duplicate_Opportunity__c | Duplicate Opportunity | reference
+Overall_Partner_Position__c | Overall Partner Position | string
+Overall_Partner_Account_Name__c | Overall Partner Account Name | string
+Overall_Partner_Account_id__c | Overall Partner Account id | string
+Time_Close_Process_Ran__c | Time Close Process Ran | datetime
+Sales_Order_Link__c | Sales Order Link | url
+Referral_Partner__c | Referral Partner | reference
+Referral_Partner_Deal_Type__c | Referral Partner Deal Type | picklist
+Opportunity_Source__c | Opportunity Source | string
+Multiyear_Conversion__c | Multiyear Conversion | picklist
+Billing_Term_Conversion__c | Billing Term Conversion | picklist
+Secondary_Partner_Target_Account_Status__c | Secondary Partner Target Account Status | string
+Quote_Prorate_Multiplier_Calculated__c | Quote Prorate Multiplier Calculated | double
+Customer_Total_Customer_TCV__c | Customer Total (Customer TCV) | currency
+Overall_Partner_Deal_Type_History__c | Overall Partner Deal Type History | string
+Created_Date_Stamp__c | Created Date Stamp | date
+Overall_Partner_Account_Type_Detail__c | Overall Partner Account Type Detail | string
+Referral_Partner_Target_Account_Status__c | Referral Partner Target Account Status | string
+Is_Focus_Partner__c | Is Focus Partner? | boolean
+Service_NRR_Total__c | Service NRR Total | currency
+Stage_4_Approval_Status__c | Stage 4 Approval Status | picklist
+Stage_4_Approval_Date__c | Stage 4 Approval Date | date
+Opportunity_Close_Date_Plus_7__c | Opportunity Close Date Plus 7 | date
+Last_Quote_AS_Flow_Sync__c | Last Quote AS Flow Sync | datetime
+Quote_Synced_by_Flow__c | Quote Synced by Flow | string
+Deal_Registration_Location__c | Customer Location | string
+Forecast_Amount__c | Forecast Amount | currency
+CS_Region__c | CS Region | string
+Customer_Total_Non_Recurring__c | Customer Total (Non-Recurring) | currency
+Customer_Total_Recurring__c | Customer Total (Recurring) | currency
+Include_Marketplace_Discount__c | Include Marketplace Fee? | picklist
+Marketplace_Discount_Total__c | Marketplace Fee Total | currency
+Marketplace_Discount__c | Marketplace Fee Percent | percent
+Marketplace_Vendor__c | Marketplace Vendor | picklist
+Total_Churn_Customer_ARR__c | Total Churn Customer ARR | currency
+Total_Churn_Net_ARR__c | Total Churn Net ARR | currency
+Total_Cross_Sell_Customer_ARR__c | Total Cross Sell Customer ARR | currency
+Total_Cross_Sell_Net_ARR__c | Total Cross Sell Net ARR | currency
+Total_Customer_ARR__c | Total Customer ARR | currency
+Total_Downsell_Customer_ARR__c | Total Downsell Customer ARR | currency
+Total_Downsell_Net_ARR__c | Total Downsell Net ARR | currency
+Total_Net_ARR__c | Total  Net ARR | currency
+Total_New_Business_Customer_ARR__c | Total New Business Customer ARR | currency
+Total_New_Business_Net_ARR__c | Total New Business Net ARR | currency
+Total_Partner_ARR_Terminated_for_Restr__c | Total Partner ARR Terminated for Restr | currency
+Total_Partner_ARR__c | Total Partner ARR | currency
+Total_Partner_Churn_ARR__c | Total Partner Churn ARR | currency
+Total_Partner_Cross_Sell_ARR__c | Total Partner Cross Sell ARR | currency
+Total_Partner_Downsell_ARR__c | Total Partner Downsell ARR | currency
+Total_Partner_New_Business_ARR__c | Total Partner New Business ARR | currency
+Total_Partner_Renewed_ARR__c | Total Partner Renewed ARR | currency
+Total_Partner_Swap_In_ARR__c | Total Partner Swap In ARR | currency
+Total_Partner_Swap_Out_ARR__c | Total Partner Swap Out ARR | currency
+Total_Partner_Upsell_ARR__c | Total Partner Upsell ARR | currency
+Total_Renewed_Customer_ARR__c | Total Renewed Customer ARR | currency
+Total_Renewed_Net_ARR__c | Total Renewed Net ARR | currency
+Total_Swap_In_Customer_ARR__c | Total Swap In Customer ARR | currency
+Total_Swap_In_Net_ARR__c | Total Swap In Net ARR | currency
+Total_Swap_Out_Customer_ARR__c | Total Swap Out Customer ARR | currency
+Total_Swap_Out_Net_ARR__c | Total Swap Out Net ARR | currency
+Total_Terminated_for_Restr_Customer_ARR__c | Total Terminated for Restr Customer ARR | currency
+Total_Terminated_for_Restructure_Net_ARR__c | Total Terminated for Restructure Net ARR | currency
+Total_Upsell_Customer_ARR__c | Total Upsell Customer ARR | currency
+Total_Upsell_Net_ARR__c | Total Upsell Net ARR | currency
+Total_Net_New_Customer_ARR__c | Total Net New Customer ARR | currency
+Total_Net_New_Net_ARR__c | Total Net New Net ARR | currency
+Total_Partner_Net_New_ARR__c | Total Partner Net New ARR | currency
+Legacy_Opportunity__c | Legacy Opportunity | boolean
+Exclude_from_2026_Partner_Recalculation__c | Exclude from 2026 Partner Recalculation | boolean
+Partner_Total_Non_Recurring__c | Partner Total (Non-Recurring) | currency
+Partner_Total_Recurring__c | Partner Total (Recurring) | currency
+Net_Total_Non_Recurring__c | Net Total (Non-Recurring) | currency
+Net_Total_Recurring__c | Net Total (Recurring) | currency
+Net_Total_Contract_Value__c | Net Total Contract Value | currency
+Are_You_Using_a_Partner__c | Are You Using a Partner? | picklist
+Include_in_2026_Partner_Recalculation__c | Include in 2026 Partner Recalculation | boolean
+Total_ARR_Available_for_Renewal__c | Total ARR Available for Renewal | currency
+Total_Net_ARR_Available_For_Renewal__c | Total Net ARR Available For Renewal | currency
+Total_Partner_ARR_Available_For_Renewal__c | Total Partner ARR Available For Renewal | currency
+Commissionable_Sales_Amount__c | Commissionable Sales Amount | currency
+Commissionable_Renewal_Amount__c | Commissionable Renewal Amount | currency
+Microsoft_Marketplace_Nomination_Status__c | Microsoft Marketplace Nomination Status | picklist
+MS_Mkt_Status_Change_Date__c | MS Mkt Status Change Date | date
+Net_Total_Non_Recurring_License__c | Net Total (Non-Recurring License) | currency
+Referral_Partner_Custom_Account_id__c | Referral Partner Custom Account id | string
+Partner_Accelerator_Plan__c | Partner Accelerator Plan | string
+Customer_Total_Non_Recurring_License__c | Customer Total (Non-Recurring License) | currency
+Partner_Total_Non_Recurring_License__c | Partner Total (Non-Recurring License) | currency
+Referral_Partner_id_Attached__c | Referral Partner id (Attached) | string

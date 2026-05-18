@@ -10,6 +10,7 @@ import os
 import re
 from datetime import date, timedelta
 from typing import Any
+import yaml
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -34,6 +35,125 @@ BREAKDOWNS_PIPELINE: list[str] = ["total", "country", "stage", "quarter", "partn
 
 DEFAULT_CHANNEL_MANAGER: str = os.getenv("DEFAULT_CHANNEL_MANAGER", "")
 ADMIN_KEY: str = os.getenv("ADMIN_KEY", "")
+DEFAULT_PARTNER_TARGET: int = 100000
+
+# ---------------------------------------------------------------------------
+# Config Manager — Load targets from YAML
+# ---------------------------------------------------------------------------
+
+class ConfigManager:
+    """Load and manage sales targets from config/sales_targets.yaml."""
+
+    def __init__(self, config_path: str = "config/sales_targets.yaml"):
+        self.config_path = config_path
+        self.config = {}
+        self.territories = {}
+        self.partners = {}
+        self.accounts = {}
+        self._load_config()
+
+    def _load_config(self):
+        """Load YAML config, handle missing file gracefully."""
+        try:
+            if os.path.exists(self.config_path):
+                with open(self.config_path, "r") as f:
+                    self.config = yaml.safe_load(f) or {}
+                    self.territories = self.config.get("territories", {})
+                    self.partners = self.config.get("partners", {})
+                    self.accounts = self.config.get("accounts", {})
+        except Exception as e:
+            print(f"Warning: Could not load config from {self.config_path}: {e}")
+
+    def get_territory_target(
+        self,
+        territory: str,
+        country: str | None = None,
+        fiscal_year: str = "fy27"
+    ) -> int | None:
+        """
+        Get revenue target for a territory.
+
+        Hierarchy:
+        1. Territory + Country combination
+        2. Territory-wide target
+        3. None if not found
+        """
+        if territory not in self.territories:
+            return None
+
+        terr = self.territories[territory]
+
+        # If country specified, try country-specific target
+        if country:
+            countries = terr.get("countries", {})
+            if country in countries:
+                country_config = countries[country]
+                target = country_config.get("revenue_target", {}).get(fiscal_year)
+                if target:
+                    return target
+
+        # Fall back to territory-wide target
+        target = terr.get("revenue_target", {}).get(fiscal_year)
+        return target
+
+    def get_partner_target(
+        self,
+        partner_name: str,
+        country: str | None = None,
+        fiscal_year: str = "fy27"
+    ) -> int:
+        """
+        Get revenue target for a partner.
+
+        Hierarchy:
+        1. Partner + Country combination
+        2. Partner-wide target
+        3. Default (100,000)
+        """
+        if partner_name not in self.partners:
+            return DEFAULT_PARTNER_TARGET
+
+        partner = self.partners[partner_name]
+
+        # If country specified, try country-specific target
+        if country:
+            countries = partner.get("countries", {})
+            if country in countries:
+                country_config = countries[country]
+                target = country_config.get("revenue_target", {}).get(fiscal_year)
+                if target:
+                    return target
+
+        # Fall back to partner-wide target
+        target = partner.get("revenue_target", {}).get(fiscal_year)
+        if target:
+            return target
+
+        # Default
+        return DEFAULT_PARTNER_TARGET
+
+    def get_account_target(
+        self,
+        account_name: str,
+        fiscal_year: str = "fy27"
+    ) -> int | None:
+        """Get revenue target for an account (if configured)."""
+        if account_name not in self.accounts:
+            return None
+
+        account = self.accounts[account_name]
+        target = account.get("revenue_target", {}).get(fiscal_year)
+        return target
+
+# Lazy-load config on first use
+_config_manager: ConfigManager | None = None
+
+def get_config() -> ConfigManager:
+    """Get or create the config manager."""
+    global _config_manager
+    if _config_manager is None:
+        _config_manager = ConfigManager()
+    return _config_manager
 
 # ---------------------------------------------------------------------------
 # Fiscal-year / date utilities
@@ -299,6 +419,8 @@ async def get_revenue(
     channel_manager: str = DEFAULT_CHANNEL_MANAGER,
     partner_name: str | None = None,
     country: str | None = None,
+    territory: str | None = None,
+    revenue_target: int | None = None,
 ) -> dict[str, Any]:
     period = _normalize_period(period)
     _assert_enum(period, PERIODS, "period")
@@ -314,26 +436,70 @@ async def get_revenue(
 
     where = _build_opp_where(closed_mode="won", range_=range_, channel_manager=channel_manager, extra_conditions=extra)
 
+    # Resolve target from config if not explicitly provided
+    cfg = get_config()
+    fy_label = _fiscal_year_label(range_["start"])
+    fy_key = f"fy{fy_label[2:]}"  # FY27 -> fy27
+
+    target = revenue_target
+    if not target:
+        if partner_name:
+            target = cfg.get_partner_target(partner_name, country=country, fiscal_year=fy_key)
+        elif territory and country:
+            target = cfg.get_territory_target(territory, country=country, fiscal_year=fy_key)
+        elif territory:
+            target = cfg.get_territory_target(territory, fiscal_year=fy_key)
+
     if breakdown == "total":
         res = await sf.query(f"SELECT SUM(Amount) totalRevenue, COUNT(Id) dealCount FROM Opportunity WHERE {where}")
-        return {
+        total_revenue = _num(res["records"][0], "totalRevenue", "expr0")
+        deal_count = _num(res["records"][0], "dealCount", "expr1")
+
+        result = {
             "tool": "get_revenue", "period": _summarize_period(period),
             "breakdown": breakdown, "channelManager": channel_manager or None,
             "data": {
-                "totalRevenue": _num(res["records"][0], "totalRevenue", "expr0"),
-                "dealCount": _num(res["records"][0], "dealCount", "expr1"),
+                "totalRevenue": total_revenue,
+                "dealCount": deal_count,
             },
         }
+
+        if target:
+            attainment_pct = (total_revenue / target * 100) if target > 0 else 0
+            result["data"]["target"] = target
+            result["data"]["attainmentPct"] = round(attainment_pct, 1)
+            result["data"]["gap"] = round(target - total_revenue, 0)
+
+        return result
 
     if breakdown == "country":
         res = await sf.query(
             f"SELECT Account.BillingCountry country, SUM(Amount) totalRevenue, COUNT(Id) dealCount "
             f"FROM Opportunity WHERE {where} GROUP BY Account.BillingCountry ORDER BY SUM(Amount) DESC LIMIT {safe_limit}"
         )
+        data = []
+        for r in res["records"]:
+            country_name = r.get("country")
+            revenue = _num(r, "totalRevenue", "expr0")
+
+            item = {
+                "country": country_name,
+                "totalRevenue": revenue,
+                "dealCount": _num(r, "dealCount", "expr1"),
+            }
+
+            if territory and country_name:
+                country_target = cfg.get_territory_target(territory, country=country_name, fiscal_year=fy_key)
+                if country_target:
+                    item["target"] = country_target
+                    item["attainmentPct"] = round(revenue / country_target * 100, 1) if country_target > 0 else 0
+
+            data.append(item)
+
         return {
             "tool": "get_revenue", "period": _summarize_period(period),
             "breakdown": breakdown, "limit": safe_limit, "channelManager": channel_manager or None,
-            "data": [{"country": r.get("country"), "totalRevenue": _num(r, "totalRevenue", "expr0"), "dealCount": _num(r, "dealCount", "expr1")} for r in res["records"]],
+            "data": data,
         }
 
     if breakdown == "partner":
@@ -342,11 +508,30 @@ async def get_revenue(
             f"FROM Opportunity WHERE {where} AND Partner__c != null "
             f"GROUP BY Partner__c, Partner__r.Name ORDER BY SUM(Amount) DESC LIMIT {safe_limit}"
         )
+        data = []
+        for r in res["records"]:
+            partner = r.get("partnerName")
+            revenue = _num(r, "totalRevenue", "expr0")
+
+            item = {
+                "partnerId": r.get("partnerId"),
+                "partnerName": partner,
+                "totalRevenue": revenue,
+                "dealCount": _num(r, "dealCount", "expr1"),
+            }
+
+            if partner:
+                partner_target = cfg.get_partner_target(partner, country=country, fiscal_year=fy_key)
+                if partner_target:
+                    item["target"] = partner_target
+                    item["attainmentPct"] = round(revenue / partner_target * 100, 1) if partner_target > 0 else 0
+
+            data.append(item)
+
         return {
             "tool": "get_revenue", "period": _summarize_period(period),
             "breakdown": breakdown, "limit": safe_limit, "channelManager": channel_manager or None,
-            "data": [{"partnerId": r.get("partnerId"), "partnerName": r.get("partnerName"),
-                      "totalRevenue": _num(r, "totalRevenue", "expr0"), "dealCount": _num(r, "dealCount", "expr1")} for r in res["records"]],
+            "data": data,
         }
 
     # quarter breakdown — aggregate client-side
@@ -1804,4 +1989,703 @@ async def get_time_to_close_stats(
     return {
         "tool": "get_time_to_close_stats", "period": _summarize_period(period),
         "breakdown": breakdown, "channelManager": channel_manager or None, "data": data,
+    }
+
+
+# ---------------------------------------------------------------------------
+# PHASE 1 TOOLS: Activity, Risk, Lost Deals, Stage Velocity
+# ---------------------------------------------------------------------------
+
+async def get_stalled_deals(
+    sf,
+    period: str = "THIS_QUARTER",
+    days_threshold: int = 60,
+    stage_filter: str | None = None,
+    channel_manager: str | None = None,
+) -> dict[str, Any]:
+    """
+    Find deals that haven't been modified in X days (stalled/at-risk).
+
+    Returns: Opportunity list grouped by stage, showing age and last modified date.
+    """
+    range_ = _get_period_range(period)
+    base_where = _build_opp_where(closed_mode="open", range_=range_, channel_manager=channel_manager)
+
+    res = await sf.query(
+        f"SELECT Id, Name, Amount, StageName, Probability, CloseDate, "
+        f"LastModifiedDate, Account.BillingCountry, Partner__r.Name "
+        f"FROM Opportunity WHERE {base_where} ORDER BY LastModifiedDate ASC LIMIT 2000"
+    )
+
+    records = res.get("records", [])
+    today = date.today()
+    stalled = []
+
+    for r in records:
+        stage = r.get("StageName", "Unknown")
+        if stage_filter and stage != stage_filter:
+            continue
+
+        lmd = r.get("LastModifiedDate", "")[:10]
+        if not lmd:
+            continue
+
+        try:
+            last_mod_date = date.fromisoformat(lmd)
+            days_since = (today - last_mod_date).days
+        except ValueError:
+            continue
+
+        if days_since >= days_threshold:
+            stalled.append({
+                "id": r.get("Id"),
+                "name": r.get("Name"),
+                "amount": r.get("Amount"),
+                "stage": stage,
+                "probability": r.get("Probability"),
+                "closeDate": r.get("CloseDate"),
+                "lastModifiedDate": lmd,
+                "daysSinceModified": days_since,
+                "country": (r.get("Account") or {}).get("BillingCountry"),
+                "partner": (r.get("Partner__r") or {}).get("Name"),
+            })
+
+    stalled.sort(key=lambda x: x["daysSinceModified"], reverse=True)
+
+    stage_breakdown = {}
+    for s in stalled:
+        stage = s["stage"]
+        stage_breakdown.setdefault(stage, []).append(s)
+
+    return {
+        "tool": "get_stalled_deals",
+        "period": _summarize_period(period),
+        "threshold_days": days_threshold,
+        "stage_filter": stage_filter,
+        "total_stalled": len(stalled),
+        "by_stage": {k: {"count": len(v), "deals": v} for k, v in stage_breakdown.items()},
+        "all_deals": stalled,
+    }
+
+
+async def get_partner_activity_summary(
+    sf,
+    period: str = "THIS_QUARTER",
+    channel_manager: str | None = None,
+) -> dict[str, Any]:
+    """
+    Partner activity summary: open pipeline, deal count, last deal modification.
+
+    Proxy for engagement level using LastModifiedDate of most recent opportunity.
+    """
+    range_ = _get_period_range(period)
+    base_where = _build_opp_where(closed_mode="open", range_=range_, channel_manager=channel_manager)
+
+    res = await sf.query(
+        f"SELECT Amount, StageName, LastModifiedDate, Partner__r.Name "
+        f"FROM Opportunity WHERE {base_where} ORDER BY LastModifiedDate DESC LIMIT 2000"
+    )
+
+    records = res.get("records", [])
+    today = date.today()
+    partner_map: dict[str, dict] = {}
+
+    for r in records:
+        partner = (r.get("Partner__r") or {}).get("Name") or "Orphan"
+        amount = r.get("Amount", 0)
+
+        if partner not in partner_map:
+            partner_map[partner] = {
+                "partner": partner,
+                "open_pipeline_amount": 0,
+                "deal_count": 0,
+                "last_deal_modified_date": None,
+                "days_since_last_activity": None,
+                "deals_modified_this_week": 0,
+                "deals_modified_this_month": 0,
+            }
+
+        partner_map[partner]["open_pipeline_amount"] += amount
+        partner_map[partner]["deal_count"] += 1
+
+        lmd = r.get("LastModifiedDate", "")[:10]
+        if lmd:
+            try:
+                last_mod_date = date.fromisoformat(lmd)
+                days = (today - last_mod_date).days
+
+                if partner_map[partner]["last_deal_modified_date"] is None:
+                    partner_map[partner]["last_deal_modified_date"] = lmd
+                    partner_map[partner]["days_since_last_activity"] = days
+
+                if days <= 7:
+                    partner_map[partner]["deals_modified_this_week"] += 1
+                if days <= 30:
+                    partner_map[partner]["deals_modified_this_month"] += 1
+            except ValueError:
+                pass
+
+    data = list(partner_map.values())
+    data.sort(key=lambda x: x["days_since_last_activity"] or 999)
+
+    return {
+        "tool": "get_partner_activity_summary",
+        "period": _summarize_period(period),
+        "total_partners": len(data),
+        "data": data,
+    }
+
+
+async def get_opportunity_recency(
+    sf,
+    opportunity_id_or_name: str,
+) -> dict[str, Any]:
+    """
+    Get full details of an opportunity including recency/modification tracking.
+
+    Shows when the deal was last modified and how many days it's been idle.
+    """
+    where = f"Id = '{opportunity_id_or_name}' OR Name LIKE '%{opportunity_id_or_name}%'"
+
+    res = await sf.query(
+        f"SELECT Id, Name, Amount, StageName, Probability, CloseDate, "
+        f"CreatedDate, LastModifiedDate, Account.BillingCountry, Partner__r.Name "
+        f"FROM Opportunity WHERE {where} LIMIT 10"
+    )
+
+    records = res.get("records", [])
+    if not records:
+        return {"tool": "get_opportunity_recency", "error": "Opportunity not found"}
+
+    r = records[0]
+    today = date.today()
+
+    lmd = r.get("LastModifiedDate", "")[:10]
+    cd = r.get("CreatedDate", "")[:10]
+    days_since_modified = None
+    days_in_stage = None
+
+    if lmd:
+        try:
+            last_mod_date = date.fromisoformat(lmd)
+            days_since_modified = (today - last_mod_date).days
+        except ValueError:
+            pass
+
+    if cd:
+        try:
+            created_date = date.fromisoformat(cd)
+            days_in_stage = (today - created_date).days
+        except ValueError:
+            pass
+
+    return {
+        "tool": "get_opportunity_recency",
+        "opportunity": {
+            "id": r.get("Id"),
+            "name": r.get("Name"),
+            "amount": r.get("Amount"),
+            "stage": r.get("StageName"),
+            "probability": r.get("Probability"),
+            "closeDate": r.get("CloseDate"),
+            "createdDate": cd,
+            "lastModifiedDate": lmd,
+            "daysSinceModified": days_since_modified,
+            "daysInStage": days_in_stage,
+            "country": (r.get("Account") or {}).get("BillingCountry"),
+            "partner": (r.get("Partner__r") or {}).get("Name"),
+        },
+    }
+
+
+async def get_lost_deals(
+    sf,
+    period: str = "THIS_QUARTER",
+    group_by: str | None = None,
+    channel_manager: str | None = None,
+) -> dict[str, Any]:
+    """
+    Analyze lost deals: count, amount, by stage/partner/country.
+
+    Grouping: None (total), 'stage', 'partner', 'country'
+    """
+    range_ = _get_period_range(period)
+    base_where = _build_opp_where(closed_mode="lost", range_=range_, channel_manager=channel_manager)
+
+    res = await sf.query(
+        f"SELECT Amount, StageName, Account.BillingCountry, Partner__r.Name "
+        f"FROM Opportunity WHERE {base_where} LIMIT 2000"
+    )
+
+    lost_records = res.get("records", [])
+
+    # Also get won deals for calculating loss rate
+    won_where = _build_opp_where(closed_mode="won", range_=range_, channel_manager=channel_manager)
+    won_res = await sf.query(
+        f"SELECT Amount FROM Opportunity WHERE {won_where} LIMIT 2000"
+    )
+    won_records = won_res.get("records", [])
+
+    total_lost = len(lost_records)
+    total_won = len(won_records)
+    total_deals = total_lost + total_won
+    loss_rate_pct = (total_lost / total_deals * 100) if total_deals > 0 else 0
+
+    if not group_by:
+        total_lost_amount = sum(r.get("Amount", 0) for r in lost_records)
+        avg_deal_size = (total_lost_amount / total_lost) if total_lost > 0 else 0
+
+        return {
+            "tool": "get_lost_deals",
+            "period": _summarize_period(period),
+            "group_by": None,
+            "total_lost_count": total_lost,
+            "total_lost_amount": total_lost_amount,
+            "total_won_count": total_won,
+            "loss_rate_pct": round(loss_rate_pct, 1),
+            "avg_deal_size_lost": round(avg_deal_size, 0),
+        }
+
+    group_map: dict[str, dict] = {}
+    for r in lost_records:
+        if group_by == "stage":
+            key = r.get("StageName", "Unknown")
+        elif group_by == "partner":
+            key = (r.get("Partner__r") or {}).get("Name") or "Orphan"
+        elif group_by == "country":
+            key = (r.get("Account") or {}).get("BillingCountry") or "Unknown"
+        else:
+            key = "Total"
+
+        if key not in group_map:
+            group_map[key] = {"label": key, "count": 0, "amount": 0}
+
+        group_map[key]["count"] += 1
+        group_map[key]["amount"] += r.get("Amount", 0)
+
+    data = list(group_map.values())
+    for item in data:
+        item["avg_deal_size"] = round(item["amount"] / item["count"], 0) if item["count"] > 0 else 0
+
+    data.sort(key=lambda x: x["amount"], reverse=True)
+
+    return {
+        "tool": "get_lost_deals",
+        "period": _summarize_period(period),
+        "group_by": group_by,
+        "total_lost_count": total_lost,
+        "total_won_count": total_won,
+        "loss_rate_pct": round(loss_rate_pct, 1),
+        "by_group": data,
+    }
+
+
+async def get_new_vs_existing(
+    sf,
+    period: str = "THIS_QUARTER",
+    breakdown: str | None = None,
+    channel_manager: str | None = None,
+) -> dict[str, Any]:
+    """
+    Revenue/pipeline split by Type (New Business vs. Renewal/Expansion).
+
+    Breakdown: None (total), 'partner', 'country', 'channel_manager'
+    """
+    range_ = _get_period_range(period)
+
+    # Get closed-won
+    won_where = _build_opp_where(closed_mode="won", range_=range_, channel_manager=channel_manager)
+    won_res = await sf.query(
+        f"SELECT Amount, Type, Account.BillingCountry, Partner__r.Name "
+        f"FROM Opportunity WHERE {won_where} LIMIT 2000"
+    )
+    won_records = won_res.get("records", [])
+
+    # Get open pipeline
+    open_where = _build_opp_where(closed_mode="open", range_=range_, channel_manager=channel_manager)
+    open_res = await sf.query(
+        f"SELECT Amount, Type, Account.BillingCountry, Partner__r.Name "
+        f"FROM Opportunity WHERE {open_where} LIMIT 2000"
+    )
+    open_records = open_res.get("records", [])
+
+    all_records = won_records + open_records
+
+    if not breakdown:
+        new_won = sum(r.get("Amount", 0) for r in won_records if r.get("Type") == "New Business")
+        existing_won = sum(r.get("Amount", 0) for r in won_records if r.get("Type") != "New Business")
+        new_pipeline = sum(r.get("Amount", 0) for r in open_records if r.get("Type") == "New Business")
+        existing_pipeline = sum(r.get("Amount", 0) for r in open_records if r.get("Type") != "New Business")
+
+        total_won = new_won + existing_won
+        total_pipeline = new_pipeline + existing_pipeline
+
+        return {
+            "tool": "get_new_vs_existing",
+            "period": _summarize_period(period),
+            "breakdown": None,
+            "closed_won": {
+                "new_business": new_won,
+                "existing_business": existing_won,
+                "new_business_pct": round(new_won / total_won * 100, 1) if total_won > 0 else 0,
+            },
+            "open_pipeline": {
+                "new_business": new_pipeline,
+                "existing_business": existing_pipeline,
+                "new_business_pct": round(new_pipeline / total_pipeline * 100, 1) if total_pipeline > 0 else 0,
+            },
+        }
+
+    group_map: dict[str, dict] = {}
+    for r in all_records:
+        if breakdown == "partner":
+            key = (r.get("Partner__r") or {}).get("Name") or "Orphan"
+        elif breakdown == "country":
+            key = (r.get("Account") or {}).get("BillingCountry") or "Unknown"
+        else:
+            key = "Total"
+
+        if key not in group_map:
+            group_map[key] = {
+                "label": key,
+                "new_won": 0,
+                "existing_won": 0,
+                "new_pipeline": 0,
+                "existing_pipeline": 0,
+            }
+
+        is_new = r.get("Type") == "New Business"
+        amount = r.get("Amount", 0)
+
+        if r in won_records:
+            if is_new:
+                group_map[key]["new_won"] += amount
+            else:
+                group_map[key]["existing_won"] += amount
+        else:
+            if is_new:
+                group_map[key]["new_pipeline"] += amount
+            else:
+                group_map[key]["existing_pipeline"] += amount
+
+    for item in group_map.values():
+        total_won = item["new_won"] + item["existing_won"]
+        total_pipeline = item["new_pipeline"] + item["existing_pipeline"]
+        item["new_won_pct"] = round(item["new_won"] / total_won * 100, 1) if total_won > 0 else 0
+        item["new_pipeline_pct"] = round(item["new_pipeline"] / total_pipeline * 100, 1) if total_pipeline > 0 else 0
+
+    data = list(group_map.values())
+    data.sort(key=lambda x: x["new_won"] + x["new_pipeline"], reverse=True)
+
+    return {
+        "tool": "get_new_vs_existing",
+        "period": _summarize_period(period),
+        "breakdown": breakdown,
+        "data": data,
+    }
+
+
+async def get_stage_risk_profile(
+    sf,
+    period: str = "THIS_QUARTER",
+    channel_manager: str | None = None,
+) -> dict[str, Any]:
+    """
+    Stage risk profile: for each stage, show probability distribution, count, and quality.
+
+    High-risk stages: avg probability < 40%
+    Medium-risk stages: 40-60%
+    Low-risk stages: > 60%
+    """
+    range_ = _get_period_range(period)
+    base_where = _build_opp_where(closed_mode="open", range_=range_, channel_manager=channel_manager)
+
+    res = await sf.query(
+        f"SELECT Amount, StageName, Probability "
+        f"FROM Opportunity WHERE {base_where} ORDER BY StageName LIMIT 2000"
+    )
+
+    records = res.get("records", [])
+    stage_map: dict[str, list] = {}
+
+    for r in records:
+        stage = r.get("StageName", "Unknown")
+        stage_map.setdefault(stage, []).append(r)
+
+    data = []
+    for stage, deals in stage_map.items():
+        amounts = [d.get("Amount", 0) for d in deals]
+        probs = [d.get("Probability", 50) for d in deals]
+
+        total_amount = sum(amounts)
+        avg_prob = sum(probs) / len(probs) if probs else 0
+        weighted_amount = sum(a * p / 100 for a, p in zip(amounts, probs))
+
+        amounts_sorted = sorted(amounts)
+        n = len(amounts_sorted)
+        median_amount = amounts_sorted[n // 2] if n % 2 else (amounts_sorted[n // 2 - 1] + amounts_sorted[n // 2]) / 2
+
+        if avg_prob > 60:
+            confidence = "HIGH"
+        elif avg_prob > 40:
+            confidence = "MEDIUM"
+        else:
+            confidence = "LOW"
+
+        data.append({
+            "stage": stage,
+            "deal_count": len(deals),
+            "total_pipeline_amount": round(total_amount, 0),
+            "avg_probability_pct": round(avg_prob, 1),
+            "weighted_pipeline": round(weighted_amount, 0),
+            "coverage_ratio": round(weighted_amount / total_amount * 100, 1) if total_amount > 0 else 0,
+            "min_amount": round(min(amounts), 0) if amounts else 0,
+            "max_amount": round(max(amounts), 0) if amounts else 0,
+            "median_amount": round(median_amount, 0),
+            "confidence_level": confidence,
+        })
+
+    data.sort(key=lambda x: x["avg_probability_pct"], reverse=True)
+
+    return {
+        "tool": "get_stage_risk_profile",
+        "period": _summarize_period(period),
+        "data": data,
+    }
+
+
+async def get_deal_aging_by_stage(
+    sf,
+    period: str = "THIS_QUARTER",
+    days_threshold: int = 60,
+    channel_manager: str | None = None,
+) -> dict[str, Any]:
+    """
+    Bottleneck detection: for each stage, show how many deals are older than threshold.
+
+    Identifies stalled deals that need intervention.
+    """
+    range_ = _get_period_range(period)
+    base_where = _build_opp_where(closed_mode="open", range_=range_, channel_manager=channel_manager)
+
+    res = await sf.query(
+        f"SELECT Id, StageName, CreatedDate, LastModifiedDate, Amount "
+        f"FROM Opportunity WHERE {base_where} ORDER BY StageName LIMIT 2000"
+    )
+
+    records = res.get("records", [])
+    today = date.today()
+    stage_map: dict[str, dict] = {}
+
+    for r in records:
+        stage = r.get("StageName", "Unknown")
+
+        if stage not in stage_map:
+            stage_map[stage] = {
+                "stage": stage,
+                "total_deals": 0,
+                "deals_under_threshold": 0,
+                "deals_over_threshold": 0,
+                "avg_age_days": 0,
+                "oldest_deal_age_days": 0,
+                "ages": [],
+            }
+
+        lmd = r.get("LastModifiedDate", "")[:10]
+        if not lmd:
+            continue
+
+        try:
+            last_mod_date = date.fromisoformat(lmd)
+            age_days = (today - last_mod_date).days
+        except ValueError:
+            continue
+
+        stage_map[stage]["total_deals"] += 1
+        stage_map[stage]["ages"].append(age_days)
+
+        if age_days >= days_threshold:
+            stage_map[stage]["deals_over_threshold"] += 1
+        else:
+            stage_map[stage]["deals_under_threshold"] += 1
+
+        if age_days > stage_map[stage]["oldest_deal_age_days"]:
+            stage_map[stage]["oldest_deal_age_days"] = age_days
+
+    data = []
+    for stage, info in stage_map.items():
+        if info["ages"]:
+            info["avg_age_days"] = round(sum(info["ages"]) / len(info["ages"]), 1)
+        del info["ages"]
+        data.append(info)
+
+    data.sort(key=lambda x: x["deals_over_threshold"], reverse=True)
+
+    return {
+        "tool": "get_deal_aging_by_stage",
+        "period": _summarize_period(period),
+        "days_threshold": days_threshold,
+        "data": data,
+    }
+
+
+async def get_high_risk_deals(
+    sf,
+    period: str = "THIS_QUARTER",
+    probability_threshold: int = 40,
+    channel_manager: str | None = None,
+) -> dict[str, Any]:
+    """
+    High-risk deals: low probability + closing soon.
+
+    Criteria: Probability < threshold AND CloseDate within 30 days.
+    """
+    range_ = _get_period_range(period)
+    base_where = _build_opp_where(closed_mode="open", range_=range_, channel_manager=channel_manager)
+
+    res = await sf.query(
+        f"SELECT Id, Name, Amount, StageName, Probability, CloseDate, "
+        f"Account.BillingCountry, Partner__r.Name "
+        f"FROM Opportunity WHERE {base_where} ORDER BY CloseDate ASC LIMIT 2000"
+    )
+
+    records = res.get("records", [])
+    today = date.today()
+    high_risk = []
+
+    for r in records:
+        prob = r.get("Probability") or 50
+        close_date_str = r.get("CloseDate", "")[:10]
+
+        if not close_date_str or prob >= probability_threshold:
+            continue
+
+        try:
+            close_date = date.fromisoformat(close_date_str)
+            days_until_close = (close_date - today).days
+        except ValueError:
+            continue
+
+        if days_until_close >= 0 and days_until_close <= 30:
+            high_risk.append({
+                "id": r.get("Id"),
+                "name": r.get("Name"),
+                "amount": r.get("Amount"),
+                "stage": r.get("StageName"),
+                "probability": prob,
+                "closeDate": close_date_str,
+                "daysUntilClose": days_until_close,
+                "riskScore": round(100 - prob - (days_until_close * 2), 1),
+                "country": (r.get("Account") or {}).get("BillingCountry"),
+                "partner": (r.get("Partner__r") or {}).get("Name"),
+                "recommendation": f"High-risk: {prob}% prob, closing in {days_until_close} days",
+            })
+
+    high_risk.sort(key=lambda x: x["riskScore"], reverse=True)
+
+    return {
+        "tool": "get_high_risk_deals",
+        "period": _summarize_period(period),
+        "probability_threshold_pct": probability_threshold,
+        "total_high_risk": len(high_risk),
+        "deals": high_risk,
+    }
+
+
+async def get_stage_progression_velocity(
+    sf,
+    period: str = "LAST_FISCAL_YEAR",
+    lookback_periods: int = 4,
+    channel_manager: str | None = None,
+) -> dict[str, Any]:
+    """
+    Historical stage progression velocity: avg days in each stage (from closed-won deals).
+
+    Uses past closed-won deals to infer how long deals typically spend in each stage.
+    Compares current open deals against historical velocity.
+    """
+    # Get closed-won deals from historical period
+    range_ = _get_period_range(period)
+    won_where = _build_opp_where(closed_mode="won", range_=range_, channel_manager=channel_manager)
+
+    won_res = await sf.query(
+        f"SELECT CreatedDate, CloseDate, StageName, Amount "
+        f"FROM Opportunity WHERE {won_where} ORDER BY CloseDate DESC LIMIT 2000"
+    )
+
+    won_records = won_res.get("records", [])
+
+    stage_velocity: dict[str, list] = {}
+    for r in won_records:
+        cd = r.get("CreatedDate", "")[:10]
+        cl = r.get("CloseDate", "")[:10]
+        stage = r.get("StageName", "Unknown")
+
+        if not cd or not cl:
+            continue
+
+        try:
+            days = (date.fromisoformat(cl) - date.fromisoformat(cd)).days
+        except ValueError:
+            continue
+
+        if days < 0:
+            continue
+
+        stage_velocity.setdefault(stage, []).append(days)
+
+    # Get current open deals to compare
+    open_range = _get_period_range("THIS_QUARTER")
+    open_where = _build_opp_where(closed_mode="open", range_=open_range, channel_manager=channel_manager)
+
+    open_res = await sf.query(
+        f"SELECT CreatedDate, StageName "
+        f"FROM Opportunity WHERE {open_where} LIMIT 2000"
+    )
+
+    open_records = open_res.get("records", [])
+    today = date.today()
+    current_stage_age: dict[str, list] = {}
+
+    for r in open_records:
+        cd = r.get("CreatedDate", "")[:10]
+        stage = r.get("StageName", "Unknown")
+
+        if not cd:
+            continue
+
+        try:
+            days = (today - date.fromisoformat(cd)).days
+        except ValueError:
+            continue
+
+        current_stage_age.setdefault(stage, []).append(days)
+
+    data = []
+    for stage, historical_days in stage_velocity.items():
+        avg_historical = sum(historical_days) / len(historical_days) if historical_days else 0
+        median_historical = sorted(historical_days)[len(historical_days) // 2] if historical_days else 0
+
+        current_ages = current_stage_age.get(stage, [])
+        avg_current = sum(current_ages) / len(current_ages) if current_ages else 0
+
+        aged_deals = sum(1 for age in current_ages if age > avg_historical * 1.5) if avg_historical > 0 else 0
+
+        data.append({
+            "stage": stage,
+            "historical_avg_days": round(avg_historical, 1),
+            "historical_median_days": round(median_historical, 1),
+            "deals_passed_through_stage": len(historical_days),
+            "current_deals_in_stage": len(current_ages),
+            "current_avg_age_days": round(avg_current, 1),
+            "deals_aged_vs_historical": aged_deals,
+        })
+
+    data.sort(key=lambda x: x["historical_avg_days"], reverse=True)
+
+    return {
+        "tool": "get_stage_progression_velocity",
+        "lookback_period": _summarize_period(period),
+        "current_period": "THIS_QUARTER",
+        "data": data,
     }

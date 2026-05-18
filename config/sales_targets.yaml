@@ -44,35 +44,35 @@ territories:
   South_Europe:
     # Main territory target — used if no country-specific breakdown provided
     revenue_target:
-      fy27: 2000000
-      fy26: 1850000
+      fy27: 3650000
+      fy26: 4650000
 
     # Country-level targets (if defined, used instead of territory-wide)
     countries:
       Italy:
         revenue_target:
-          fy27: 600000
-          fy26: 550000
+          fy27: 825000
+          fy26: 1200000
       Spain:
         revenue_target:
-          fy27: 700000
-          fy26: 650000
+          fy27: 1825000
+          fy26: 1200000
       Portugal:
         revenue_target:
-          fy27: 350000
-          fy26: 325000
+          fy27: 1000000
+          fy26: 1000000
       Greece:
         revenue_target:
-          fy27: 200000
-          fy26: 175000
+          fy27: 100000
+          fy26: 50000
       Cyprus:
         revenue_target:
-          fy27: 100000
-          fy26: 90000
+          fy27: 0
+          fy26: 0
       Malta:
         revenue_target:
-          fy27: 50000
-          fy26: 45000
+          fy27: 0
+          fy26: 0
 
   # Example: Add additional territories as needed
   # Northern_Europe:

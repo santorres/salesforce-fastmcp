@@ -978,13 +978,14 @@ async def search_opportunities(
     query: Annotated[str, Field(description="Name fragment to search for in opportunity names")],
     period: Annotated[str, Field(description="Fiscal period to scope the search")] = "THIS_FISCAL_YEAR",
     partner_name: Annotated[str | None, Field(description="Optional partner name filter")] = None,
+    country: Annotated[str | None, Field(description="Optional country filter (e.g. 'Italy', 'Spain', 'Greece')")] = None,
     limit: Annotated[int, Field(description="Max results (default 10, max 50)")] = 10,
     channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
 ) -> str:
-    """Search opportunities by name fragment in Southern Europe, with optional partner and period filters."""
+    """Search opportunities by name fragment in Southern Europe, with optional partner/country and period filters."""
     try:
         result = await ci.search_opportunities(
-            get_client(), query, partner_name, period, limit,
+            get_client(), query, partner_name, country, period, limit,
             channel_manager if channel_manager is not None else "",
         )
         return format_result(result)
@@ -997,13 +998,17 @@ async def get_opportunity_detail(
     opportunity_id: Annotated[str | None, Field(description="Salesforce opportunity ID (15/18 chars)")] = None,
     opportunity_name: Annotated[str | None, Field(description="Opportunity name (partial match)")] = None,
     partner_name: Annotated[str | None, Field(description="Optional partner name filter")] = None,
+    country: Annotated[str | None, Field(description="Optional country filter (e.g. 'Italy', 'Spain', 'Greece')")] = None,
     period: Annotated[str | None, Field(description="Optional fiscal period filter")] = None,
     channel_manager: Annotated[str | None, Field(description="Optional Channel_Manager__c filter")] = None,
 ) -> str:
-    """Full detail for a specific opportunity by ID or name. Returns markdown summary plus raw data."""
+    """Full detail for a specific opportunity by ID or name. Returns markdown summary plus raw data.
+
+    Example: get_opportunity_detail(country='Greece') to find opportunities in Greece
+    """
     try:
         result = await ci.get_opportunity_detail(
-            get_client(), opportunity_id, opportunity_name, partner_name, period,
+            get_client(), opportunity_id, opportunity_name, partner_name, country, period,
             channel_manager if channel_manager is not None else "",
         )
         return format_result(result)

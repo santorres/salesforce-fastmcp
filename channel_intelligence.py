@@ -884,6 +884,7 @@ async def search_opportunities(
     sf,
     query: str,
     partner_name: str | None = None,
+    country: str | None = None,
     period: str = "THIS_FISCAL_YEAR",
     limit: int = 10,
     channel_manager: str = "",
@@ -900,6 +901,8 @@ async def search_opportunities(
         f"CloseDate >= {range_['start'].isoformat()}",
         f"CloseDate <= {range_['end'].isoformat()}",
     ]
+    if country:
+        conditions.append(f"Account.BillingCountry = '{_escape_soql(str(country))}'")
     if channel_manager:
         conditions.append(f"Channel_Manager__c = '{_escape_soql(channel_manager)}'")
     if partner_name:
@@ -938,10 +941,14 @@ async def get_opportunity_detail(
     opportunity_id: str | None = None,
     opportunity_name: str | None = None,
     partner_name: str | None = None,
+    country: str | None = None,
     period: str | None = None,
     channel_manager: str = "",
 ) -> dict[str, Any]:
     conditions = [f"Account.BillingCountry IN {COUNTRIES_SQL}"]
+
+    if country:
+        conditions.append(f"Account.BillingCountry = '{_escape_soql(str(country))}'")
 
     if period:
         period = _normalize_period(period)

@@ -1043,8 +1043,8 @@ async def get_deal_registrations(
     where_conditions = [
         f"Account.BillingCountry IN {COUNTRIES_SQL}",
         f"Partner_Registration_Approval__c != null",
-        f"CreatedDate >= {range_['start'].isoformat()}T00:00:00Z",
-        f"CreatedDate <= {range_['end'].isoformat()}T23:59:59Z",
+        f"CreatedDate >= '{range_['start'].isoformat()}T00:00:00Z'",
+        f"CreatedDate <= '{range_['end'].isoformat()}T23:59:59Z'",
     ]
     if channel_manager:
         where_conditions.append(f"Channel_Manager__c = '{_escape_soql(channel_manager)}'")
@@ -2005,8 +2005,8 @@ async def get_deal_registrations_breakdown(
     where_conditions = [
         f"Account.BillingCountry IN {COUNTRIES_SQL}",
         f"Partner_Registration_Approval__c != null",
-        f"CreatedDate >= {range_['start'].isoformat()}T00:00:00Z",
-        f"CreatedDate <= {range_['end'].isoformat()}T23:59:59Z",
+        f"CreatedDate >= '{range_['start'].isoformat()}T00:00:00Z'",
+        f"CreatedDate <= '{range_['end'].isoformat()}T23:59:59Z'",
     ]
     if channel_manager:
         where_conditions.append(f"Channel_Manager__c = '{_escape_soql(channel_manager)}'")

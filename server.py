@@ -1019,10 +1019,16 @@ async def get_opportunity_detail(
 @mcp.tool
 async def get_deal_registrations(
     period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR, THIS_QUARTER)")],
+    channel_manager: Annotated[str | None, Field(description="Optional filter by Channel_Manager__c")] = None,
 ) -> str:
-    """Count deal registrations (Deal_Registration__c) for the given period."""
+    """Deal registration summary: count, amount, and conversion rates by status.
+
+    Queries Partner_Registration_Approval__c field on Opportunity.
+    Returns: total registrations + breakdown by status (Submitted/In Review/Approved/Rejected)
+             + approval rate (Submitted→Approved) and close rate (Approved→Closed Won).
+    """
     try:
-        result = await ci.get_deal_registrations(get_client(), period)
+        result = await ci.get_deal_registrations(get_client(), period, channel_manager)
         return format_result(result)
     except (ValueError, Exception) as e:
         return f"Error: {e}"
@@ -1230,15 +1236,25 @@ async def get_multi_period_trend(
 @mcp.tool
 async def get_deal_registrations_breakdown(
     period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR)")] = "THIS_FISCAL_YEAR",
-    breakdown: Annotated[str, Field(description="Aggregation: total | partner | country")] = "total",
+    breakdown: Annotated[str, Field(description="Aggregation: total | partner | country | status")] = "total",
     limit: Annotated[int, Field(description="Max rows for breakdown (default 20)")] = 20,
     channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
 ) -> str:
-    """Deal registration count with optional breakdown by partner or country."""
+    """Deal registration breakdown with counts, amounts, and conversion metrics.
+
+    Queries Partner_Registration_Approval__c field on Opportunity.
+    Breakdowns:
+    - total: overall summary + conversion rates
+    - partner: per-partner registration counts + approval/close stats
+    - country: per-country registration counts + approval/close stats
+    - status: registrations by approval status (Submitted/In Review/Approved/Rejected)
+
+    Example: get_deal_registrations_breakdown(period="THIS_QUARTER", breakdown="partner")
+    """
     try:
         result = await ci.get_deal_registrations_breakdown(
             get_client(), period, breakdown, limit,
-            channel_manager if channel_manager is not None else "",
+            channel_manager if channel_manager is not None else None,
         )
         return format_result(result)
     except (ValueError, Exception) as e:

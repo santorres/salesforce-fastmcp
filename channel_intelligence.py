@@ -1060,7 +1060,7 @@ async def get_deal_registrations(
     # Query 2: Approved DRs that became Closed Won
     approved_where = f"{where} AND Partner_Registration_Approval__c = 'Approved'"
     closed_res = await sf.query(
-        f"SELECT COUNT(Id) cnt_approved, SUM(CASE WHEN IsWon = true THEN 1 ELSE 0 END) cnt_closed_won "
+        f"SELECT COUNT(Id) cnt_approved, COUNT(CASE WHEN IsWon = true THEN Id ELSE null END) cnt_closed_won "
         f"FROM Opportunity WHERE {approved_where}"
     )
 
@@ -2022,7 +2022,7 @@ async def get_deal_registrations_breakdown(
 
     # Query 2: Conversion stats (for all)
     approved_res = await sf.query(
-        f"SELECT COUNT(Id) cnt_approved, SUM(CASE WHEN IsWon = true THEN 1 ELSE 0 END) cnt_closed_won "
+        f"SELECT COUNT(Id) cnt_approved, COUNT(CASE WHEN IsWon = true THEN Id ELSE null END) cnt_closed_won "
         f"FROM Opportunity WHERE {base_where} AND Partner_Registration_Approval__c = 'Approved'"
     )
     approved_total = _num(approved_res.get("records", [{}])[0], "cnt_approved", "expr0")
@@ -2044,8 +2044,8 @@ async def get_deal_registrations_breakdown(
     if breakdown == "partner":
         pres = await sf.query(
             f"SELECT Partner__r.Name partnerName, COUNT(Id) cnt_dr, SUM(Amount) amt_dr, "
-            f"SUM(CASE WHEN Partner_Registration_Approval__c = 'Approved' THEN 1 ELSE 0 END) cnt_approved, "
-            f"SUM(CASE WHEN Partner_Registration_Approval__c = 'Approved' AND IsWon = true THEN 1 ELSE 0 END) cnt_closed_won "
+            f"COUNT(CASE WHEN Partner_Registration_Approval__c = 'Approved' THEN Id ELSE null END) cnt_approved, "
+            f"COUNT(CASE WHEN Partner_Registration_Approval__c = 'Approved' AND IsWon = true THEN Id ELSE null END) cnt_closed_won "
             f"FROM Opportunity WHERE {base_where} GROUP BY Partner__r.Name ORDER BY COUNT(Id) DESC LIMIT {safe_limit}"
         )
         breakdown_data = [
@@ -2062,8 +2062,8 @@ async def get_deal_registrations_breakdown(
     elif breakdown == "country":
         cres = await sf.query(
             f"SELECT Account.BillingCountry country, COUNT(Id) cnt_dr, SUM(Amount) amt_dr, "
-            f"SUM(CASE WHEN Partner_Registration_Approval__c = 'Approved' THEN 1 ELSE 0 END) cnt_approved, "
-            f"SUM(CASE WHEN Partner_Registration_Approval__c = 'Approved' AND IsWon = true THEN 1 ELSE 0 END) cnt_closed_won "
+            f"COUNT(CASE WHEN Partner_Registration_Approval__c = 'Approved' THEN Id ELSE null END) cnt_approved, "
+            f"COUNT(CASE WHEN Partner_Registration_Approval__c = 'Approved' AND IsWon = true THEN Id ELSE null END) cnt_closed_won "
             f"FROM Opportunity WHERE {base_where} GROUP BY Account.BillingCountry ORDER BY COUNT(Id) DESC LIMIT {safe_limit}"
         )
         breakdown_data = [

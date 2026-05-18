@@ -1034,6 +1034,7 @@ async def get_deal_registrations(
     """Count and analyze deal registrations (Partner_Registration_Approval__c on Opportunity).
 
     Returns: registration counts + amounts by status + approval & close rates.
+    Note: Uses CreatedDate for period filtering (Partner_Opportunity_Registration_Date__c may have data integrity issues).
     """
     period = _normalize_period(period)
     _assert_enum(period, PERIODS, "period")
@@ -1042,8 +1043,8 @@ async def get_deal_registrations(
     where_conditions = [
         f"Account.BillingCountry IN {COUNTRIES_SQL}",
         f"Partner_Registration_Approval__c != null",
-        f"Partner_Opportunity_Registration_Date__c >= '{range_['start'].isoformat()}T00:00:00Z'",
-        f"Partner_Opportunity_Registration_Date__c <= '{range_['end'].isoformat()}T23:59:59Z'",
+        f"CreatedDate >= {range_['start'].isoformat()}T00:00:00Z",
+        f"CreatedDate <= {range_['end'].isoformat()}T23:59:59Z",
     ]
     if channel_manager:
         where_conditions.append(f"Channel_Manager__c = '{_escape_soql(channel_manager)}'")
@@ -1993,6 +1994,7 @@ async def get_deal_registrations_breakdown(
 
     Tracks registrations on Opportunity via Partner_Registration_Approval__c field.
     Returns counts + amounts + conversion rates by breakdown dimension.
+    Note: Uses CreatedDate for period filtering (Partner_Opportunity_Registration_Date__c may have data integrity issues).
     """
     period = _normalize_period(period)
     _assert_enum(period, PERIODS, "period")
@@ -2003,8 +2005,8 @@ async def get_deal_registrations_breakdown(
     where_conditions = [
         f"Account.BillingCountry IN {COUNTRIES_SQL}",
         f"Partner_Registration_Approval__c != null",
-        f"Partner_Opportunity_Registration_Date__c >= '{range_['start'].isoformat()}T00:00:00Z'",
-        f"Partner_Opportunity_Registration_Date__c <= '{range_['end'].isoformat()}T23:59:59Z'",
+        f"CreatedDate >= {range_['start'].isoformat()}T00:00:00Z",
+        f"CreatedDate <= {range_['end'].isoformat()}T23:59:59Z",
     ]
     if channel_manager:
         where_conditions.append(f"Channel_Manager__c = '{_escape_soql(channel_manager)}'")

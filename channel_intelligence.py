@@ -42,7 +42,7 @@ DEFAULT_PARTNER_TARGET: int = 100000
 # ---------------------------------------------------------------------------
 
 class ConfigManager:
-    """Load and manage sales targets from config/sales_targets.yaml."""
+    """Load and manage sales targets and fiscal calendar from config/sales_targets.yaml."""
 
     def __init__(self, config_path: str = "config/sales_targets.yaml"):
         self.config_path = config_path
@@ -50,6 +50,7 @@ class ConfigManager:
         self.territories = {}
         self.partners = {}
         self.accounts = {}
+        self.fiscal_calendar = None
         self._load_config()
 
     def _load_config(self):
@@ -61,6 +62,7 @@ class ConfigManager:
                     self.territories = self.config.get("territories", {})
                     self.partners = self.config.get("partners", {})
                     self.accounts = self.config.get("accounts", {})
+                    self.fiscal_calendar = self.config.get("fiscal_calendar", {})
         except Exception as e:
             print(f"Warning: Could not load config from {self.config_path}: {e}")
 
@@ -145,6 +147,27 @@ class ConfigManager:
         target = account.get("revenue_target", {}).get(fiscal_year)
         return target
 
+    def get_fiscal_year_start_month(self) -> int:
+        """Get fiscal year start month (1-12). Default: February (2)."""
+        if not self.fiscal_calendar:
+            return 2
+        fy_start = self.fiscal_calendar.get("fy_start", "02-01")
+        try:
+            month = int(fy_start.split("-")[0])
+            return month if 1 <= month <= 12 else 2
+        except (ValueError, IndexError):
+            return 2
+
+    def get_quarter_range(self, quarter: str) -> dict[str, int] | None:
+        """Get start/end months for a quarter (Q1-Q4)."""
+        if not self.fiscal_calendar:
+            return None
+        quarters = self.fiscal_calendar.get("quarters", {})
+        if quarter not in quarters:
+            return None
+        q = quarters[quarter]
+        return {"start_month": q.get("start_month"), "end_month": q.get("end_month")}
+
 # Lazy-load config on first use
 _config_manager: ConfigManager | None = None
 
@@ -160,9 +183,11 @@ def get_config() -> ConfigManager:
 # ---------------------------------------------------------------------------
 
 def _start_of_fiscal_year(d: date) -> date:
-    """FY starts Feb 1.  If month < February the FY started the previous year."""
-    year = d.year if d.month >= 2 else d.year - 1
-    return date(year, 2, 1)
+    """FY start date based on config (default Feb 1). If month < FY start, FY started the previous year."""
+    cfg = get_config()
+    fy_start_month = cfg.get_fiscal_year_start_month()
+    year = d.year if d.month >= fy_start_month else d.year - 1
+    return date(year, fy_start_month, 1)
 
 
 def _end_of_fiscal_year(d: date) -> date:
@@ -180,17 +205,64 @@ def _fiscal_year_label(d: date) -> str:
 
 
 def _fiscal_quarter_range(d: date) -> dict[str, Any]:
+    """Get fiscal quarter range based on config (default: Feb-Jan FY). Falls back to hardcoded if config unavailable."""
     m, y = d.month, d.year
-    if 2 <= m <= 4:
-        return {"start": date(y, 2, 1), "end": date(y, 4, 30), "quarter": "Q1"}
-    if 5 <= m <= 7:
-        return {"start": date(y, 5, 1), "end": date(y, 7, 31), "quarter": "Q2"}
-    if 8 <= m <= 10:
-        return {"start": date(y, 8, 1), "end": date(y, 10, 31), "quarter": "Q3"}
-    if m >= 11:
-        return {"start": date(y, 11, 1), "end": date(y + 1, 1, 31), "quarter": "Q4"}
-    # January — belongs to Q4 of the previous fiscal year
-    return {"start": date(y - 1, 11, 1), "end": date(y, 1, 31), "quarter": "Q4"}
+    cfg = get_config()
+
+    # Try to get quarter definitions from config
+    quarters_config = cfg.fiscal_calendar.get("quarters", {}) if cfg.fiscal_calendar else {}
+
+    if not quarters_config:
+        # Fallback to hardcoded defaults
+        if 2 <= m <= 4:
+            return {"start": date(y, 2, 1), "end": date(y, 4, 30), "quarter": "Q1"}
+        if 5 <= m <= 7:
+            return {"start": date(y, 5, 1), "end": date(y, 7, 31), "quarter": "Q2"}
+        if 8 <= m <= 10:
+            return {"start": date(y, 8, 1), "end": date(y, 10, 31), "quarter": "Q3"}
+        if m >= 11:
+            return {"start": date(y, 11, 1), "end": date(y + 1, 1, 31), "quarter": "Q4"}
+        return {"start": date(y - 1, 11, 1), "end": date(y, 1, 31), "quarter": "Q4"}
+
+    # Use config-based quarter definitions
+    def _get_last_day_of_month(month: int, year: int) -> int:
+        if month in (1, 3, 5, 7, 8, 10, 12):
+            return 31
+        elif month in (4, 6, 9, 11):
+            return 30
+        elif month == 2:
+            return 29 if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0) else 28
+        return 31
+
+    # Match month to quarter based on config
+    for q_name in ["Q1", "Q2", "Q3", "Q4"]:
+        if q_name not in quarters_config:
+            continue
+        q = quarters_config[q_name]
+        start_m = q.get("start_month")
+        end_m = q.get("end_month")
+
+        if start_m and end_m:
+            # Handle Q4 which spans year boundary (Nov-Jan)
+            if end_m < start_m:
+                if start_m <= m or m <= end_m:
+                    start_year = y if m >= start_m else y - 1
+                    end_year = y if m <= end_m else y + 1
+                    return {
+                        "start": date(start_year, start_m, 1),
+                        "end": date(end_year, end_m, _get_last_day_of_month(end_m, end_year)),
+                        "quarter": q_name,
+                    }
+            else:
+                if start_m <= m <= end_m:
+                    return {
+                        "start": date(y, start_m, 1),
+                        "end": date(y, end_m, _get_last_day_of_month(end_m, y)),
+                        "quarter": q_name,
+                    }
+
+    # Fallback if month doesn't match any quarter (shouldn't happen)
+    return {"start": date(y, 2, 1), "end": date(y, 4, 30), "quarter": "Q1"}
 
 
 def _fiscal_quarter_from_date_str(date_str: str) -> str:

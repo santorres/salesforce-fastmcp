@@ -2085,6 +2085,49 @@ async def get_deal_registrations_breakdown(
     }
 
 
+async def get_deal_registrations_trend(
+    sf,
+    periods: list[str] | None = None,
+    channel_manager: str | None = None,
+) -> dict[str, Any]:
+    """Deal registration trend across multiple fiscal quarters.
+
+    Shows count, amount, approval rate, and close rate per quarter side-by-side.
+    Defaults to Q1, Q2, Q3, Q4 of current fiscal year.
+    """
+    if not periods:
+        periods = ["Q1", "Q2", "Q3", "Q4"]
+
+    normalized = [_normalize_period(p) for p in periods]
+    for p in normalized:
+        _assert_enum(p, PERIODS, "period")
+
+    results = await asyncio.gather(*[
+        get_deal_registrations(sf, p, channel_manager=channel_manager)
+        for p in normalized
+    ])
+
+    trend = []
+    for res in results:
+        period_info = res.get("period", {})
+        d = res.get("data", {})
+        trend.append({
+            "quarter": period_info.get("fiscalLabel", period_info.get("label", "")),
+            "period_label": f"{period_info.get('startDate', '')} – {period_info.get('endDate', '')}",
+            "total_count": d.get("total_count", 0),
+            "total_amount": d.get("total_amount", 0),
+            "approval_rate_pct": d.get("approval_rate_pct", 0),
+            "close_rate_pct": d.get("close_rate_pct", 0),
+        })
+
+    return {
+        "tool": "get_deal_registrations_trend",
+        "periods": [res.get("period") for res in results],
+        "channel_manager": channel_manager or None,
+        "data": trend,
+    }
+
+
 async def get_win_rate_by_country(
     sf,
     period: str = "THIS_FISCAL_YEAR",

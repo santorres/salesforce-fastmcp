@@ -1262,6 +1262,33 @@ async def get_deal_registrations_breakdown(
 
 
 @mcp.tool
+async def get_deal_registrations_trend(
+    periods: Annotated[list[str] | None, Field(description="List of periods (e.g. [\"Q1\",\"Q2\",\"Q3\",\"Q4\"] or [\"FY26_Q1\",\"FY27_Q1\"]). Defaults to Q1-Q4 of current FY")] = None,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Deal registration trend across multiple fiscal quarters.
+
+    Shows count, amount, approval rate, and close rate per quarter side-by-side.
+    Enables quarter-over-quarter and year-over-year comparison.
+
+    periods: list of periods (defaults to Q1, Q2, Q3, Q4 of current FY)
+             Examples: ["Q1","Q2","Q3","Q4"] or ["FY26_Q1","FY26_Q2","FY27_Q1","FY27_Q2"]
+
+    Example: get_deal_registrations_trend() → Q1-Q4 FY27
+    Example: get_deal_registrations_trend(periods=["FY26_Q1","FY26_Q2","FY27_Q1","FY27_Q2"])
+    """
+    try:
+        result = await ci.get_deal_registrations_trend(
+            get_client(),
+            periods=periods,
+            channel_manager=channel_manager,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
 async def get_win_rate_by_country(
     period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR)")] = "THIS_FISCAL_YEAR",
     channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,

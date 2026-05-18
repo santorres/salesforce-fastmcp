@@ -4,6 +4,13 @@ FastMCP server providing Salesforce analytics and CRUD tools, purpose-built for 
 
 **Total: 60 tools** across CRUD, navigation, analytics, BI, and specialized channel intelligence. Includes Phase 1 activity/risk/velocity analytics with config-based revenue targets.
 
+## 📖 Quick Start for Channel Directors
+
+**New to the MCP?** Start here:
+- **[CHANNEL_DIRECTOR_PLAYBOOK.md](CHANNEL_DIRECTOR_PLAYBOOK.md)** — Complete reference for all 60 tools with real-world examples, organized by use case (daily standup, weekly ops, monthly review, QBR, partner management, etc.)
+- Real prompt examples: `get_revenue()`, `get_pipeline()`, `generate_partner_qbr()`
+- Copy-paste ready workflows for reporting
+
 ---
 
 ## Tools Overview
@@ -229,7 +236,8 @@ The 9 Phase 1 tools provide activity tracking, risk detection, and stage velocit
 
 ### Documentation
 
-- **[PHASE_1_IMPLEMENTATION.md](PHASE_1_IMPLEMENTATION.md)** — Full usage guide with examples for all 9 tools
+- **[CHANNEL_DIRECTOR_PLAYBOOK.md](CHANNEL_DIRECTOR_PLAYBOOK.md)** — **Start here** — Complete MCP reference for channel directors: daily standup, weekly ops, monthly review, QBR workflows, partner management, real-world examples for all 60 tools
+- **[PHASE_1_IMPLEMENTATION.md](PHASE_1_IMPLEMENTATION.md)** — Full usage guide with examples for all 9 activity/risk/velocity tools
 - **[CHANNEL_DIRECTOR_CAPABILITY_MAP.md](CHANNEL_DIRECTOR_CAPABILITY_MAP.md)** — Assessment of 60+ channel director questions vs tool coverage
 - **[SCALING_PRIORITIZATION.md](SCALING_PRIORITIZATION.md)** — Gap analysis, roadmap for Phase 2+ custom fields
 

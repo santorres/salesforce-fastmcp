@@ -1,12 +1,40 @@
-# Sales Targets Configuration
-# This file defines revenue targets at territory, country, and partner levels.
+# Sales Targets & Fiscal Calendar Configuration
+# This file defines:
+# 1. Revenue targets at territory, country, and partner levels
+# 2. Fiscal calendar (quarter definitions)
 #
-# HIERARCHY:
+# TARGET HIERARCHY:
 # 1. Specific partner + country → Partner target for that country
 # 2. Partner (global) → Partner target across all countries
 # 3. Country-specific → Country target within territory
 # 4. Territory → Territory-wide fallback target
 # 5. Default → 100,000 per partner/year if none specified
+
+# ============================================================================
+# FISCAL CALENDAR (quarter definitions)
+# ============================================================================
+
+fiscal_calendar:
+  # Fiscal year starts on this date (month-day)
+  fy_start: "02-01"  # February 1st
+
+  # Quarter definitions (month ranges inclusive)
+  quarters:
+    Q1:
+      start_month: 2    # February
+      end_month: 4      # April
+
+    Q2:
+      start_month: 5    # May
+      end_month: 7      # July
+
+    Q3:
+      start_month: 8    # August
+      end_month: 10     # October
+
+    Q4:
+      start_month: 11   # November
+      end_month: 1      # January (next year)
 
 # ============================================================================
 # TERRITORIES (regional groupings with multi-level targets)
@@ -132,6 +160,15 @@ accounts:
 # CONFIGURATION NOTES
 # ============================================================================
 
+# FISCAL CALENDAR:
+# - Defines when your fiscal year starts (fy_start: "MM-DD")
+# - Currently: Feb 1 (standard for Salesforce Southern Europe region)
+# - Quarter months use calendar month numbers (1-12)
+# - Q4 end_month is 1 (January) because it spans the year boundary (Nov-Jan)
+# - Changes here affect all period calculations across all tools
+# - Example: If FY starts on April 1, set fy_start: "04-01" and update quarters accordingly
+#
+# REVENUE TARGETS:
 # - All amounts in EUR (or local currency — specify in your Salesforce org)
 # - Fiscal year labels: fy27, fy26, fy25, etc.
 # - Current fiscal year: FY27 (Feb 2026 - Jan 2027)

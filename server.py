@@ -65,8 +65,22 @@ def get_client() -> SalesforceClient:
 
 
 def format_result(data: Any) -> str:
-    """Format result data as JSON string."""
+    """Format result data as JSON string. Logs truncation warnings at WARN level."""
+    if isinstance(data, dict) and data.get("truncationWarning"):
+        logger.warning(f"TRUNCATION | {data.get('tool', '?')} | {data['truncationWarning']}")
     return json.dumps(data, indent=2, default=str)
+
+
+def _coerce_period(period: str | None) -> str | None:
+    """Normalize a period string before passing to ci functions.
+
+    Converts LLM-style typos ("Q1?", "thisQ") to canonical form ("Q1", "THIS_QUARTER")
+    so validation errors are avoided for common abbreviations.
+    Called selectively in tool wrappers where the LLM is most likely to send informal input.
+    """
+    if period is None:
+        return None
+    return ci._normalize_period(period)
 
 
 # =============================================================================
@@ -889,7 +903,7 @@ async def get_revenue(
     """
     try:
         result = await ci.get_revenue(
-            get_client(), period, breakdown, limit,
+            get_client(), _coerce_period(period), breakdown, limit,
             channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
             partner_name, country, territory, revenue_target,
         )
@@ -910,7 +924,7 @@ async def get_pipeline(
     """Open pipeline analytics for Southern Europe. Excludes Closed Won and Closed Lost."""
     try:
         result = await ci.get_pipeline(
-            get_client(), period, breakdown, limit,
+            get_client(), _coerce_period(period), breakdown, limit,
             channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
             partner_name, country,
         )
@@ -1081,7 +1095,7 @@ async def get_kpi_snapshot(
     """Core KPI bundle: revenue, pipeline, win rate, avg deal size, partner coverage, orphan %, concentration."""
     try:
         result = await ci.get_kpi_snapshot(
-            get_client(), period, revenue_target,
+            get_client(), _coerce_period(period), revenue_target,
             channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
         )
         return format_result(result)

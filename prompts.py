@@ -4,8 +4,10 @@ This module provides reusable prompts for analyzing pipeline, partner engagement
 and leads from a Channel Director perspective covering Southern Europe.
 
 Region: Portugal, Spain, Italy, Greece, Cyprus
-Fiscal Year FY27: Feb 1, 2026 – Jan 31, 2027
 """
+
+from channel_intelligence import _get_period_range, _normalize_period, _fiscal_quarter_range
+from datetime import date as _date
 
 # =============================================================================
 # Configuration Constants
@@ -14,17 +16,37 @@ Fiscal Year FY27: Feb 1, 2026 – Jan 31, 2027
 COUNTRIES = ["Portugal", "Spain", "Italy", "Greece", "Cyprus"]
 COUNTRIES_SQL = "('Spain','Portugal','Italy','Greece','Cyprus')"
 
-# Fiscal Year FY27: Feb 1, 2026 – Jan 31, 2027
-FY27_START = "2026-02-01"
-FY27_END = "2027-01-31"
+# Fiscal year dates — computed dynamically from channel_intelligence config
+# so prompts stay correct when the fiscal year rolls over.
+_fy = _get_period_range("THIS_FISCAL_YEAR")
+FY_START = _fy["start"].isoformat()
+FY_END = _fy["end"].isoformat()
+FY_LABEL = _fy["fiscal_label"]  # e.g. "FY27"
 
-# Quarter date ranges for FY27
-QUARTERS = {
-    "Q1": ("2026-02-01", "2026-04-30"),  # Feb-Apr 2026
-    "Q2": ("2026-05-01", "2026-07-31"),  # May-Jul 2026
-    "Q3": ("2026-08-01", "2026-10-31"),  # Aug-Oct 2026
-    "Q4": ("2026-11-01", "2027-01-31"),  # Nov 2026 - Jan 2027
-}
+# Keep legacy names as aliases so any external code that imported them still works
+FY27_START = FY_START
+FY27_END = FY_END
+
+# Quarter date ranges — computed dynamically
+def _quarter_range(q: str) -> tuple[str, str]:
+    """Return (start, end) ISO date strings for a fiscal quarter label."""
+    fy_start = _fy["start"]
+    # Map Q1-Q4 relative to current FY start
+    offsets = {"Q1": 0, "Q2": 3, "Q3": 6, "Q4": 9}
+    months_offset = offsets.get(q.upper(), 0)
+    month = fy_start.month + months_offset
+    year = fy_start.year + (month - 1) // 12
+    month = ((month - 1) % 12) + 1
+    start = _date(year, month, 1)
+    # End is 2 months later, last day
+    end_month = month + 2
+    end_year = year + (end_month - 1) // 12
+    end_month = ((end_month - 1) % 12) + 1
+    last_day = 31 if end_month in (1, 3, 5, 7, 8, 10, 12) else (30 if end_month != 2 else 28)
+    end = _date(end_year, end_month, last_day)
+    return start.isoformat(), end.isoformat()
+
+QUARTERS = {q: _quarter_range(q) for q in ("Q1", "Q2", "Q3", "Q4")}
 
 # =============================================================================
 # Field Mapping Reference
@@ -81,9 +103,9 @@ def quarterly_pipeline_analysis(quarter: str = "Q1") -> str:
     start_date, end_date = get_quarter_dates(quarter)
 
     return f"""You are assisting a Channel Director covering Portugal, Spain, Italy, Greece, and Cyprus.
-Fiscal year FY27 runs from Feb 1, 2026 – Jan 31, 2027.
+Fiscal year {FY_LABEL} runs from {FY_START} to {FY_END}.
 
-**Task:** Analyze all OPEN opportunities in {quarter} FY27.
+**Task:** Analyze all OPEN opportunities in {quarter} {FY_LABEL}.
 
 **SOQL Query to execute:**
 ```sql
@@ -121,11 +143,11 @@ def closed_won_partner_analysis(quarter: str = "", full_year: bool = True) -> st
     """
     if full_year:
         date_filter = f"CloseDate >= {FY27_START} AND CloseDate <= {FY27_END}"
-        period = "FY27"
+        period = FY_LABEL
     else:
         start_date, end_date = get_quarter_dates(quarter)
         date_filter = f"CloseDate >= {start_date} AND CloseDate <= {end_date}"
-        period = f"{quarter} FY27"
+        period = f"{quarter} {FY_LABEL}"
 
     return f"""You are assisting a Channel Director covering Southern Europe.
 
@@ -317,10 +339,10 @@ def new_vs_existing_business(quarter: str = "") -> str:
     if quarter:
         start_date, end_date = get_quarter_dates(quarter)
         date_filter = f"CloseDate >= {start_date} AND CloseDate <= {end_date}"
-        period = f"{quarter} FY27"
+        period = f"{quarter} {FY_LABEL}"
     else:
         date_filter = f"CloseDate >= {FY27_START} AND CloseDate <= {FY27_END}"
-        period = "FY27"
+        period = FY_LABEL
 
     return f"""You are assisting a Channel Director analyzing business mix.
 
@@ -374,7 +396,7 @@ def lead_conversion_analysis() -> str:
     """
     return f"""You are assisting a Channel Director analyzing lead funnel.
 
-**Task:** Analyze leads created in FY27 with conversion and partner attribution.
+**Task:** Analyze leads created in {FY_LABEL} with conversion and partner attribution.
 
 **SOQL Query to execute:**
 ```sql
@@ -485,10 +507,10 @@ def country_pipeline_dashboard(quarter: str = "") -> str:
     if quarter:
         start_date, end_date = get_quarter_dates(quarter)
         date_filter = f"CloseDate >= {start_date} AND CloseDate <= {end_date}"
-        period = f"{quarter} FY27"
+        period = f"{quarter} {FY_LABEL}"
     else:
         date_filter = f"CloseDate >= {FY27_START} AND CloseDate <= {FY27_END}"
-        period = "FY27"
+        period = FY_LABEL
 
     return f"""You are assisting a Channel Director with a regional dashboard.
 
@@ -556,7 +578,7 @@ def forecast_vs_actuals(quarter: str = "Q1") -> str:
 
     return f"""You are assisting a Channel Director with forecast analysis.
 
-**Task:** Compare FORECAST vs ACTUALS for {quarter} FY27.
+**Task:** Compare FORECAST vs ACTUALS for {quarter} {FY_LABEL}.
 
 **SOQL Query - All opportunities (open + closed):**
 ```sql
@@ -675,7 +697,7 @@ ORDER BY Partner__c, Partner_Source_Influence__c
 2. **Individual Partner Cards (Top 10):**
    For each partner show:
    - Total Pipeline Value
-   - Closed-Won Value (FY27)
+   - Closed-Won Value ({FY_LABEL})
    - # of Opportunities
    - Avg Deal Size
    - Source vs Influence ratio
@@ -796,7 +818,7 @@ The Partner__c field is a LOOKUP to Account, not a text field.
 2. Then use that ID in queries: WHERE Partner__c = '<account_id>'
 3. Use Partner__r.Name to display the partner name in query results
 
-**Task:** Generate QBR preparation report for {quarter} FY27.
+**Task:** Generate QBR preparation report for {quarter} {FY_LABEL}.
 
 **Query 1 - Partner's Pipeline:**
 ```sql

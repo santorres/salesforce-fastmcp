@@ -192,7 +192,12 @@ def _start_of_fiscal_year(d: date) -> date:
 
 def _end_of_fiscal_year(d: date) -> date:
     fy_start = _start_of_fiscal_year(d)
-    return date(fy_start.year + 1, 1, 31)
+    # End month is the calendar month before FY start (wraps Dec→Jan)
+    end_month = fy_start.month - 1 or 12
+    # End year is always one calendar year after FY start year
+    end_year = fy_start.year + 1
+    last_day = 31 if end_month in (1, 3, 5, 7, 8, 10, 12) else (30 if end_month != 2 else 28)
+    return date(end_year, end_month, last_day)
 
 
 def _fiscal_year_number(d: date) -> int:
@@ -452,6 +457,10 @@ def _build_opp_where(
     if closed_mode == "open":
         clauses.append("IsClosed = false")
     elif closed_mode == "won":
+        # Use StageName rather than IsWon=true — IsWon is set by Salesforce only when the
+        # stage transitions through the standard close flow. Custom stage names or data
+        # migrations can leave IsWon=false on deals that are genuinely Closed Won. The
+        # stage name is the authoritative signal for this org.
         clauses.append("StageName = 'Closed Won'")
     elif closed_mode == "closed":
         clauses.append("IsClosed = true")
@@ -1450,7 +1459,7 @@ async def get_partner_scorecard(
         sf.query(f"SELECT AVG(Amount) avgAmount FROM Opportunity WHERE {base_where} AND StageName = 'Closed Won'"),
         sf.query(f"SELECT DISTINCT Account.BillingCountry country FROM Opportunity WHERE {base_where}"),
         sf.query(f"SELECT StageName stage, COUNT(Id) stageCount FROM Opportunity WHERE {base_where} AND IsClosed = false GROUP BY StageName"),
-        sf.query(f"SELECT CloseDate FROM Opportunity WHERE {base_where}"),
+        sf.query(f"SELECT CloseDate FROM Opportunity WHERE {base_where} LIMIT 2000"),
     )
 
     by_q: dict[str, int] = {}
@@ -1459,7 +1468,7 @@ async def get_partner_scorecard(
             q = _fiscal_quarter_from_date_str(r["CloseDate"])
             by_q[q] = by_q.get(q, 0) + 1
 
-    return {
+    result: dict[str, Any] = {
         "tool": "get_partner_scorecard", "period": _summarize_period(period),
         "partner": partner_name, "channelManager": channel_manager or None,
         "data": {
@@ -1472,6 +1481,12 @@ async def get_partner_scorecard(
             "byQuarter": [{"quarter": q, "count": by_q.get(q, 0)} for q in ["Q1", "Q2", "Q3", "Q4"]],
         },
     }
+    if not dates_res.get("done", True):
+        result["truncationWarning"] = (
+            "Partner has >2000 opportunities — quarterly trend counts reflect only the first 2000 records "
+            "returned by Salesforce. Revenue and pipeline totals (from aggregate queries) are not affected."
+        )
+    return result
 
 
 async def generate_partner_qbr(
@@ -1969,7 +1984,7 @@ async def get_multi_period_trend(
                 series_map[label][pl] = row.get(value_field, 0)
         else:
             value = data.get("totalRevenue" if metric == "revenue" else "totalPipeline", 0)
-            series_map.setdefault("Total", {"label": "Total"})["Total"]
+            series_map.setdefault("Total", {"label": "Total"})
             series_map["Total"][pl] = value
 
     return {

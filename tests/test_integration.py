@@ -35,23 +35,14 @@ pytestmark = pytest.mark.integration
 # Fixtures
 # ---------------------------------------------------------------------------
 
-@pytest.fixture(scope="session")
-def anyio_backend():
-    return "asyncio"
-
-
-@pytest.fixture(scope="session")
+@pytest.fixture
 async def mcp_client():
-    """Session-scoped FastMCP client. Skips all tests if server is unreachable."""
+    """Per-test FastMCP client. Skips if server is unreachable."""
     try:
         async with Client(SERVER_URL) as client:
-            await client.list_tools()
+            yield client
     except Exception as exc:
         pytest.skip(f"MCP server not reachable at {SERVER_URL} — {exc}")
-
-    # Re-yield inside the context so tests share the session
-    async with Client(SERVER_URL) as client:
-        yield client
 
 
 # ---------------------------------------------------------------------------

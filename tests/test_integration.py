@@ -52,6 +52,8 @@ async def mcp_client():
 def parse(result) -> dict | list:
     """Extract and JSON-parse a tool call result from FastMCP client."""
     text = raw_text(result)
+    if text.startswith("Error:"):
+        pytest.fail(text)
     return json.loads(text)
 
 

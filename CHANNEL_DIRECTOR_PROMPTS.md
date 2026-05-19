@@ -1,6 +1,57 @@
 # Channel Director Prompts — Real-World Examples
 
-These are natural language prompts you'd actually use. Each maps to MCP tool calls.
+These are natural language prompts that work directly in Claude Desktop. Type them as-is — no tool syntax needed.
+
+---
+
+## Tested Prompts (copy-paste ready)
+
+These have been verified end-to-end against real Salesforce data.
+
+### Revenue & Attainment
+```
+What's our total closed-won revenue for this fiscal year?
+Break down FY27 revenue by country
+How are we tracking against target in Spain this year?
+Compare revenue this fiscal year versus last fiscal year
+Show me Q1 revenue
+```
+
+### Pipeline
+```
+What does our pipeline look like this quarter?
+Show me the pipeline by stage for this quarter
+What's coming up in the next 60 days?
+Show pipeline for both this quarter and next quarter combined
+```
+
+### Partners
+```
+Who are our top 10 partners by revenue this fiscal year?
+Give me a full scorecard for Accenture
+How is Inetum Spain performing this quarter?
+Generate a QBR for Accenture for this quarter
+Generate QBR for Inetum Spain for Q1 FY27 with a target of 500000
+```
+
+### Hygiene & Risk
+```
+Show me all orphan deals without a partner assigned this quarter
+Which deals haven't moved in the last 60 days?
+What deals are high risk — low probability and closing soon?
+Show me deals we lost this quarter and where we lost them
+Which partners are most active?
+```
+
+### KPIs & Trends
+```
+Give me a full KPI snapshot for this fiscal year
+Show me revenue trend across Q1, Q2, Q3, Q4
+What's our win rate by country this year?
+How do deal registrations compare quarter over quarter?
+What was revenue in FY26 Q1 versus FY27 Q1?
+Show revenue growth from last fiscal year to this one broken down by country
+```
 
 ---
 

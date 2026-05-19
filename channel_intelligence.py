@@ -849,27 +849,176 @@ async def route_slash_command(sf, input_: str, channel_manager: str = DEFAULT_CH
     raise ValueError(f"Unsupported slash command: /{command}")
 
 
+def _detect_period(normalized: str) -> str:
+    """Extract the most specific period mention from a lowercase intent string."""
+    if m := re.search(r"\bfy(\d{2})_?q([1-4])\b", normalized):
+        return f"FY{m.group(1)}_Q{m.group(2)}"
+    if m := re.search(r"\bq([1-4])_?fy(\d{2})\b", normalized):
+        return f"FY{m.group(2)}_Q{m.group(1)}"
+    if m := re.search(r"\bq([1-4])\b", normalized):
+        return f"Q{m.group(1)}"
+    if m := re.search(r"\bquarter\s*([1-4])\b", normalized):
+        return f"Q{m.group(1)}"
+    if "next quarter" in normalized:
+        return "NEXT_QUARTER"
+    if "last quarter" in normalized:
+        return "LAST_QUARTER"
+    if "this quarter" in normalized or "current quarter" in normalized:
+        return "THIS_QUARTER"
+    if "last year" in normalized or "previous year" in normalized or "last fiscal" in normalized:
+        return "LAST_FISCAL_YEAR"
+    if "last 30" in normalized or "past 30" in normalized:
+        return "LAST_30_DAYS"
+    if "next 60" in normalized or "coming 60" in normalized:
+        return "NEXT_60_DAYS"
+    return "THIS_FISCAL_YEAR"
+
+
+# Complete keyword → (tool, description, base_params) routing table.
+# Entries are checked in order; first match wins.
+# Each entry: (trigger_keywords, tool_name, description, base_params_dict)
+_ROUTING_TABLE: list[tuple[list[str], str, str, dict]] = [
+    # --- Opportunity detail ---
+    (["opportunity detail", "tell me about", "who owns", "sales rep", "opp detail"],
+     "get_opportunity_detail",
+     "Detailed view of a single opportunity",
+     {"opportunity_name": "<name>", "period": "THIS_FISCAL_YEAR"}),
+    # --- Partner-specific pipeline ---
+    (["partner pipeline", "partner open deals", "partner open opportunities"],
+     "get_partner_pipeline",
+     "Open pipeline for a specific partner with deal list",
+     {"partner_name": "<name>", "period": "THIS_FISCAL_YEAR"}),
+    # --- Partner scorecard ---
+    (["partner scorecard", "partner deep dive", "partner detail"],
+     "get_partner_scorecard",
+     "Deep-dive partner scorecard: revenue, pipeline, trend, countries",
+     {"partner_name": "<name>", "period": "THIS_FISCAL_YEAR"}),
+    # --- QBR ---
+    (["qbr", "business review", "quarterly review"],
+     "generate_partner_qbr",
+     "Full partner Quarterly Business Review pack",
+     {"partner_name": "<name>"}),
+    # --- Orphan hygiene ---
+    (["orphan", "without partner", "no partner", "unassigned deal"],
+     "get_orphan_hygiene",
+     "Open deals with no partner assigned",
+     {"period": "THIS_QUARTER"}),
+    # --- Deal registrations (before kpi to avoid "summary" collision) ---
+    (["deal registration", "deal reg", " dr "],
+     "get_deal_registrations_breakdown",
+     "Deal registration breakdown by partner, country, or status",
+     {"period": "THIS_FISCAL_YEAR"}),
+    # --- KPI snapshot / dashboard ---
+    (["kpi", "snapshot", "dashboard", "overview", "health check"],
+     "get_kpi_snapshot",
+     "Core KPI bundle: revenue, pipeline, win rate, partner coverage, orphan %",
+     {"period": "THIS_FISCAL_YEAR"}),
+    # --- Growth / YoY / QoQ ---
+    (["growth", "yoy", "qoq", "year over year", "quarter over quarter", "compare period"],
+     "get_growth",
+     "Period-over-period growth for revenue or pipeline",
+     {"metric": "revenue", "period_a": "THIS_FISCAL_YEAR", "period_b": "LAST_FISCAL_YEAR"}),
+    # --- Multi-period trend ---
+    (["trend", "quarterly trend", "multi period", "over time"],
+     "get_multi_period_trend",
+     "Revenue or pipeline trend across multiple quarters",
+     {"metric": "revenue", "periods": ["Q1", "Q2", "Q3", "Q4"], "breakdown": "total"}),
+    # --- Stalled deals ---
+    (["stalled", "stuck", "no activity", "not moving"],
+     "get_stalled_deals",
+     "Deals with no recent stage progression or activity",
+     {"period": "THIS_FISCAL_YEAR"}),
+    # --- Lost deals ---
+    (["lost deal", "closed lost", "why we lost", "loss analysis"],
+     "get_lost_deals",
+     "Closed Lost deals with reason analysis",
+     {"period": "THIS_FISCAL_YEAR"}),
+    # --- Win rate by country ---
+    (["win rate", "win ratio", "close rate"],
+     "get_win_rate_by_country",
+     "Win rate broken down by country",
+     {"period": "THIS_FISCAL_YEAR"}),
+    # --- Time to close ---
+    (["time to close", "cycle time", "sales cycle", "days to close"],
+     "get_time_to_close_stats",
+     "Average time-to-close statistics",
+     {"period": "THIS_FISCAL_YEAR"}),
+    # --- Deal aging ---
+    (["aging", "age of deal", "how old", "days in stage"],
+     "get_deal_aging_by_stage",
+     "Deals broken down by age in current stage",
+     {"period": "THIS_FISCAL_YEAR"}),
+    # --- High-risk deals ---
+    (["high risk", "at risk", "risk", "risky deal"],
+     "get_high_risk_deals",
+     "Deals flagged as high-risk by age, value, or stage",
+     {"period": "THIS_FISCAL_YEAR"}),
+    # --- Stage risk ---
+    (["stage risk", "stage health", "stage profile"],
+     "get_stage_risk_profile",
+     "Risk profile broken down by pipeline stage",
+     {"period": "THIS_FISCAL_YEAR"}),
+    # --- Weighted pipeline ---
+    (["weighted", "probability weighted", "expected value"],
+     "get_weighted_pipeline",
+     "Pipeline weighted by close probability",
+     {"period": "THIS_QUARTER"}),
+    # --- Channel manager performance ---
+    (["channel manager performance", "manager comparison", "cm performance"],
+     "get_channel_manager_performance",
+     "Compare performance across channel managers",
+     {"period": "THIS_FISCAL_YEAR"}),
+    # --- New vs existing business ---
+    (["new business", "existing business", "new vs existing", "new logo"],
+     "get_new_vs_existing",
+     "Split of new-logo vs existing-account revenue",
+     {"period": "THIS_FISCAL_YEAR"}),
+    # --- Partner activity ---
+    (["partner activity", "activity summary", "partner engagement"],
+     "get_partner_activity_summary",
+     "Recent partner activity and engagement signals",
+     {"period": "THIS_QUARTER"}),
+    # --- Stage velocity ---
+    (["velocity", "progression", "stage speed", "moving through"],
+     "get_stage_progression_velocity",
+     "How fast deals move through stages",
+     {"period": "THIS_FISCAL_YEAR"}),
+    # --- Top partners by pipeline ---
+    (["top partner", "best partner", "leading partner"],
+     "get_top_partners",
+     "Partners ranked by revenue or pipeline",
+     {"metric": "revenue", "period": "THIS_QUARTER"}),
+    # --- Pipeline (broad) ---
+    (["pipeline", "open deal", "forecast", "open opportunit"],
+     "get_pipeline",
+     "Open pipeline analytics by country, stage, partner, or quarter",
+     {"period": "THIS_QUARTER", "breakdown": "total"}),
+    # --- Revenue (broad) ---
+    (["revenue", "closed won", "attainment", "quota", "target achieved"],
+     "get_revenue",
+     "Closed-Won revenue with optional target attainment",
+     {"period": "THIS_FISCAL_YEAR", "breakdown": "total"}),
+]
+
+
 async def run_exploratory_analysis(sf, intent: str, channel_manager: str = DEFAULT_CHANNEL_MANAGER) -> dict[str, Any]:
+    """Route a natural-language intent to the best matching tool.
+
+    For slash commands (/pipeline, /revenue, /orphans, /top_partners) the tool is
+    executed directly. For free-text intents the function returns a structured hint
+    with the recommended tool and suggested parameters so the LLM can call it
+    precisely — this avoids silent fallthrough to the wrong tool.
+    """
     normalized = str(intent).strip()[:400].lower()
 
     if normalized.startswith("/"):
         return await route_slash_command(sf, normalized, channel_manager)
 
-    # Detect period from intent text
-    period = "THIS_FISCAL_YEAR"
-    if m := re.search(r"\bq([1-4])\b", normalized):
-        period = f"Q{m.group(1)}"
-    elif m := re.search(r"\bquarter\s*([1-4])\b", normalized):
-        period = f"Q{m.group(1)}"
-    elif "next quarter" in normalized:
-        period = "NEXT_QUARTER"
-    elif "last quarter" in normalized:
-        period = "LAST_QUARTER"
-    elif "this quarter" in normalized or "current quarter" in normalized:
-        period = "THIS_QUARTER"
-
+    period = _detect_period(normalized)
     quoted = re.search(r"""['"]([^'"]+)['"]""", normalized)
 
+    # --- Execute routes for the highest-confidence patterns ---
+    # (opportunity detail and partner pipeline require extracted names, so execute directly)
     if "opportunity" in normalized and any(kw in normalized for kw in ["detail", "more details", "tell me more", "who owns", "sales rep", "owner"]):
         opp_name = quoted.group(1).strip() if quoted else None
         if opp_name:
@@ -886,38 +1035,45 @@ async def run_exploratory_analysis(sf, intent: str, channel_manager: str = DEFAU
                     "mappedTool": "get_partner_pipeline", "data": result["data"],
                     "period": result["period"], "matchedPartners": result["matchedPartners"]}
 
-    if "orphan" in normalized or "without partner" in normalized or "no partner" in normalized:
-        result = await get_orphan_hygiene(sf, "THIS_QUARTER", channel_manager=channel_manager)
-        return {"tool": "run_exploratory_analysis", "intent": intent, "mappedTool": "get_orphan_hygiene", "data": result["data"]}
+    # --- Keyword-table routing: return structured hint rather than executing ---
+    for triggers, tool_name, description, base_params in _ROUTING_TABLE:
+        if any(kw in normalized for kw in triggers):
+            # Inject detected period into params that accept one
+            params = dict(base_params)
+            if "period" in params:
+                params["period"] = period
+            if "period_a" in params:
+                params["period_a"] = period
+            return {
+                "tool": "run_exploratory_analysis",
+                "intent": intent,
+                "matched": True,
+                "use_tool": tool_name,
+                "description": description,
+                "suggested_params": {
+                    **params,
+                    **({"channel_manager": channel_manager} if channel_manager else {}),
+                },
+                "hint": (
+                    f"Call `{tool_name}` directly with the suggested_params above. "
+                    "Adjust period, breakdown, or limit as needed."
+                ),
+            }
 
-    if "top partner" in normalized and "revenue" in normalized:
-        result = await get_top_partners(sf, "revenue", "THIS_QUARTER", limit=10, channel_manager=channel_manager)
-        return {"tool": "run_exploratory_analysis", "intent": intent, "mappedTool": "get_top_partners", "data": result["data"]}
-
-    if "top partner" in normalized and "pipeline" in normalized:
-        result = await get_top_partners(sf, "pipeline", "THIS_QUARTER", limit=10, channel_manager=channel_manager)
-        return {"tool": "run_exploratory_analysis", "intent": intent, "mappedTool": "get_top_partners", "data": result["data"]}
-
-    if "growth" in normalized or "yoy" in normalized or "qoq" in normalized:
-        metric = "pipeline" if "pipeline" in normalized else "revenue"
-        breakdown = "country" if "country" in normalized else "total"
-        result = await get_growth(sf, metric, "THIS_FISCAL_YEAR", "LAST_FISCAL_YEAR", breakdown=breakdown, channel_manager=channel_manager)
-        return {"tool": "run_exploratory_analysis", "intent": intent, "mappedTool": "get_growth", "data": result["data"]}
-
-    if "pipeline" in normalized:
-        if "opportunit" in normalized:
-            q = quoted.group(1).strip() if quoted else intent
-            result = await search_opportunities(sf, q, period=period, limit=10, channel_manager="")
-            return {"tool": "run_exploratory_analysis", "intent": intent,
-                    "mappedTool": "search_opportunities", "data": result["data"], "period": result["period"]}
-        result = await get_pipeline(sf, "THIS_QUARTER", "total", channel_manager=channel_manager)
-        return {"tool": "run_exploratory_analysis", "intent": intent, "mappedTool": "get_pipeline", "data": result["data"]}
-
-    if "revenue" in normalized:
-        result = await get_revenue(sf, "THIS_FISCAL_YEAR", "total", channel_manager=channel_manager)
-        return {"tool": "run_exploratory_analysis", "intent": intent, "mappedTool": "get_revenue", "data": result["data"]}
-
-    raise ValueError("Intent is unclear for deterministic routing. Try a direct canonical tool or slash command.")
+    # --- Nothing matched — return catalogue so LLM can choose ---
+    return {
+        "tool": "run_exploratory_analysis",
+        "intent": intent,
+        "matched": False,
+        "hint": (
+            "Intent did not match any routing rule. "
+            "Call one of the tools below directly for precise results."
+        ),
+        "available_tools": [
+            {"tool": t, "description": d, "example_params": p}
+            for _, t, d, p in _ROUTING_TABLE
+        ],
+    }
 
 
 async def get_opportunity_list(

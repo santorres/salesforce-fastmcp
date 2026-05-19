@@ -153,3 +153,34 @@ class TestFiscalCalendarFromFile:
         cfg = ci.ConfigManager("config/sales_targets.yaml")
         result = cfg.get_territory_target("South_Europe", country="Cyprus", fiscal_year="fy27")
         assert result == 0
+
+
+class TestNormalizePartnerKey:
+    def test_spaces_to_underscores(self):
+        assert ci._normalize_partner_key("Inetum Spain") == "inetum_spain"
+
+    def test_already_underscored(self):
+        assert ci._normalize_partner_key("Inetum_Spain") == "inetum_spain"
+
+    def test_strips_punctuation(self):
+        # "-" and "()" are stripped; multiple spaces collapse to a single underscore
+        assert ci._normalize_partner_key("Inetum - Spain (Partner)") == "inetum_spain_partner"
+
+    def test_lowercased(self):
+        assert ci._normalize_partner_key("ACCENTURE") == "accenture"
+
+    def test_fuzzy_lookup_spaces(self):
+        """'Inetum Spain' should resolve to Inetum_Spain's target via normalisation."""
+        cfg = ci.ConfigManager("config/sales_targets.yaml")
+        result = cfg.get_partner_target("Inetum Spain", country="Spain", fiscal_year="fy27")
+        assert result == 500_000
+
+    def test_fuzzy_lookup_case_insensitive(self):
+        cfg = ci.ConfigManager("config/sales_targets.yaml")
+        result = cfg.get_partner_target("accenture", fiscal_year="fy27")
+        assert result == 900_000
+
+    def test_fuzzy_lookup_still_returns_default_for_unknown(self):
+        cfg = ci.ConfigManager("config/sales_targets.yaml")
+        result = cfg.get_partner_target("Partner That Does Not Exist", fiscal_year="fy27")
+        assert result == 100_000

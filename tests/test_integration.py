@@ -51,22 +51,17 @@ async def mcp_client():
 
 def parse(result) -> dict | list:
     """Extract and JSON-parse a tool call result from FastMCP client."""
-    if isinstance(result, list):
-        text = result[0].text
-    elif hasattr(result, "content"):
-        # FastMCP 3.x returns CallToolResult with a .content list
-        text = result.content[0].text
-    else:
-        text = str(result)
+    text = raw_text(result)
     return json.loads(text)
 
 
 def raw_text(result) -> str:
-    """Extract raw text from a tool call result without JSON-parsing."""
+    """Extract raw text from a tool call result, joining all content blocks."""
     if isinstance(result, list):
-        return result[0].text
+        return "".join(getattr(c, "text", "") for c in result)
     elif hasattr(result, "content"):
-        return result.content[0].text
+        # FastMCP 3.x returns CallToolResult with a .content list
+        return "".join(getattr(c, "text", "") for c in result.content)
     return str(result)
 
 
@@ -305,13 +300,14 @@ class TestMultiPeriodTrend:
         )
         data = parse(result)
         assert_no_error(data, "get_multi_period_trend/4q")
-        # Regression for Phase 1-A bug: total series must be present and non-empty
-        series = data.get("series") or data.get("data", {}).get("series", {})
-        if isinstance(series, dict) and "Total" in series:
-            total_series = series["Total"]
-            # At least one quarter should have a numeric value
-            values = [v for v in total_series.values() if isinstance(v, (int, float))]
-            assert values, "Total series is empty — Phase 1-A regression"
+        # Regression for Phase 1-A bug: response must be non-empty
+        assert data, "get_multi_period_trend returned empty response — Phase 1-A regression"
+        # If response is a dict with a series key, verify Total series has values
+        if isinstance(data, dict):
+            series = data.get("series") or data.get("data", {}).get("series", {})
+            if isinstance(series, dict) and "Total" in series:
+                values = [v for v in series["Total"].values() if isinstance(v, (int, float))]
+                assert values, "Total series is empty — Phase 1-A regression"
 
     async def test_country_breakdown(self, mcp_client):
         result = await mcp_client.call_tool(

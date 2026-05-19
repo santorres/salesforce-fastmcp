@@ -175,7 +175,7 @@ def partner_engagement_health() -> str:
 ```sql
 SELECT Account.Id, Account.Name, Account.BillingCountry, Account.Type,
        Name, Amount, StageName, Stage_Detail__c,
-       Partner__c, Partner__c, Partner_Source_Influence__c
+       Partner__c, Partner__r.Name, Partner_Source_Influence__c
 FROM Opportunity
 WHERE IsClosed = false
   AND Account.BillingCountry IN {COUNTRIES_SQL}
@@ -270,7 +270,7 @@ def at_risk_pipeline() -> str:
 **SOQL Query to execute:**
 ```sql
 SELECT Id, Name, Amount, Probability, StageName, Stage_Detail__c,
-       CloseDate, Owner.Name, Channel_Manager__c, Partner__c, Partner__c,
+       CloseDate, Owner.Name, Channel_Manager__c, Partner__c, Partner__r.Name,
        Account.Name, Account.BillingCountry
 FROM Opportunity
 WHERE IsClosed = false
@@ -330,7 +330,7 @@ def new_vs_existing_business(quarter: str = "") -> str:
 ```sql
 SELECT Id, Name, Amount, StageName, CloseDate, Type,
        Account.Name, Account.BillingCountry,
-       Partner__c, Partner__c, Partner_Source_Influence__c
+       Partner__c, Partner__r.Name, Partner_Source_Influence__c
 FROM Opportunity
 WHERE IsClosed = false
   AND {date_filter}
@@ -435,7 +435,7 @@ def stalled_opportunities(days_stalled: int = 60) -> str:
 ```sql
 SELECT Id, Name, Amount, StageName, Stage_Detail__c, CloseDate,
        Account.Name, Account.BillingCountry, Owner.Name,
-       Channel_Manager__c, Partner__c, Partner__c,
+       Channel_Manager__c, Partner__c, Partner__r.Name,
        LastModifiedDate, LastActivityDate
 FROM Opportunity
 WHERE IsClosed = false
@@ -562,7 +562,7 @@ def forecast_vs_actuals(quarter: str = "Q1") -> str:
 ```sql
 SELECT Id, Name, Amount, Probability, StageName, CloseDate, IsWon, IsClosed,
        Account.Name, Account.BillingCountry,
-       Partner__c, Partner__c, Partner_Source_Influence__c
+       Partner__c, Partner__r.Name, Partner_Source_Influence__c
 FROM Opportunity
 WHERE CloseDate >= {start_date} AND CloseDate <= {end_date}
   AND Account.BillingCountry IN {COUNTRIES_SQL}
@@ -891,7 +891,7 @@ def competitive_analysis(competitor: str = "") -> str:
 SELECT Id, Name, Amount, StageName, IsWon, IsClosed, CloseDate,
        Account.Name, Account.BillingCountry,
        Competitor__c, Loss_Reason__c, Win_Reason__c,
-       Partner__c, Partner__c, Partner_Source_Influence__c
+       Partner__c, Partner__r.Name, Partner_Source_Influence__c
 FROM Opportunity
 WHERE CloseDate >= {FY27_START} AND CloseDate <= {FY27_END}
   AND Account.BillingCountry IN {COUNTRIES_SQL}

@@ -27,3 +27,6 @@ build-backend = "hatchling.build"
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+    "integration: requires a live MCP server (use -m integration to run, -m 'not integration' to skip)",
+]

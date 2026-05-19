@@ -11,11 +11,11 @@ load_dotenv()
 
 # Import Salesforce client
 sys.path.insert(0, '/Users/santiago/Projects/salesforce-fastmcp')
-from server import create_sf_client
+from server import get_client
 
 async def test_queries():
     """Test progressive SOQL queries to isolate the issue."""
-    sf = create_sf_client()
+    sf = get_client()
 
     print("=" * 80)
     print("DIAGNOSTIC: Testing Partner_Registration_Approval__c field")

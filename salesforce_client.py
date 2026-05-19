@@ -1,5 +1,6 @@
 """Salesforce API client using httpx for async HTTP requests."""
 
+import asyncio
 import os
 from datetime import datetime, timedelta
 from typing import Any
@@ -634,13 +635,19 @@ class SalesforceClient:
             ORDER BY LeadSource, Status
         """.strip()
 
-        # Conversion analysis
-        conversion_query = f"""
-            SELECT LeadSource,
-                   COUNT(Id) TotalLeads,
-                   SUM(CASE WHEN IsConverted = true THEN 1 ELSE 0 END) ConvertedLeads
+        # Conversion analysis — two separate COUNT queries (SOQL does not support CASE in aggregates)
+        total_leads_query = f"""
+            SELECT LeadSource, COUNT(Id) TotalLeads
             FROM Lead
             WHERE CreatedDate = {timeframe}{source_filter}
+            GROUP BY LeadSource
+            ORDER BY COUNT(Id) DESC
+        """.strip()
+
+        converted_leads_query = f"""
+            SELECT LeadSource, COUNT(Id) ConvertedLeads
+            FROM Lead
+            WHERE CreatedDate = {timeframe} AND IsConverted = true{source_filter}
             GROUP BY LeadSource
             ORDER BY COUNT(Id) DESC
         """.strip()
@@ -665,25 +672,32 @@ class SalesforceClient:
             LIMIT 20
         """.strip()
 
-        # Execute queries
+        # Execute queries (conversion pair run in parallel)
         volume_response = await client.get(f"/query?q={quote(volume_query)}")
         self._handle_error(volume_response)
 
-        conversion_response = await client.get(f"/query?q={quote(conversion_query)}")
-        self._handle_error(conversion_response)
-
-        quality_response = await client.get(f"/query?q={quote(quality_query)}")
+        total_resp, converted_resp, quality_response, opportunity_response = await asyncio.gather(
+            client.get(f"/query?q={quote(total_leads_query)}"),
+            client.get(f"/query?q={quote(converted_leads_query)}"),
+            client.get(f"/query?q={quote(quality_query)}"),
+            client.get(f"/query?q={quote(opportunity_query)}"),
+        )
+        self._handle_error(total_resp)
+        self._handle_error(converted_resp)
         self._handle_error(quality_response)
-
-        opportunity_response = await client.get(f"/query?q={quote(opportunity_query)}")
         self._handle_error(opportunity_response)
 
+        # Build per-source conversion map
+        converted_map = {
+            r.get("LeadSource"): r.get("ConvertedLeads") or 0
+            for r in converted_resp.json().get("records", [])
+        }
+
         # Calculate funnel metrics
-        conversion_records = conversion_response.json().get("records", [])
         funnel_metrics = []
-        for record in conversion_records:
+        for record in total_resp.json().get("records", []):
             total = record.get("TotalLeads") or 0
-            converted = record.get("ConvertedLeads") or 0
+            converted = converted_map.get(record.get("LeadSource"), 0)
             rate = (converted / total * 100) if total > 0 else 0
 
             funnel_metrics.append({
@@ -702,6 +716,7 @@ class SalesforceClient:
             "qualityAnalysis": quality_response.json().get("records", []),
             "topOpportunities": opportunity_response.json().get("records", []),
         }
+
 
     async def get_opportunities_by_partner(
         self,

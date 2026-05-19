@@ -91,7 +91,7 @@ class ConfigManager:
             if country in countries:
                 country_config = countries[country]
                 target = country_config.get("revenue_target", {}).get(fiscal_year)
-                if target:
+                if target is not None:
                     return target
 
         # Fall back to territory-wide target
@@ -123,12 +123,12 @@ class ConfigManager:
             if country in countries:
                 country_config = countries[country]
                 target = country_config.get("revenue_target", {}).get(fiscal_year)
-                if target:
+                if target is not None:
                     return target
 
         # Fall back to partner-wide target
         target = partner.get("revenue_target", {}).get(fiscal_year)
-        if target:
+        if target is not None:
             return target
 
         # Default

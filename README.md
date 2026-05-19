@@ -2,7 +2,7 @@
 
 FastMCP server providing Salesforce analytics and CRUD tools, purpose-built for Southern Europe channel management (Italy, Spain, Portugal, Greece, Cyprus, Malta).
 
-**Total: 60 tools** across CRUD, navigation, analytics, BI, and specialized channel intelligence. Includes Phase 1 activity/risk/velocity analytics with config-based revenue targets.
+**Total: 54 tools** across CRUD, navigation, analytics, BI, and specialized channel intelligence. Includes Phase 1 activity/risk/velocity analytics with config-based revenue targets.
 
 ## 📖 Quick Start for Channel Directors
 

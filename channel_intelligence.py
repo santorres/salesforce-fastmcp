@@ -1150,7 +1150,7 @@ async def get_partner_scorecard(
         sf.query(f"SELECT SUM(Amount) totalPipeline FROM Opportunity WHERE {base_where} AND IsClosed = false"),
         sf.query(f"SELECT COUNT(Id) dealCount FROM Opportunity WHERE {base_where}"),
         sf.query(f"SELECT AVG(Amount) avgAmount FROM Opportunity WHERE {base_where} AND StageName = 'Closed Won'"),
-        sf.query(f"SELECT DISTINCT Account.BillingCountry country FROM Opportunity WHERE {base_where}"),
+        sf.query(f"SELECT Account.BillingCountry country, COUNT(Id) cnt FROM Opportunity WHERE {base_where} GROUP BY Account.BillingCountry ORDER BY COUNT(Id) DESC LIMIT 10"),
         sf.query(f"SELECT StageName stage, COUNT(Id) stageCount FROM Opportunity WHERE {base_where} AND IsClosed = false GROUP BY StageName"),
         sf.query(f"SELECT CloseDate FROM Opportunity WHERE {base_where} LIMIT 2000"),
     )

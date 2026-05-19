@@ -302,13 +302,13 @@ class TestMultiPeriodTrend:
         )
         data = parse(result)
         assert_no_error(data, "get_multi_period_trend/4q")
-        # Regression for Phase 1-A bug: response must be non-empty
-        assert data, "get_multi_period_trend returned empty response — Phase 1-A regression"
-        # If response is a dict with a series key, verify Total series has values
-        if isinstance(data, dict):
-            series = data.get("series") or data.get("data", {}).get("series", {})
-            if isinstance(series, dict) and "Total" in series:
-                values = [v for v in series["Total"].values() if isinstance(v, (int, float))]
+        # Regression for Phase 1-A bug: Total series must have numeric values
+        # get_multi_period_trend returns {"data": [{"label": "Total", "FY27_Q1": 100, ...}, ...]}
+        series_list = data.get("data", []) if isinstance(data, dict) else data
+        if isinstance(series_list, list):
+            total = next((s for s in series_list if s.get("label") == "Total"), None)
+            if total:
+                values = [v for k, v in total.items() if k != "label" and isinstance(v, (int, float))]
                 assert values, "Total series is empty — Phase 1-A regression"
 
     async def test_country_breakdown(self, mcp_client):

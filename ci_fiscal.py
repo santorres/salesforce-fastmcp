@@ -260,7 +260,7 @@ def _normalize_period(value: str) -> str:
 def _assert_enum(value: str, allowed: list[str], name: str) -> None:
     if value in allowed:
         return
-    if name == "period" and re.match(r"^FY\d{2}_Q[1-4]$", value):
+    if "period" in name.lower() and re.match(r"^FY\d{2}_Q[1-4]$", value):
         return
     raise ValueError(f"Invalid {name}. Allowed: {', '.join(allowed)}")
 

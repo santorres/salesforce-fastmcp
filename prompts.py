@@ -13,8 +13,8 @@ from datetime import date as _date
 # Configuration Constants
 # =============================================================================
 
-COUNTRIES = ["Portugal", "Spain", "Italy", "Greece", "Cyprus"]
-COUNTRIES_SQL = "('Spain','Portugal','Italy','Greece','Cyprus')"
+COUNTRIES = ["Portugal", "Spain", "Italy", "Greece", "Cyprus", "Malta"]
+COUNTRIES_SQL = "('Spain','Portugal','Italy','Greece','Cyprus','Malta')"
 
 # Fiscal year dates — computed dynamically from channel_intelligence config
 # so prompts stay correct when the fiscal year rolls over.

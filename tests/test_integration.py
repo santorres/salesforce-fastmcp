@@ -50,9 +50,24 @@ async def mcp_client():
 # ---------------------------------------------------------------------------
 
 def parse(result) -> dict | list:
-    """Extract and JSON-parse a tool call result (list of MCP content blocks)."""
-    text = result[0].text if isinstance(result, list) else str(result)
+    """Extract and JSON-parse a tool call result from FastMCP client."""
+    if isinstance(result, list):
+        text = result[0].text
+    elif hasattr(result, "content"):
+        # FastMCP 3.x returns CallToolResult with a .content list
+        text = result.content[0].text
+    else:
+        text = str(result)
     return json.loads(text)
+
+
+def raw_text(result) -> str:
+    """Extract raw text from a tool call result without JSON-parsing."""
+    if isinstance(result, list):
+        return result[0].text
+    elif hasattr(result, "content"):
+        return result.content[0].text
+    return str(result)
 
 
 def assert_no_error(data, tool: str = ""):
@@ -631,7 +646,7 @@ class TestExploratoryRouting:
             result = await mcp_client.call_tool(
                 "run_exploratory_analysis", {"intent": intent}
             )
-            text = result[0].text if isinstance(result, list) else str(result)
+            text = raw_text(result)
             assert not text.startswith("Error:"), f"Error returned for intent {intent!r}: {text}"
 
 
@@ -657,7 +672,7 @@ class TestPeriodEdgeCases:
         result = await mcp_client.call_tool(
             "get_revenue", {"period": period, "breakdown": "total"}
         )
-        text = result[0].text if isinstance(result, list) else str(result)
+        text = raw_text(result)
         assert not text.startswith("Error:"), f"Period {period!r} caused error: {text}"
         data = json.loads(text)
         assert isinstance(data, dict)

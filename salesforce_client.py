@@ -206,8 +206,9 @@ class SalesforceClient:
             pass
 
         # Fallback to SOQL if SOSL fails
+        safe_term = search_term.replace("\\", "\\\\").replace("'", "\\'")
         where_clause = " OR ".join(
-            [f"{field} LIKE '%{search_term}%'" for field in search_fields]
+            [f"{field} LIKE '%{safe_term}%'" for field in search_fields]
         )
         soql_query = (
             f"SELECT Id, {fields_to_search} FROM {object_name} "

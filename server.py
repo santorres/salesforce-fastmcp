@@ -246,12 +246,13 @@ async def salesforce_find_partner(
     """
     try:
         client = get_client()
+        safe_term = search_term.replace("\\", "\\\\").replace("'", "\\'")
 
         # Search for partner accounts
         query = f"""
             SELECT Id, Name, BillingCountry, Type, Partner_Status__c
             FROM Account
-            WHERE Name LIKE '%{search_term}%'
+            WHERE Name LIKE '%{safe_term}%'
             ORDER BY Name
             LIMIT 10
         """
@@ -966,7 +967,7 @@ async def get_partner_pipeline(
     try:
         result = await ci.get_partner_pipeline(
             get_client(), partner_name, period, open_opp_limit,
-            channel_manager if channel_manager is not None else "",
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
         )
         return format_result(result)
     except (ValueError, Exception) as e:
@@ -986,7 +987,7 @@ async def search_opportunities(
     try:
         result = await ci.search_opportunities(
             get_client(), query, partner_name, country, period, limit,
-            channel_manager if channel_manager is not None else "",
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
         )
         return format_result(result)
     except (ValueError, Exception) as e:
@@ -1009,7 +1010,7 @@ async def get_opportunity_detail(
     try:
         result = await ci.get_opportunity_detail(
             get_client(), opportunity_id, opportunity_name, partner_name, country, period,
-            channel_manager if channel_manager is not None else "",
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
         )
         return format_result(result)
     except (ValueError, Exception) as e:
@@ -1189,7 +1190,7 @@ async def get_weighted_pipeline(
     try:
         result = await ci.get_weighted_pipeline(
             get_client(), period, breakdown, limit,
-            channel_manager if channel_manager is not None else "",
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
             min_probability,
         )
         return format_result(result)
@@ -1208,7 +1209,7 @@ async def get_channel_manager_performance(
     try:
         result = await ci.get_channel_manager_performance(
             get_client(), period, metric, limit,
-            channel_manager if channel_manager is not None else "",
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
         )
         return format_result(result)
     except (ValueError, Exception) as e:
@@ -1226,7 +1227,7 @@ async def get_multi_period_trend(
     try:
         result = await ci.get_multi_period_trend(
             get_client(), metric, periods, breakdown,
-            channel_manager if channel_manager is not None else "",
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
         )
         return format_result(result)
     except (ValueError, Exception) as e:
@@ -1254,7 +1255,7 @@ async def get_deal_registrations_breakdown(
     try:
         result = await ci.get_deal_registrations_breakdown(
             get_client(), period, breakdown, limit,
-            channel_manager if channel_manager is not None else None,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
         )
         return format_result(result)
     except (ValueError, Exception) as e:
@@ -1297,7 +1298,7 @@ async def get_win_rate_by_country(
     try:
         result = await ci.get_win_rate_by_country(
             get_client(), period,
-            channel_manager if channel_manager is not None else "",
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
         )
         return format_result(result)
     except (ValueError, Exception) as e:

@@ -1,0 +1,4190 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "salesforce-fastmcp",
+    "languages": [
+      "Python",
+      "Markdown",
+      "Shell",
+      "YAML",
+      "JSON",
+      "TOML"
+    ],
+    "frameworks": [
+      "FastMCP",
+      "pytest",
+      "pytest-asyncio"
+    ],
+    "description": "FastMCP server providing Salesforce analytics and CRUD tools, purpose-built for Southern Europe channel management (Italy, Spain, Portugal, Greece, Cyprus, Malta).",
+    "analyzedAt": "2026-05-25T19:55:03.509Z",
+    "gitCommitHash": "b812e1a71c837730f1d9dfa07ec9129352a2359b"
+  },
+  "nodes": [
+    {
+      "id": "file:channel_intelligence.py",
+      "type": "file",
+      "name": "channel_intelligence.py",
+      "filePath": "channel_intelligence.py",
+      "summary": "Core analytics module providing 35+ functions for Salesforce revenue, pipeline, deal registration, and opportunity analysis with support for period normalization, filtering by partner/country/manager, and complex SOQL query building.",
+      "tags": [
+        "analytics-engine",
+        "query-builder",
+        "api-handler",
+        "data-aggregation",
+        "service",
+        "tested"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Extensive use of asyncio for parallel Salesforce queries, SOQL string building with escape utilities, and complex nested dictionary transformations for multi-dimensional breakdowns."
+    },
+    {
+      "id": "file:ci_config.py",
+      "type": "file",
+      "name": "ci_config.py",
+      "filePath": "ci_config.py",
+      "summary": "Configuration management module providing territory and partner target lookups, Southern Europe country definitions, and fiscal calendar configuration for the analytics system.",
+      "tags": [
+        "configuration",
+        "target-management",
+        "constants",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:ci_fiscal.py",
+      "type": "file",
+      "name": "ci_fiscal.py",
+      "filePath": "ci_fiscal.py",
+      "summary": "Fiscal calendar and period normalization module handling quarter/month/year date range calculations, period string parsing, and fiscal quarter lookups for Salesforce reporting.",
+      "tags": [
+        "date-handling",
+        "fiscal-calendar",
+        "period-normalization",
+        "utility"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Period normalization uses regex patterns and date arithmetic to handle various period string formats (e.g., 'Q1', 'FY27_Q2', 'LAST_QUARTER') consistently."
+    },
+    {
+      "id": "file:tests/test_config.py",
+      "type": "file",
+      "name": "test_config.py",
+      "filePath": "tests/test_config.py",
+      "summary": "Unit tests for configuration module covering target lookups, country list validation, and edge cases in the analytics configuration system.",
+      "tags": [
+        "test",
+        "unit-test",
+        "configuration-test"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_fiscal.py",
+      "type": "file",
+      "name": "test_fiscal.py",
+      "filePath": "tests/test_fiscal.py",
+      "summary": "Unit tests for fiscal calendar module validating period normalization, date range calculations, quarter detection, and edge cases in date handling.",
+      "tags": [
+        "test",
+        "unit-test",
+        "fiscal-calendar-test"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_llm_layer.py",
+      "type": "file",
+      "name": "test_llm_layer.py",
+      "filePath": "tests/test_llm_layer.py",
+      "summary": "Integration tests for exploratory analysis and natural language routing features, validating intent detection and command routing within the analytics module.",
+      "tags": [
+        "test",
+        "integration-test",
+        "nlp-test",
+        "command-routing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_soql.py",
+      "type": "file",
+      "name": "test_soql.py",
+      "filePath": "tests/test_soql.py",
+      "summary": "Unit tests for SOQL query building functions validating filter construction, clamping, period range generation, and opportunity WHERE clause assembly.",
+      "tags": [
+        "test",
+        "unit-test",
+        "query-builder-test"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_revenue",
+      "type": "function",
+      "name": "get_revenue",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        32,
+        165
+      ],
+      "summary": "Retrieves closed-won revenue for a fiscal period with optional breakdown by country, partner, or quarter and target attainment calculation.",
+      "tags": [
+        "query",
+        "aggregation",
+        "revenue-metric"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_pipeline",
+      "type": "function",
+      "name": "get_pipeline",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        168,
+        247
+      ],
+      "summary": "Fetches open opportunities pipeline with breakdowns by country, partner, stage, or quarter including weighted probability calculations.",
+      "tags": [
+        "query",
+        "aggregation",
+        "pipeline-metric"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_top_partners",
+      "type": "function",
+      "name": "get_top_partners",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        250,
+        301
+      ],
+      "summary": "Ranks partners by closed-won revenue or open pipeline for a given period with limit and period options.",
+      "tags": [
+        "query",
+        "ranking",
+        "partner-analysis"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_partner_detail",
+      "type": "function",
+      "name": "get_partner_detail",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        304,
+        382
+      ],
+      "summary": "Returns comprehensive partner scorecard including open opportunities, revenue metrics, win rates, and deal details for a specific partner.",
+      "tags": [
+        "query",
+        "partner-profile",
+        "aggregation"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_partner_pipeline",
+      "type": "function",
+      "name": "get_partner_pipeline",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        385,
+        426
+      ],
+      "summary": "Formats partner's open pipeline as markdown table with opportunity names, amounts, stages, and probabilities.",
+      "tags": [
+        "formatting",
+        "reporting",
+        "markdown-generation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:channel_intelligence.py:search_opportunities",
+      "type": "function",
+      "name": "search_opportunities",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        429,
+        482
+      ],
+      "summary": "Searches opportunities by name fragment with filters for partner, country, period, and returns matching records with key fields.",
+      "tags": [
+        "search",
+        "query",
+        "filtering"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_opportunity_detail",
+      "type": "function",
+      "name": "get_opportunity_detail",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        485,
+        572
+      ],
+      "summary": "Retrieves comprehensive opportunity details including account, partner, owner, stage, and probability with optional filtering by ID or name.",
+      "tags": [
+        "query",
+        "detail-retrieval",
+        "filtering"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_deal_registrations",
+      "type": "function",
+      "name": "get_deal_registrations",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        575,
+        650
+      ],
+      "summary": "Analyzes deal registration metrics including approval rates, close rates, and counts by approval status across a period.",
+      "tags": [
+        "query",
+        "metric-calculation",
+        "registration-tracking"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_growth",
+      "type": "function",
+      "name": "get_growth",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        653,
+        702
+      ],
+      "summary": "Calculates growth metrics (absolute and percentage change) between two periods for revenue or pipeline with optional breakdowns.",
+      "tags": [
+        "analytics",
+        "comparison",
+        "growth-metric"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_orphan_hygiene",
+      "type": "function",
+      "name": "get_orphan_hygiene",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        705,
+        739
+      ],
+      "summary": "Identifies opportunities without an assigned partner (orphans) and provides counts by stage and country.",
+      "tags": [
+        "data-quality",
+        "hygiene-check",
+        "filtering"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_kpi_snapshot",
+      "type": "function",
+      "name": "get_kpi_snapshot",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        742,
+        795
+      ],
+      "summary": "Computes comprehensive KPI bundle including revenue, pipeline, win rate, deal metrics, and concentration metrics for a period.",
+      "tags": [
+        "metric-bundle",
+        "kpi-calculation",
+        "analytics"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:route_slash_command",
+      "type": "function",
+      "name": "route_slash_command",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        798,
+        849
+      ],
+      "summary": "Parses slash commands (e.g., /pipeline, /revenue partner) and routes to appropriate analysis functions with parameter extraction.",
+      "tags": [
+        "command-routing",
+        "parsing",
+        "nlp"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:channel_intelligence.py:run_exploratory_analysis",
+      "type": "function",
+      "name": "run_exploratory_analysis",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1004,
+        1076
+      ],
+      "summary": "Interprets free-form natural language queries to detect intent (partner pipeline, opportunity detail) and invokes appropriate analytics functions.",
+      "tags": [
+        "nlp",
+        "intent-detection",
+        "query-routing"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_opportunity_list",
+      "type": "function",
+      "name": "get_opportunity_list",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1079,
+        1125
+      ],
+      "summary": "Paginated listing of open opportunities with filtering by partner, country, stage, amount, and period.",
+      "tags": [
+        "query",
+        "listing",
+        "pagination"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_partner_scorecard",
+      "type": "function",
+      "name": "get_partner_scorecard",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1128,
+        1182
+      ],
+      "summary": "Generates deep-dive partner analysis including revenue, pipeline, deal counts, average deal size, countries, stages, and quarterly trends.",
+      "tags": [
+        "reporting",
+        "partner-analysis",
+        "aggregation"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:generate_partner_qbr",
+      "type": "function",
+      "name": "generate_partner_qbr",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1185,
+        1451
+      ],
+      "summary": "Generates comprehensive partner quarterly business review markdown including performance metrics, pipeline analysis, country breakdown, and top opportunities.",
+      "tags": [
+        "reporting",
+        "qbr-generation",
+        "document-assembly"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:list_available_metrics",
+      "type": "function",
+      "name": "list_available_metrics",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1454,
+        1488
+      ],
+      "summary": "Describes all available metric functions, supported fiscal periods, and breakdown options in a structured metadata format.",
+      "tags": [
+        "metadata",
+        "documentation",
+        "discovery"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:channel_intelligence.py:admin_discover_targets",
+      "type": "function",
+      "name": "admin_discover_targets",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1491,
+        1514
+      ],
+      "summary": "Admin-only function querying Salesforce custom objects to discover quota and target field values with admin key validation.",
+      "tags": [
+        "admin-only",
+        "discovery",
+        "permission-gated"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_weighted_pipeline",
+      "type": "function",
+      "name": "get_weighted_pipeline",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1517,
+        1582
+      ],
+      "summary": "Calculates probability-weighted open pipeline with optional probability floor filtering and breakdown options.",
+      "tags": [
+        "query",
+        "weighted-aggregation",
+        "pipeline-metric"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_channel_manager_performance",
+      "type": "function",
+      "name": "get_channel_manager_performance",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1585,
+        1635
+      ],
+      "summary": "Leaderboard-style ranking of channel managers by revenue, pipeline, deal count, and win rate for a given period.",
+      "tags": [
+        "ranking",
+        "performance-analysis",
+        "leaderboard"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_multi_period_trend",
+      "type": "function",
+      "name": "get_multi_period_trend",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1638,
+        1686
+      ],
+      "summary": "Multi-period time series analysis comparing revenue or pipeline across up to 8 fiscal periods with optional breakdowns.",
+      "tags": [
+        "trend-analysis",
+        "time-series",
+        "comparison"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_deal_registrations_breakdown",
+      "type": "function",
+      "name": "get_deal_registrations_breakdown",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1689,
+        1793
+      ],
+      "summary": "Detailed deal registration analysis with breakdowns by partner, country, and status including approval and close rates.",
+      "tags": [
+        "registration-analysis",
+        "breakdown",
+        "metric-calculation"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_deal_registrations_trend",
+      "type": "function",
+      "name": "get_deal_registrations_trend",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1796,
+        1836
+      ],
+      "summary": "Time-series registration metrics across multiple quarters showing approval and close rate evolution.",
+      "tags": [
+        "trend-analysis",
+        "time-series",
+        "registration-tracking"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_win_rate_by_country",
+      "type": "function",
+      "name": "get_win_rate_by_country",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1839,
+        1880
+      ],
+      "summary": "Win rate analysis by country showing won deals, total deals, revenue, and average deal size for each region.",
+      "tags": [
+        "analysis",
+        "geo-breakdown",
+        "win-rate"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_time_to_close_stats",
+      "type": "function",
+      "name": "get_time_to_close_stats",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1883,
+        1942
+      ],
+      "summary": "Sales velocity statistics (avg, median, min, max days to close) for closed-won deals with optional breakdowns by country, partner, or stage.",
+      "tags": [
+        "velocity-analysis",
+        "sales-metrics",
+        "time-tracking"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_stalled_deals",
+      "type": "function",
+      "name": "get_stalled_deals",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        1949,
+        2018
+      ],
+      "summary": "Identifies opportunities not modified for N days (stalled) with breakdowns by stage and country for bottleneck detection.",
+      "tags": [
+        "bottleneck-detection",
+        "aging-analysis",
+        "health-check"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_partner_activity_summary",
+      "type": "function",
+      "name": "get_partner_activity_summary",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        2021,
+        2086
+      ],
+      "summary": "Partner engagement summary showing open pipeline, deal count, and last activity date to identify active vs. inactive partners.",
+      "tags": [
+        "engagement-analysis",
+        "activity-tracking",
+        "partner-health"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_opportunity_recency",
+      "type": "function",
+      "name": "get_opportunity_recency",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        2089,
+        2148
+      ],
+      "summary": "Retrieves opportunity modification history including creation date, last modified date, and days since last activity.",
+      "tags": [
+        "metadata",
+        "activity-tracking",
+        "query"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_lost_deals",
+      "type": "function",
+      "name": "get_lost_deals",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        2151,
+        2230
+      ],
+      "summary": "Lost deal analysis showing count, amount, and loss rate with optional grouping by stage, partner, or country.",
+      "tags": [
+        "loss-analysis",
+        "pipeline-health",
+        "grouping"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_new_vs_existing",
+      "type": "function",
+      "name": "get_new_vs_existing",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        2233,
+        2335
+      ],
+      "summary": "New business vs. renewal/expansion breakdown for revenue and pipeline with optional partner/country splits.",
+      "tags": [
+        "business-type-analysis",
+        "breakdown",
+        "segmentation"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_stage_risk_profile",
+      "type": "function",
+      "name": "get_stage_risk_profile",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        2338,
+        2404
+      ],
+      "summary": "Sales stage probability distribution and confidence analysis identifying high-risk stages with low win probability.",
+      "tags": [
+        "risk-analysis",
+        "stage-analysis",
+        "forecast-confidence"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_deal_aging_by_stage",
+      "type": "function",
+      "name": "get_deal_aging_by_stage",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        2407,
+        2479
+      ],
+      "summary": "Identifies deals aged beyond threshold in each stage to detect bottlenecks and stuck opportunities.",
+      "tags": [
+        "bottleneck-detection",
+        "aging-analysis",
+        "stage-breakdown"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_high_risk_deals",
+      "type": "function",
+      "name": "get_high_risk_deals",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        2482,
+        2542
+      ],
+      "summary": "Alerts on low-probability deals closing within 30 days for early intervention and risk management.",
+      "tags": [
+        "risk-detection",
+        "alert",
+        "early-warning"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:channel_intelligence.py:get_stage_progression_velocity",
+      "type": "function",
+      "name": "get_stage_progression_velocity",
+      "filePath": "channel_intelligence.py",
+      "lineRange": [
+        2545,
+        2641
+      ],
+      "summary": "Historical stage velocity analysis with average days per stage and current deal aging vs. historical norms.",
+      "tags": [
+        "velocity-analysis",
+        "forecasting",
+        "benchmarking"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:cli/channel_cli.py",
+      "type": "file",
+      "name": "channel_cli.py",
+      "filePath": "cli/channel_cli.py",
+      "summary": "Click-based CLI providing channel directors with direct access to Salesforce analytics through formatted commands for KPI, revenue, pipeline, partner, QBR, risk, and deal registration queries.",
+      "tags": [
+        "cli-interface",
+        "analytics-frontend",
+        "formatter-functions",
+        "entry-point"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:get_sf",
+      "type": "function",
+      "name": "get_sf",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        40,
+        42
+      ],
+      "summary": "Lazy instantiation of the SalesforceClient for use across CLI commands.",
+      "tags": [
+        "factory",
+        "client-initialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:cli/channel_cli.py:format_json",
+      "type": "function",
+      "name": "format_json",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        45,
+        47
+      ],
+      "summary": "Formats data as indented JSON for display or piping to downstream tools like jq.",
+      "tags": [
+        "formatting",
+        "output"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:cli/channel_cli.py:format_kpi",
+      "type": "function",
+      "name": "format_kpi",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        50,
+        81
+      ],
+      "summary": "Pretty-formats KPI snapshot data into human-readable text with revenue, pipeline, coverage, win rate, and active partner counts.",
+      "tags": [
+        "formatting",
+        "output",
+        "analytics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:format_revenue",
+      "type": "function",
+      "name": "format_revenue",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        84,
+        116
+      ],
+      "summary": "Formats closed-won revenue data with optional breakdown by partner, country, quarter, or stage, including attainment percentages.",
+      "tags": [
+        "formatting",
+        "output",
+        "revenue"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:format_pipeline",
+      "type": "function",
+      "name": "format_pipeline",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        119,
+        146
+      ],
+      "summary": "Formats open pipeline data displaying total, breakdown by stage, and detailed stage progression.",
+      "tags": [
+        "formatting",
+        "output",
+        "pipeline"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:format_partner",
+      "type": "function",
+      "name": "format_partner",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        149,
+        191
+      ],
+      "summary": "Formats detailed partner scorecard including revenue, pipeline, win rate, and stage breakdown.",
+      "tags": [
+        "formatting",
+        "output",
+        "partner-analytics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:format_qbr",
+      "type": "function",
+      "name": "format_qbr",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        194,
+        196
+      ],
+      "summary": "Formats quarterly business review markdown data for partner presentations.",
+      "tags": [
+        "formatting",
+        "output",
+        "qbr"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:cli/channel_cli.py:format_risk",
+      "type": "function",
+      "name": "format_risk",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        199,
+        227
+      ],
+      "summary": "Formats high-risk deals identified by low probability combined with near-term close dates.",
+      "tags": [
+        "formatting",
+        "output",
+        "risk-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:format_registrations",
+      "type": "function",
+      "name": "format_registrations",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        230,
+        253
+      ],
+      "summary": "Formats partner deal registration metrics including submission, approval, and close rates.",
+      "tags": [
+        "formatting",
+        "output",
+        "deal-registration"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:format_top_partners",
+      "type": "function",
+      "name": "format_top_partners",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        256,
+        280
+      ],
+      "summary": "Formats ranked partner leaderboard sorted by revenue or pipeline metric.",
+      "tags": [
+        "formatting",
+        "output",
+        "partner-ranking"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:handle_error",
+      "type": "function",
+      "name": "handle_error",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        283,
+        286
+      ],
+      "summary": "Prints error messages and exits with non-zero status code.",
+      "tags": [
+        "error-handling",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:cli/channel_cli.py:kpi",
+      "type": "function",
+      "name": "kpi",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        299,
+        312
+      ],
+      "summary": "CLI command exposing KPI snapshot analytics with period and channel manager filters.",
+      "tags": [
+        "cli-command",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:revenue",
+      "type": "function",
+      "name": "revenue",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        320,
+        334
+      ],
+      "summary": "CLI command exposing closed-won revenue analytics with period, breakdown, and channel manager filters.",
+      "tags": [
+        "cli-command",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:pipeline",
+      "type": "function",
+      "name": "pipeline",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        342,
+        356
+      ],
+      "summary": "CLI command exposing open pipeline analytics with period and breakdown filters.",
+      "tags": [
+        "cli-command",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:partner",
+      "type": "function",
+      "name": "partner",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        363,
+        376
+      ],
+      "summary": "CLI command exposing partner scorecard with period filter.",
+      "tags": [
+        "cli-command",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:qbr",
+      "type": "function",
+      "name": "qbr",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        385,
+        400
+      ],
+      "summary": "CLI command generating quarterly business review reports for a partner with revenue targets and comparison periods.",
+      "tags": [
+        "cli-command",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:risk",
+      "type": "function",
+      "name": "risk",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        408,
+        422
+      ],
+      "summary": "CLI command identifying high-risk deals with configurable probability threshold and period filter.",
+      "tags": [
+        "cli-command",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:registrations",
+      "type": "function",
+      "name": "registrations",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        429,
+        441
+      ],
+      "summary": "CLI command exposing deal registration trend analysis across quarters.",
+      "tags": [
+        "cli-command",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:top_partners",
+      "type": "function",
+      "name": "top_partners",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        449,
+        463
+      ],
+      "summary": "CLI command exposing partner leaderboard ranked by revenue or pipeline with configurable limits.",
+      "tags": [
+        "cli-command",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:search",
+      "type": "function",
+      "name": "search",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        474,
+        499
+      ],
+      "summary": "CLI command searching opportunities by name, period, stage, partner, country, and amount filters.",
+      "tags": [
+        "cli-command",
+        "api-handler",
+        "search"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:list_opps",
+      "type": "function",
+      "name": "list_opps",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        511,
+        529
+      ],
+      "summary": "CLI command listing open opportunities with filters for partner, country, stage, and minimum amount.",
+      "tags": [
+        "cli-command",
+        "api-handler"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:format_opportunity_list",
+      "type": "function",
+      "name": "format_opportunity_list",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        532,
+        561
+      ],
+      "summary": "Formats opportunity list showing count, status summary, and detailed table with name, stage, amount, and probability.",
+      "tags": [
+        "formatting",
+        "output"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cli/channel_cli.py:_normalize_period",
+      "type": "function",
+      "name": "_normalize_period",
+      "filePath": "cli/channel_cli.py",
+      "lineRange": [
+        564,
+        566
+      ],
+      "summary": "Wraps channel_intelligence period normalization for CLI-specific period handling.",
+      "tags": [
+        "utility",
+        "normalization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:salesforce_client.py",
+      "type": "file",
+      "name": "salesforce_client.py",
+      "filePath": "salesforce_client.py",
+      "summary": "Async Salesforce REST API client wrapping httpx with comprehensive CRUD, query, search, analytics, and reporting methods for Southern Europe channel operations.",
+      "tags": [
+        "api-client",
+        "salesforce",
+        "async-http"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Heavy use of async/await with httpx for concurrent API requests. Multiple analysis methods (pipeline, trend, case insights, lead funnel) construct dynamic SOQL queries with time-based filtering."
+    },
+    {
+      "id": "class:salesforce_client.py:SalesforceError",
+      "type": "class",
+      "name": "SalesforceError",
+      "filePath": "salesforce_client.py",
+      "lineRange": [
+        12,
+        14
+      ],
+      "summary": "Custom exception for Salesforce API errors.",
+      "tags": [
+        "error-handling",
+        "exception"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:salesforce_client.py:SalesforceClient",
+      "type": "class",
+      "name": "SalesforceClient",
+      "filePath": "salesforce_client.py",
+      "lineRange": [
+        17,
+        795
+      ],
+      "summary": "Async HTTP client managing authenticated connections to Salesforce REST API with 22 methods covering CRUD, queries, reporting, and multi-dimensional analytics for Southern Europe channel management.",
+      "tags": [
+        "api-client",
+        "async",
+        "salesforce",
+        "analytics"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:server.py",
+      "type": "file",
+      "name": "server.py",
+      "filePath": "server.py",
+      "summary": "FastMCP server exposing 73 Salesforce analytics and CRUD tools via MCP protocol, integrating channel_intelligence queries with Salesforce client and response formatting for LLM consumption.",
+      "tags": [
+        "mcp-server",
+        "api-gateway",
+        "entry-point",
+        "analytics-platform"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Extensive use of FastMCP decorators (@mcp.tool) to expose functions as tools. Heavy integration with channel_intelligence module for analytics. Request logging with rotation handles high-volume usage."
+    },
+    {
+      "id": "function:server.py:_setup_logger",
+      "type": "function",
+      "name": "_setup_logger",
+      "filePath": "server.py",
+      "lineRange": [
+        39,
+        48
+      ],
+      "summary": "Configures rotating file and stream logging for MCP request tracking.",
+      "tags": [
+        "logging",
+        "infrastructure"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.py:get_client",
+      "type": "function",
+      "name": "get_client",
+      "filePath": "server.py",
+      "lineRange": [
+        59,
+        64
+      ],
+      "summary": "Singleton factory for lazy SalesforceClient instantiation.",
+      "tags": [
+        "factory",
+        "singleton"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.py:format_result",
+      "type": "function",
+      "name": "format_result",
+      "filePath": "server.py",
+      "lineRange": [
+        67,
+        71
+      ],
+      "summary": "Serializes results to JSON and logs truncation warnings when data exceeds limits.",
+      "tags": [
+        "formatting",
+        "logging"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.py:_coerce_period",
+      "type": "function",
+      "name": "_coerce_period",
+      "filePath": "server.py",
+      "lineRange": [
+        74,
+        83
+      ],
+      "summary": "Normalizes LLM-style period abbreviations (Q1, thisQ) to canonical form (THIS_QUARTER) before passing to analytics functions.",
+      "tags": [
+        "utility",
+        "normalization",
+        "llm-interface"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:test_dr_field.py",
+      "type": "file",
+      "name": "test_dr_field.py",
+      "filePath": "test_dr_field.py",
+      "summary": "Diagnostic script testing Partner_Registration_Approval__c field queries with progressive SOQL complexity to isolate query issues and validate deal registration field support.",
+      "tags": [
+        "test",
+        "diagnostic",
+        "debugging"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:test_dr_field.py:test_queries",
+      "type": "function",
+      "name": "test_queries",
+      "filePath": "test_dr_field.py",
+      "lineRange": [
+        16,
+        75
+      ],
+      "summary": "Executes 8 progressive SOQL test queries ranging from simple field selection to complex GROUP BY and date-range filtering to validate Partner_Registration_Approval__c field functionality.",
+      "tags": [
+        "test",
+        "diagnostic",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:.env.example",
+      "type": "config",
+      "name": ".env.example",
+      "filePath": ".env.example",
+      "summary": "Environment variable template for Salesforce API authentication, defining credentials required to connect the FastMCP server to a Salesforce instance.",
+      "tags": [
+        "configuration",
+        "secrets",
+        "authentication",
+        "salesforce"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:pyproject.toml",
+      "type": "config",
+      "name": "pyproject.toml",
+      "filePath": "pyproject.toml",
+      "summary": "Python project configuration defining package metadata, dependencies, script entry points (CLI command), and pytest settings.",
+      "tags": [
+        "configuration",
+        "build-system",
+        "python",
+        "packaging"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "Main project documentation covering quick start for channel directors, 54-tool overview across CRUD/analytics/intelligence, setup instructions, and test guides for both MCP and CLI interfaces.",
+      "tags": [
+        "documentation",
+        "entry-point",
+        "overview",
+        "api-reference"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:CHANNEL_DIRECTOR_PLAYBOOK.md",
+      "type": "document",
+      "name": "CHANNEL_DIRECTOR_PLAYBOOK.md",
+      "filePath": "CHANNEL_DIRECTOR_PLAYBOOK.md",
+      "summary": "Comprehensive reference guide for all 54 MCP tools organized by business workflows (daily standup, weekly ops, monthly/quarterly reviews, partner management, pipeline, risk tracking), with prompts and real-world usage examples.",
+      "tags": [
+        "documentation",
+        "user-guide",
+        "reference",
+        "business-workflows"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:CHANNEL_DIRECTOR_PROMPTS.md",
+      "type": "document",
+      "name": "CHANNEL_DIRECTOR_PROMPTS.md",
+      "filePath": "CHANNEL_DIRECTOR_PROMPTS.md",
+      "summary": "Copy-paste ready prompt examples for channel directors covering revenue, pipeline, partner analysis, deal registrations, risk identification, and KPI tracking with real tested queries.",
+      "tags": [
+        "documentation",
+        "prompts",
+        "user-guide",
+        "reference"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:CLI_PLAYBOOK.md",
+      "type": "document",
+      "name": "CLI_PLAYBOOK.md",
+      "filePath": "CLI_PLAYBOOK.md",
+      "summary": "Complete guide for command-line interface usage covering 10 CLI commands, real-world automation workflows, Hermes integration for scheduled reports, and advanced jq piping for custom analysis and reporting.",
+      "tags": [
+        "documentation",
+        "user-guide",
+        "cli",
+        "automation"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:CLI_USAGE.md",
+      "type": "document",
+      "name": "CLI_USAGE.md",
+      "filePath": "CLI_USAGE.md",
+      "summary": "Quick reference for CLI installation, command syntax, fiscal period definitions, output formats (JSON/pretty-print), real-world use cases from daily standup to cron-based automation, and troubleshooting tips.",
+      "tags": [
+        "documentation",
+        "user-guide",
+        "cli",
+        "reference"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:CHANNEL_DIRECTOR_CAPABILITY_MAP.md",
+      "type": "document",
+      "name": "CHANNEL_DIRECTOR_CAPABILITY_MAP.md",
+      "filePath": "CHANNEL_DIRECTOR_CAPABILITY_MAP.md",
+      "summary": "Capability assessment mapping channel director business questions to MCP tool coverage, identifying critical data gaps and proposing a four-phase implementation roadmap to achieve hallucination-proof analytics.",
+      "tags": [
+        "documentation",
+        "architecture",
+        "requirements",
+        "analysis"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:PHASE_1_IMPLEMENTATION.md",
+      "type": "document",
+      "name": "PHASE_1_IMPLEMENTATION.md",
+      "filePath": "PHASE_1_IMPLEMENTATION.md",
+      "summary": "Implementation documentation detailing Phase 1 completion: external config system for targets, enhanced revenue tool with attainment calculations, and nine new analytics tools for activity tracking, lost deals, and risk scoring without Salesforce custom fields.",
+      "tags": [
+        "documentation",
+        "implementation",
+        "architecture",
+        "release-notes"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:SCALING_PRIORITIZATION.md",
+      "type": "document",
+      "name": "SCALING_PRIORITIZATION.md",
+      "filePath": "SCALING_PRIORITIZATION.md",
+      "summary": "Gap analysis and solution design covering quota/target management, activity/engagement tracking, competitive intelligence, and stage velocity/risk scoring, with phased roadmap (Phase 1-4) addressing available data versus Salesforce custom field requirements.",
+      "tags": [
+        "documentation",
+        "architecture",
+        "roadmap",
+        "requirements"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:SF_CLI_QUERIES.md",
+      "type": "document",
+      "name": "SF_CLI_QUERIES.md",
+      "filePath": "SF_CLI_QUERIES.md",
+      "summary": "Reference guide mapping business questions to equivalent MCP prompts, covering revenue, pipeline, partners, hygiene/risk, and KPI trends with concrete examples and SOQL query patterns.",
+      "tags": [
+        "documentation",
+        "reference",
+        "queries",
+        "examples"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:requirements.txt",
+      "type": "document",
+      "name": "requirements.txt",
+      "filePath": "requirements.txt",
+      "summary": "Python package dependencies listing core and optional dependencies required to run the FastMCP server and CLI tools.",
+      "tags": [
+        "documentation",
+        "dependencies",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:test_soql_dr.sh",
+      "type": "file",
+      "name": "test_soql_dr.sh",
+      "filePath": "test_soql_dr.sh",
+      "summary": "Shell script for testing Salesforce CLI SOQL queries related to deal registrations, validating count, grouping, and filtering logic across different date ranges and geographic scopes.",
+      "tags": [
+        "test",
+        "script",
+        "validation",
+        "salesforce-cli"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:wrapper.sh",
+      "type": "file",
+      "name": "wrapper.sh",
+      "filePath": "wrapper.sh",
+      "summary": "Utility shell script that proxies MCP stdio traffic to a remote FastMCP server over Tailscale, enabling Claude Desktop to connect to a server running on another laptop.",
+      "tags": [
+        "utility",
+        "script",
+        "infrastructure",
+        "proxy"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:cli/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "cli/__init__.py",
+      "summary": "Empty package marker for the CLI module directory.",
+      "tags": [
+        "entry-point",
+        "package-marker"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:config/sales_targets.yaml",
+      "type": "config",
+      "name": "sales_targets.yaml",
+      "filePath": "config/sales_targets.yaml",
+      "summary": "Fiscal calendar and multi-level revenue targets for Southern Europe territories, countries, and partners, governing attainment calculations and forecasting.",
+      "tags": [
+        "configuration",
+        "sales-targets",
+        "financial"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:prompts.py",
+      "type": "file",
+      "name": "prompts.py",
+      "filePath": "prompts.py",
+      "summary": "Reusable analysis prompts and templates for channel directors covering partner engagement, pipeline health, and regional business intelligence with 18 analytic functions.",
+      "tags": [
+        "entry-point",
+        "business-intelligence",
+        "api-handler"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Prompts module dynamically computes fiscal dates and quarter ranges from channel_intelligence configuration, ensuring alignment with current financial calendar."
+    },
+    {
+      "id": "function:prompts.py:_quarter_range",
+      "type": "function",
+      "name": "_quarter_range",
+      "filePath": "prompts.py",
+      "lineRange": [
+        31,
+        47
+      ],
+      "summary": "Calculates ISO date string boundaries for a fiscal quarter label (Q1-Q4) relative to the current fiscal year start.",
+      "tags": [
+        "utility",
+        "date-calculation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:prompts.py:get_quarter_dates",
+      "type": "function",
+      "name": "get_quarter_dates",
+      "filePath": "prompts.py",
+      "lineRange": [
+        77,
+        79
+      ],
+      "summary": "Returns cached quarter date boundaries from the QUARTERS lookup table by label.",
+      "tags": [
+        "utility",
+        "date-lookup"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:prompts.py:build_region_filter",
+      "type": "function",
+      "name": "build_region_filter",
+      "filePath": "prompts.py",
+      "lineRange": [
+        82,
+        84
+      ],
+      "summary": "Constructs a SQL WHERE clause for filtering Salesforce opportunities by Southern Europe region.",
+      "tags": [
+        "utility",
+        "sql-builder"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:prompts.py:format_analysis_section",
+      "type": "function",
+      "name": "format_analysis_section",
+      "filePath": "prompts.py",
+      "lineRange": [
+        87,
+        89
+      ],
+      "summary": "Joins analysis items into a newline-delimited section for markdown reports.",
+      "tags": [
+        "utility",
+        "formatting"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:prompts.py:quarterly_pipeline_analysis",
+      "type": "function",
+      "name": "quarterly_pipeline_analysis",
+      "filePath": "prompts.py",
+      "lineRange": [
+        97,
+        130
+      ],
+      "summary": "Generates a formatted analysis of pipeline by stage for a specific quarter, including totals and stage breakdowns.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "pipeline"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:prompts.py:closed_won_partner_analysis",
+      "type": "function",
+      "name": "closed_won_partner_analysis",
+      "filePath": "prompts.py",
+      "lineRange": [
+        138,
+        178
+      ],
+      "summary": "Analyzes closed-won revenue by partner for a quarter and optionally full year, identifying top revenue drivers.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "revenue"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:prompts.py:partner_engagement_health",
+      "type": "function",
+      "name": "partner_engagement_health",
+      "filePath": "prompts.py",
+      "lineRange": [
+        186,
+        225
+      ],
+      "summary": "Scores partner engagement based on activity frequency and stalled deal counts, categorizing partners into tiers.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "partner-scoring"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:prompts.py:partner_sourced_pipeline",
+      "type": "function",
+      "name": "partner_sourced_pipeline",
+      "filePath": "prompts.py",
+      "lineRange": [
+        233,
+        274
+      ],
+      "summary": "Lists top partner-sourced deals with optional limit, highlighting opportunities where partners are the primary source.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "pipeline"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:prompts.py:at_risk_pipeline",
+      "type": "function",
+      "name": "at_risk_pipeline",
+      "filePath": "prompts.py",
+      "lineRange": [
+        282,
+        326
+      ],
+      "summary": "Identifies and analyzes opportunities at risk of closure with low probability and imminent close dates.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "risk-assessment"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:prompts.py:new_vs_existing_business",
+      "type": "function",
+      "name": "new_vs_existing_business",
+      "filePath": "prompts.py",
+      "lineRange": [
+        334,
+        384
+      ],
+      "summary": "Compares revenue and pipeline split between new business acquisitions and renewal/expansion revenue.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "business-mix"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:prompts.py:lead_conversion_analysis",
+      "type": "function",
+      "name": "lead_conversion_analysis",
+      "filePath": "prompts.py",
+      "lineRange": [
+        392,
+        439
+      ],
+      "summary": "Analyzes lead-to-opportunity conversion rates and pipeline generated from leads with source attribution.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "conversion"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:prompts.py:stalled_opportunities",
+      "type": "function",
+      "name": "stalled_opportunities",
+      "filePath": "prompts.py",
+      "lineRange": [
+        447,
+        494
+      ],
+      "summary": "Reports deals inactive beyond a threshold days, grouped by stage and partner, indicating bottlenecks.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "bottleneck-detection"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:prompts.py:country_pipeline_dashboard",
+      "type": "function",
+      "name": "country_pipeline_dashboard",
+      "filePath": "prompts.py",
+      "lineRange": [
+        502,
+        564
+      ],
+      "summary": "Generates country-by-country pipeline summary with stage distribution and top 3 opportunities per country.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "regional-dashboard"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:prompts.py:forecast_vs_actuals",
+      "type": "function",
+      "name": "forecast_vs_actuals",
+      "filePath": "prompts.py",
+      "lineRange": [
+        572,
+        624
+      ],
+      "summary": "Compares forecast pipeline to actual closed-won revenue for a quarter, identifying forecast accuracy metrics.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "forecast"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:prompts.py:partner_scorecard",
+      "type": "function",
+      "name": "partner_scorecard",
+      "filePath": "prompts.py",
+      "lineRange": [
+        632,
+        719
+      ],
+      "summary": "Comprehensive partner performance scorecard including revenue, pipeline, win rate, deal count, and open opportunity details.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "partner-scorecard"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:prompts.py:weekly_briefing",
+      "type": "function",
+      "name": "weekly_briefing",
+      "filePath": "prompts.py",
+      "lineRange": [
+        727,
+        798
+      ],
+      "summary": "Consolidated weekly executive briefing covering revenue attainment, pipeline health, at-risk deals, and top partners.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "executive-reporting"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:prompts.py:partner_qbr_prep",
+      "type": "function",
+      "name": "partner_qbr_prep",
+      "filePath": "prompts.py",
+      "lineRange": [
+        806,
+        891
+      ],
+      "summary": "Quarterly business review preparation template gathering partner revenue, pipeline, growth metrics, and win rates.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "partner-qbr"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:prompts.py:competitive_analysis",
+      "type": "function",
+      "name": "competitive_analysis",
+      "filePath": "prompts.py",
+      "lineRange": [
+        899,
+        953
+      ],
+      "summary": "Analyzes competitive positioning by examining lost deals attributed to a specific competitor.",
+      "tags": [
+        "business-intelligence",
+        "analysis",
+        "competitive-intel"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:proxy.py",
+      "type": "file",
+      "name": "proxy.py",
+      "filePath": "proxy.py",
+      "summary": "MCP stdio-to-HTTP proxy bridging Claude Desktop to a remote FastMCP server via streamable HTTP protocol.",
+      "tags": [
+        "infrastructure",
+        "api-handler",
+        "networking"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:research/opportunity_fields.txt",
+      "type": "document",
+      "name": "opportunity_fields.txt",
+      "filePath": "research/opportunity_fields.txt",
+      "summary": "Comprehensive reference documentation of Salesforce Opportunity object field names, types, and descriptions for query building.",
+      "tags": [
+        "documentation",
+        "api-reference",
+        "salesforce"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:research/opportunity_full_schema.json",
+      "type": "config",
+      "name": "opportunity_full_schema.json",
+      "filePath": "research/opportunity_full_schema.json",
+      "summary": "Complete Salesforce Opportunity object schema dump with all field metadata, picklist values, and relationships for reference.",
+      "tags": [
+        "configuration",
+        "api-schema",
+        "salesforce"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:tests/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "tests/__init__.py",
+      "summary": "Empty package marker for the test suite directory.",
+      "tags": [
+        "test",
+        "package-marker"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/conftest.py",
+      "type": "file",
+      "name": "conftest.py",
+      "filePath": "tests/conftest.py",
+      "summary": "Pytest configuration and fixtures providing MockSF Salesforce client simulator and response builders for unit tests.",
+      "tags": [
+        "test",
+        "mock",
+        "test-fixture",
+        "tested"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/conftest.py:MockSF",
+      "type": "class",
+      "name": "MockSF",
+      "filePath": "tests/conftest.py",
+      "lineRange": [
+        6,
+        28
+      ],
+      "summary": "Mock Salesforce client for testing that captures queries and returns handler-mapped responses without real API calls.",
+      "tags": [
+        "test-fixture",
+        "mock"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/conftest.py:soql_response",
+      "type": "function",
+      "name": "soql_response",
+      "filePath": "tests/conftest.py",
+      "lineRange": [
+        31,
+        33
+      ],
+      "summary": "Constructs a standard SOQL query response with records array and done flag.",
+      "tags": [
+        "test-fixture",
+        "response-builder"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/conftest.py:agg_response",
+      "type": "function",
+      "name": "agg_response",
+      "filePath": "tests/conftest.py",
+      "lineRange": [
+        36,
+        38
+      ],
+      "summary": "Wraps an aggregation row into a standard SOQL response format.",
+      "tags": [
+        "test-fixture",
+        "response-builder"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_analytics.py",
+      "type": "file",
+      "name": "test_analytics.py",
+      "filePath": "tests/test_analytics.py",
+      "summary": "Unit tests for channel intelligence analytics functions covering revenue, pipeline, KPI calculations, and partner metrics with 8 test classes.",
+      "tags": [
+        "test",
+        "unit-test",
+        "analytics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_analytics.py:_period_start",
+      "type": "function",
+      "name": "_period_start",
+      "filePath": "tests/test_analytics.py",
+      "lineRange": [
+        9,
+        11
+      ],
+      "summary": "Test helper extracting the start date of a fiscal period as ISO string.",
+      "tags": [
+        "test-helper",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_analytics.py:_period_end",
+      "type": "function",
+      "name": "_period_end",
+      "filePath": "tests/test_analytics.py",
+      "lineRange": [
+        14,
+        15
+      ],
+      "summary": "Test helper extracting the end date of a fiscal period as ISO string.",
+      "tags": [
+        "test-helper",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_analytics.py:TestGetRevenue",
+      "type": "class",
+      "name": "TestGetRevenue",
+      "filePath": "tests/test_analytics.py",
+      "lineRange": [
+        18,
+        54
+      ],
+      "summary": "Unit tests for revenue calculation including sums, attainment percentages, zero handling, and period summaries.",
+      "tags": [
+        "test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_analytics.py:TestGetPipeline",
+      "type": "class",
+      "name": "TestGetPipeline",
+      "filePath": "tests/test_analytics.py",
+      "lineRange": [
+        57,
+        70
+      ],
+      "summary": "Unit tests for pipeline totals and open deal counting.",
+      "tags": [
+        "test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_analytics.py:TestGetGrowth",
+      "type": "class",
+      "name": "TestGetGrowth",
+      "filePath": "tests/test_analytics.py",
+      "lineRange": [
+        73,
+        110
+      ],
+      "summary": "Unit tests for YoY and QoQ growth calculations with zero-base edge cases.",
+      "tags": [
+        "test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_analytics.py:TestGetKpiSnapshot",
+      "type": "class",
+      "name": "TestGetKpiSnapshot",
+      "filePath": "tests/test_analytics.py",
+      "lineRange": [
+        113,
+        166
+      ],
+      "summary": "Unit tests for KPI snapshot aggregation including win rate, orphan percentage, partner counts, and coverage ratio.",
+      "tags": [
+        "test",
+        "analytics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_analytics.py:TestGetMultiPeriodTrend",
+      "type": "class",
+      "name": "TestGetMultiPeriodTrend",
+      "filePath": "tests/test_analytics.py",
+      "lineRange": [
+        169,
+        226
+      ],
+      "summary": "Unit tests for multi-period trend analysis with total and country breakdowns across quarters.",
+      "tags": [
+        "test",
+        "analytics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_analytics.py:TestGetOrphanHygiene",
+      "type": "class",
+      "name": "TestGetOrphanHygiene",
+      "filePath": "tests/test_analytics.py",
+      "lineRange": [
+        229,
+        253
+      ],
+      "summary": "Unit tests validating structure of orphan opportunity reports.",
+      "tags": [
+        "test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_analytics.py:TestGetPartnerDetail",
+      "type": "class",
+      "name": "TestGetPartnerDetail",
+      "filePath": "tests/test_analytics.py",
+      "lineRange": [
+        256,
+        301
+      ],
+      "summary": "Unit tests for partner detail retrieval including account resolution and fallback naming.",
+      "tags": [
+        "test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_analytics.py:TestGetTopPartners",
+      "type": "class",
+      "name": "TestGetTopPartners",
+      "filePath": "tests/test_analytics.py",
+      "lineRange": [
+        304,
+        330
+      ],
+      "summary": "Unit tests for top partners ranking with diagnostics for empty data.",
+      "tags": [
+        "test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_integration.py",
+      "type": "file",
+      "name": "test_integration.py",
+      "filePath": "tests/test_integration.py",
+      "summary": "Integration tests exercising the live MCP server with real tool invocations covering revenue, pipeline, KPI, growth, and exploratory routing.",
+      "tags": [
+        "test",
+        "integration-test",
+        "mcp-server"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:tests/test_integration.py:mcp_client",
+      "type": "function",
+      "name": "mcp_client",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        39,
+        45
+      ],
+      "summary": "Pytest fixture providing an MCP client connection to the running FastMCP server.",
+      "tags": [
+        "test-fixture",
+        "mcp"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_integration.py:parse",
+      "type": "function",
+      "name": "parse",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        52,
+        57
+      ],
+      "summary": "Parses tool result from raw text, extracting JSON when wrapped in code blocks.",
+      "tags": [
+        "test-helper",
+        "parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_integration.py:raw_text",
+      "type": "function",
+      "name": "raw_text",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        60,
+        67
+      ],
+      "summary": "Extracts raw text content from mixed result formats (text blocks or plain strings).",
+      "tags": [
+        "test-helper",
+        "parsing"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_integration.py:assert_no_error",
+      "type": "function",
+      "name": "assert_no_error",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        70,
+        73
+      ],
+      "summary": "Asserts that a tool result contains no error prefix.",
+      "tags": [
+        "test-helper",
+        "assertion"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_integration.py:assert_valid_revenue",
+      "type": "function",
+      "name": "assert_valid_revenue",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        76,
+        79
+      ],
+      "summary": "Validates that a result contains required revenue data fields.",
+      "tags": [
+        "test-helper",
+        "assertion"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestServerHealth",
+      "type": "class",
+      "name": "TestServerHealth",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        86,
+        104
+      ],
+      "summary": "Integration tests validating MCP server availability and core tool presence.",
+      "tags": [
+        "test",
+        "integration-test"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestRevenue",
+      "type": "class",
+      "name": "TestRevenue",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        111,
+        162
+      ],
+      "summary": "Integration tests for revenue analytics covering fiscal totals, country/quarter breakdowns, and attainment.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestPipeline",
+      "type": "class",
+      "name": "TestPipeline",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        169,
+        202
+      ],
+      "summary": "Integration tests for pipeline analytics with quarter handling and closed deal exclusion.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestKpiSnapshot",
+      "type": "class",
+      "name": "TestKpiSnapshot",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        209,
+        244
+      ],
+      "summary": "Integration tests for KPI snapshot completeness, bounds checking, and edge cases.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestGrowth",
+      "type": "class",
+      "name": "TestGrowth",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        251,
+        291
+      ],
+      "summary": "Integration tests for YoY revenue and QoQ pipeline growth calculations.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestMultiPeriodTrend",
+      "type": "class",
+      "name": "TestMultiPeriodTrend",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        294,
+        334
+      ],
+      "summary": "Integration tests for multi-period trend analysis with regional breakdowns and YoY comparisons.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestTopPartners",
+      "type": "class",
+      "name": "TestTopPartners",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        341,
+        384
+      ],
+      "summary": "Integration tests for partner ranking by revenue and pipeline with sort order validation.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestPartnerDetail",
+      "type": "class",
+      "name": "TestPartnerDetail",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        387,
+        419
+      ],
+      "summary": "Integration tests for partner detail retrieval with partial matching and unknown partner handling.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestPartnerScorecard",
+      "type": "class",
+      "name": "TestPartnerScorecard",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        422,
+        431
+      ],
+      "summary": "Integration test validating partner scorecard structure and completeness.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestOrphanHygiene",
+      "type": "class",
+      "name": "TestOrphanHygiene",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        438,
+        458
+      ],
+      "summary": "Integration tests for orphan opportunity detection and period filtering.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestStalledDeals",
+      "type": "class",
+      "name": "TestStalledDeals",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        461,
+        479
+      ],
+      "summary": "Integration tests for stalled deal detection with configurable aging thresholds.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestHighRiskDeals",
+      "type": "class",
+      "name": "TestHighRiskDeals",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        482,
+        492
+      ],
+      "summary": "Integration test for high-risk deal identification below probability threshold.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestDealRegistrations",
+      "type": "class",
+      "name": "TestDealRegistrations",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        499,
+        536
+      ],
+      "summary": "Integration tests for deal registration tracking with partner breakdown, quarterly trends, and YoY comparison.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestWinRate",
+      "type": "class",
+      "name": "TestWinRate",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        543,
+        560
+      ],
+      "summary": "Integration tests for win rate by country with bounds validation.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestQbr",
+      "type": "class",
+      "name": "TestQbr",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        567,
+        591
+      ],
+      "summary": "Integration tests for quarterly business review report generation with target attainment.",
+      "tags": [
+        "test",
+        "integration-test",
+        "analytics"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestExploratoryRouting",
+      "type": "class",
+      "name": "TestExploratoryRouting",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        598,
+        648
+      ],
+      "summary": "Integration tests for exploratory analysis routing with intent detection and graceful fallback.",
+      "tags": [
+        "test",
+        "integration-test",
+        "routing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_integration.py:TestPeriodEdgeCases",
+      "type": "class",
+      "name": "TestPeriodEdgeCases",
+      "filePath": "tests/test_integration.py",
+      "lineRange": [
+        655,
+        676
+      ],
+      "summary": "Integration test verifying all canonical period strings resolve correctly.",
+      "tags": [
+        "test",
+        "integration-test",
+        "edge-case"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_snapshots.py",
+      "type": "file",
+      "name": "test_snapshots.py",
+      "filePath": "tests/test_snapshots.py",
+      "summary": "Snapshot and consistency tests verifying tool count, country list alignment, period definitions, and module imports.",
+      "tags": [
+        "test",
+        "snapshot-test",
+        "consistency"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tests/test_snapshots.py:_count_mcp_tools_in_server",
+      "type": "function",
+      "name": "_count_mcp_tools_in_server",
+      "filePath": "tests/test_snapshots.py",
+      "lineRange": [
+        13,
+        16
+      ],
+      "summary": "Test helper counting MCP tool decorators in the server source code.",
+      "tags": [
+        "test-helper",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_snapshots.py:_readme_claimed_tool_count",
+      "type": "function",
+      "name": "_readme_claimed_tool_count",
+      "filePath": "tests/test_snapshots.py",
+      "lineRange": [
+        19,
+        23
+      ],
+      "summary": "Test helper extracting the claimed tool count from README.md via regex.",
+      "tags": [
+        "test-helper",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tests/test_snapshots.py:_yaml_country_names",
+      "type": "function",
+      "name": "_yaml_country_names",
+      "filePath": "tests/test_snapshots.py",
+      "lineRange": [
+        26,
+        32
+      ],
+      "summary": "Test helper extracting country names from sales_targets.yaml configuration.",
+      "tags": [
+        "test-helper",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_snapshots.py:TestToolCount",
+      "type": "class",
+      "name": "TestToolCount",
+      "filePath": "tests/test_snapshots.py",
+      "lineRange": [
+        35,
+        43
+      ],
+      "summary": "Snapshot test verifying README tool count matches actual server implementation.",
+      "tags": [
+        "test",
+        "snapshot-test"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_snapshots.py:TestCountryListConsistency",
+      "type": "class",
+      "name": "TestCountryListConsistency",
+      "filePath": "tests/test_snapshots.py",
+      "lineRange": [
+        46,
+        67
+      ],
+      "summary": "Consistency tests validating Malta presence and country list alignment across channel_intelligence, prompts, and configuration.",
+      "tags": [
+        "test",
+        "consistency-test"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_snapshots.py:TestPeriodListComplete",
+      "type": "class",
+      "name": "TestPeriodListComplete",
+      "filePath": "tests/test_snapshots.py",
+      "lineRange": [
+        70,
+        91
+      ],
+      "summary": "Validation tests for canonical and historical period string resolution.",
+      "tags": [
+        "test",
+        "consistency-test"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_snapshots.py:TestModuleImports",
+      "type": "class",
+      "name": "TestModuleImports",
+      "filePath": "tests/test_snapshots.py",
+      "lineRange": [
+        94,
+        108
+      ],
+      "summary": "Import tests verifying channel_intelligence and server modules are importable and loadable.",
+      "tags": [
+        "test",
+        "smoke-test"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "file:ci_config.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "file:ci_fiscal.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:ci_fiscal.py",
+      "target": "file:ci_config.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_config.py",
+      "target": "file:channel_intelligence.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_fiscal.py",
+      "target": "file:channel_intelligence.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_llm_layer.py",
+      "target": "file:channel_intelligence.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_soql.py",
+      "target": "file:channel_intelligence.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_revenue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_pipeline",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_top_partners",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_partner_detail",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_partner_pipeline",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:search_opportunities",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_opportunity_detail",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_deal_registrations",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_growth",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_orphan_hygiene",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_kpi_snapshot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:route_slash_command",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:run_exploratory_analysis",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_opportunity_list",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_partner_scorecard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:generate_partner_qbr",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:list_available_metrics",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:admin_discover_targets",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_weighted_pipeline",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_channel_manager_performance",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_multi_period_trend",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_deal_registrations_breakdown",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_deal_registrations_trend",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_win_rate_by_country",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_time_to_close_stats",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_stalled_deals",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_partner_activity_summary",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_opportunity_recency",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_lost_deals",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_new_vs_existing",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_stage_risk_profile",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_deal_aging_by_stage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_high_risk_deals",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "function:channel_intelligence.py:get_stage_progression_velocity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "function:channel_intelligence.py:get_top_partners",
+      "target": "function:channel_intelligence.py:get_revenue",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:get_top_partners",
+      "target": "function:channel_intelligence.py:get_pipeline",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:get_partner_pipeline",
+      "target": "function:channel_intelligence.py:get_partner_detail",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:route_slash_command",
+      "target": "function:channel_intelligence.py:get_partner_detail",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:route_slash_command",
+      "target": "function:channel_intelligence.py:get_pipeline",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:route_slash_command",
+      "target": "function:channel_intelligence.py:get_revenue",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:route_slash_command",
+      "target": "function:channel_intelligence.py:get_top_partners",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:route_slash_command",
+      "target": "function:channel_intelligence.py:get_orphan_hygiene",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:run_exploratory_analysis",
+      "target": "function:channel_intelligence.py:route_slash_command",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:run_exploratory_analysis",
+      "target": "function:channel_intelligence.py:get_opportunity_detail",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:run_exploratory_analysis",
+      "target": "function:channel_intelligence.py:get_partner_pipeline",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:generate_partner_qbr",
+      "target": "function:channel_intelligence.py:get_partner_detail",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:generate_partner_qbr",
+      "target": "function:channel_intelligence.py:get_time_to_close_stats",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:generate_partner_qbr",
+      "target": "function:channel_intelligence.py:get_deal_registrations_breakdown",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:generate_partner_qbr",
+      "target": "function:channel_intelligence.py:get_revenue",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:generate_partner_qbr",
+      "target": "function:channel_intelligence.py:get_pipeline",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:generate_partner_qbr",
+      "target": "function:channel_intelligence.py:get_opportunity_list",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:channel_intelligence.py:get_deal_registrations_trend",
+      "target": "function:channel_intelligence.py:get_deal_registrations",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "file:tests/test_config.py",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5,
+      "description": "Direction corrected (was test → production)"
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "file:tests/test_fiscal.py",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5,
+      "description": "Direction corrected (was test → production)"
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "file:tests/test_llm_layer.py",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5,
+      "description": "Direction corrected (was test → production)"
+    },
+    {
+      "source": "file:channel_intelligence.py",
+      "target": "file:tests/test_soql.py",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5,
+      "description": "Direction corrected (was test → production)"
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "file:channel_intelligence.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "file:salesforce_client.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:get_sf",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:format_json",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:format_kpi",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:format_revenue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:format_pipeline",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:format_partner",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:format_qbr",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:format_risk",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:format_registrations",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:format_top_partners",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:handle_error",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:kpi",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:revenue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:pipeline",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:partner",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:qbr",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:risk",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:registrations",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:top_partners",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:search",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:list_opps",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:format_opportunity_list",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cli/channel_cli.py",
+      "target": "function:cli/channel_cli.py:_normalize_period",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "function:cli/channel_cli.py:kpi",
+      "target": "function:channel_intelligence.py:get_kpi_snapshot",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cli/channel_cli.py:revenue",
+      "target": "function:channel_intelligence.py:get_revenue",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cli/channel_cli.py:pipeline",
+      "target": "function:channel_intelligence.py:get_pipeline",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cli/channel_cli.py:partner",
+      "target": "function:channel_intelligence.py:get_partner_scorecard",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cli/channel_cli.py:qbr",
+      "target": "function:channel_intelligence.py:generate_partner_qbr",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cli/channel_cli.py:risk",
+      "target": "function:channel_intelligence.py:get_high_risk_deals",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cli/channel_cli.py:registrations",
+      "target": "function:channel_intelligence.py:get_deal_registrations_trend",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cli/channel_cli.py:top_partners",
+      "target": "function:channel_intelligence.py:get_top_partners",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cli/channel_cli.py:search",
+      "target": "function:channel_intelligence.py:search_opportunities",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cli/channel_cli.py:list_opps",
+      "target": "function:channel_intelligence.py:get_opportunity_list",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:salesforce_client.py",
+      "target": "class:salesforce_client.py:SalesforceError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:salesforce_client.py",
+      "target": "class:salesforce_client.py:SalesforceClient",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:server.py",
+      "target": "file:channel_intelligence.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:server.py",
+      "target": "file:prompts.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:server.py",
+      "target": "file:salesforce_client.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:server.py",
+      "target": "function:server.py:_setup_logger",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:server.py",
+      "target": "function:server.py:get_client",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:server.py",
+      "target": "function:server.py:format_result",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:server.py",
+      "target": "function:server.py:_coerce_period",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:test_dr_field.py",
+      "target": "file:server.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:test_dr_field.py",
+      "target": "function:test_dr_field.py:test_queries",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "document:README.md",
+      "target": "document:CHANNEL_DIRECTOR_PLAYBOOK.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "document:README.md",
+      "target": "document:CHANNEL_DIRECTOR_PROMPTS.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "document:README.md",
+      "target": "document:CLI_PLAYBOOK.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "document:README.md",
+      "target": "document:CLI_USAGE.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:README.md",
+      "target": "config:.env.example",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "config:pyproject.toml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CHANNEL_DIRECTOR_PLAYBOOK.md",
+      "target": "document:CHANNEL_DIRECTOR_PROMPTS.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "document:CHANNEL_DIRECTOR_PLAYBOOK.md",
+      "target": "document:CHANNEL_DIRECTOR_CAPABILITY_MAP.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:CHANNEL_DIRECTOR_CAPABILITY_MAP.md",
+      "target": "document:SCALING_PRIORITIZATION.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "document:CHANNEL_DIRECTOR_CAPABILITY_MAP.md",
+      "target": "document:PHASE_1_IMPLEMENTATION.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "document:SCALING_PRIORITIZATION.md",
+      "target": "document:PHASE_1_IMPLEMENTATION.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "document:CLI_PLAYBOOK.md",
+      "target": "document:CLI_USAGE.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "document:CLI_PLAYBOOK.md",
+      "target": "file:wrapper.sh",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:SF_CLI_QUERIES.md",
+      "target": "document:CHANNEL_DIRECTOR_PROMPTS.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "document:SF_CLI_QUERIES.md",
+      "target": "file:test_soql_dr.sh",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:.env.example",
+      "target": "document:README.md",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "document:requirements.txt",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:test_soql_dr.sh",
+      "target": "config:.env.example",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "file:channel_intelligence.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:_quarter_range",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:get_quarter_dates",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:build_region_filter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:format_analysis_section",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:quarterly_pipeline_analysis",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:closed_won_partner_analysis",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:partner_engagement_health",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:partner_sourced_pipeline",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:at_risk_pipeline",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:new_vs_existing_business",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:lead_conversion_analysis",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:stalled_opportunities",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:country_pipeline_dashboard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:forecast_vs_actuals",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:partner_scorecard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:weekly_briefing",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:partner_qbr_prep",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:prompts.py",
+      "target": "function:prompts.py:competitive_analysis",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "config:config/sales_targets.yaml",
+      "target": "file:prompts.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:config/sales_targets.yaml",
+      "target": "file:channel_intelligence.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:tests/conftest.py",
+      "target": "class:tests/conftest.py:MockSF",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/conftest.py",
+      "target": "function:tests/conftest.py:soql_response",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/conftest.py",
+      "target": "function:tests/conftest.py:agg_response",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_analytics.py",
+      "target": "file:channel_intelligence.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_analytics.py",
+      "target": "file:tests/conftest.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_analytics.py",
+      "target": "function:tests/test_analytics.py:_period_start",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_analytics.py",
+      "target": "function:tests/test_analytics.py:_period_end",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_analytics.py",
+      "target": "class:tests/test_analytics.py:TestGetRevenue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_analytics.py",
+      "target": "class:tests/test_analytics.py:TestGetPipeline",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_analytics.py",
+      "target": "class:tests/test_analytics.py:TestGetGrowth",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_analytics.py",
+      "target": "class:tests/test_analytics.py:TestGetKpiSnapshot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_analytics.py",
+      "target": "class:tests/test_analytics.py:TestGetMultiPeriodTrend",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_analytics.py",
+      "target": "class:tests/test_analytics.py:TestGetOrphanHygiene",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_analytics.py",
+      "target": "class:tests/test_analytics.py:TestGetPartnerDetail",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_analytics.py",
+      "target": "class:tests/test_analytics.py:TestGetTopPartners",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/conftest.py",
+      "target": "file:tests/test_analytics.py",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5,
+      "description": "Direction corrected (was test → production)"
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "function:tests/test_integration.py:mcp_client",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "function:tests/test_integration.py:parse",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "function:tests/test_integration.py:raw_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "function:tests/test_integration.py:assert_no_error",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "function:tests/test_integration.py:assert_valid_revenue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestServerHealth",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestRevenue",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestPipeline",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestKpiSnapshot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestGrowth",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestMultiPeriodTrend",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestTopPartners",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestPartnerDetail",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestPartnerScorecard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestOrphanHygiene",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestStalledDeals",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestHighRiskDeals",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestDealRegistrations",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestWinRate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestQbr",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestExploratoryRouting",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_integration.py",
+      "target": "class:tests/test_integration.py:TestPeriodEdgeCases",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_snapshots.py",
+      "target": "file:channel_intelligence.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_snapshots.py",
+      "target": "file:prompts.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_snapshots.py",
+      "target": "function:tests/test_snapshots.py:_count_mcp_tools_in_server",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_snapshots.py",
+      "target": "function:tests/test_snapshots.py:_readme_claimed_tool_count",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_snapshots.py",
+      "target": "function:tests/test_snapshots.py:_yaml_country_names",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_snapshots.py",
+      "target": "class:tests/test_snapshots.py:TestToolCount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_snapshots.py",
+      "target": "class:tests/test_snapshots.py:TestCountryListConsistency",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_snapshots.py",
+      "target": "class:tests/test_snapshots.py:TestPeriodListComplete",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_snapshots.py",
+      "target": "class:tests/test_snapshots.py:TestModuleImports",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:analytics-engine",
+      "name": "Analytics Engine",
+      "description": "Core business intelligence layer implementing 35+ Salesforce analytics functions for channel management, revenue analysis, pipeline health, partner performance, and risk metrics.",
+      "nodeIds": [
+        "file:channel_intelligence.py"
+      ]
+    },
+    {
+      "id": "layer:salesforce-integration",
+      "name": "Salesforce Integration",
+      "description": "Low-level Salesforce REST API client with async HTTP operations, CRUD implementations, and direct query/reporting capabilities for Opportunity and CRM data access.",
+      "nodeIds": [
+        "file:salesforce_client.py"
+      ]
+    },
+    {
+      "id": "layer:mcp-server",
+      "name": "MCP Server Gateway",
+      "description": "FastMCP server that exposes 54 MCP tools for Claude Desktop integration, wrapping analytics functions and Salesforce API operations for intelligent agent access.",
+      "nodeIds": [
+        "file:server.py"
+      ]
+    },
+    {
+      "id": "layer:cli-interface",
+      "name": "CLI Interface",
+      "description": "Command-line interface with 9 Click commands and 24+ formatters for terminal output, enabling automation engineers to run analytics and reporting workflows.",
+      "nodeIds": [
+        "file:cli/channel_cli.py",
+        "file:cli/__init__.py"
+      ]
+    },
+    {
+      "id": "layer:query-utilities",
+      "name": "Query Utilities",
+      "description": "Fiscal calendar management and SOQL query building, providing period normalization, fiscal year calculations, and query construction for consistent Salesforce data retrieval.",
+      "nodeIds": [
+        "file:ci_fiscal.py"
+      ]
+    },
+    {
+      "id": "layer:configuration",
+      "name": "Configuration",
+      "description": "Configuration management for YAML-based revenue targets, territory/country/partner target lookups, and fuzzy partner matching without custom Salesforce fields.",
+      "nodeIds": [
+        "file:ci_config.py",
+        "config:pyproject.toml",
+        "config:config/sales_targets.yaml",
+        "config:.env.example"
+      ]
+    },
+    {
+      "id": "layer:prompts",
+      "name": "Prompt Templates",
+      "description": "LLM prompt template library for structured reporting across quarterly pipeline, partner engagement, lead conversion, competitive analysis, and forecast scenarios.",
+      "nodeIds": [
+        "file:prompts.py"
+      ]
+    },
+    {
+      "id": "layer:integration",
+      "name": "Integration & Transport",
+      "description": "Network transport and integration layers including stdio-to-HTTP bridge for cross-laptop Claude Desktop communication and MCP server proxying.",
+      "nodeIds": [
+        "file:proxy.py",
+        "file:wrapper.sh"
+      ]
+    },
+    {
+      "id": "layer:test-suite",
+      "name": "Test Suite",
+      "description": "Comprehensive test coverage including unit tests for configuration and fiscal modules, analytics functions, SOQL utilities, integration tests against live Salesforce, snapshot/consistency validation, and test fixtures.",
+      "nodeIds": [
+        "file:tests/test_config.py",
+        "file:tests/test_fiscal.py",
+        "file:tests/test_llm_layer.py",
+        "file:tests/test_soql.py",
+        "file:tests/test_analytics.py",
+        "file:tests/test_integration.py",
+        "file:tests/test_snapshots.py",
+        "file:tests/conftest.py",
+        "file:tests/__init__.py",
+        "file:test_dr_field.py",
+        "file:test_soql_dr.sh"
+      ]
+    },
+    {
+      "id": "layer:documentation",
+      "name": "Documentation",
+      "description": "Comprehensive user and technical documentation covering project overview, channel director playbooks and prompts for business workflows, CLI automation guides, implementation architecture, scaling strategy, and Salesforce field references.",
+      "nodeIds": [
+        "document:README.md",
+        "document:CHANNEL_DIRECTOR_PLAYBOOK.md",
+        "document:CHANNEL_DIRECTOR_PROMPTS.md",
+        "document:CHANNEL_DIRECTOR_CAPABILITY_MAP.md",
+        "document:CLI_PLAYBOOK.md",
+        "document:CLI_USAGE.md",
+        "document:PHASE_1_IMPLEMENTATION.md",
+        "document:SCALING_PRIORITIZATION.md",
+        "document:SF_CLI_QUERIES.md",
+        "document:research/opportunity_fields.txt",
+        "config:research/opportunity_full_schema.json",
+        "document:requirements.txt"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Project Overview",
+      "description": "Start with the README to understand the project's purpose: a FastMCP server providing 54 Salesforce analytics and CRUD tools for Southern Europe channel management. This document outlines the architecture, setup instructions, and the two-laptop integration pattern that enables Claude Desktop to interact with the server remotely.",
+      "nodeIds": [
+        "document:README.md"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "MCP Server Gateway",
+      "description": "The server.py file is the entry point that bootstraps the FastMCP server and registers all 54 tools as MCP endpoints. It imports three core modules (channel_intelligence, salesforce_client, and prompts) and handles the stdio/HTTP transport layer, making analytics available to Claude Desktop through the MCP protocol.",
+      "nodeIds": [
+        "file:server.py"
+      ],
+      "languageLesson": "Python MCP servers register callable functions as tools by importing and exposing them to the MCP framework. The server handles bidirectional communication with Claude Desktop, marshalling requests and responses through the FastMCP transport."
+    },
+    {
+      "order": 3,
+      "title": "Core Analytics Engine",
+      "description": "The channel_intelligence.py module implements the 35+ business intelligence functions that power all analytics queries: revenue analysis, pipeline health, partner engagement, opportunity tracking, deal registrations, and risk metrics. It serves as the single source of truth for analytics logic, consuming both Salesforce data and configuration.",
+      "nodeIds": [
+        "file:channel_intelligence.py"
+      ],
+      "languageLesson": "Centralized analytics engines reduce duplication across interfaces (MCP, CLI, tests) by housing business logic in one module. This pattern allows server.py and cli/channel_cli.py to import and call the same functions without code replication."
+    },
+    {
+      "order": 4,
+      "title": "Salesforce API Integration",
+      "description": "The salesforce_client.py module provides the async HTTP client that executes SOQL queries, CRUD operations, and analytics queries against the Salesforce REST API. It abstracts authentication, request marshalling, and error handling, providing a clean interface for channel_intelligence to query Salesforce data.",
+      "nodeIds": [
+        "file:salesforce_client.py"
+      ],
+      "languageLesson": "Async HTTP clients (httpx in this case) enable efficient concurrent requests to remote APIs. The client maintains a session and connection pool, reducing latency when executing multiple Salesforce queries in sequence."
+    },
+    {
+      "order": 5,
+      "title": "Configuration Management",
+      "description": "The ci_config.py module manages YAML-based revenue targets and partner name normalization without requiring Salesforce custom fields. The ConfigManager class loads targets from sales_targets.yaml and provides territory, country, and partner-level lookups, enabling attainment calculations and fuzzy partner matching.",
+      "nodeIds": [
+        "file:ci_config.py",
+        "config:config/sales_targets.yaml"
+      ],
+      "languageLesson": "Configuration-driven systems separate business data (targets, thresholds) from code, allowing channel directors to adjust targets without redeploying. YAML is human-readable and version-controllable, making it ideal for managing multi-level hierarchies (territory > country > partner)."
+    },
+    {
+      "order": 6,
+      "title": "Fiscal Calendar & SOQL Queries",
+      "description": "The ci_fiscal.py module provides fiscal calendar utilities that normalize period references (THIS_QUARTER, FY27_Q1) into date ranges. It constructs the SOQL queries that fetch data for the specified periods, supporting the Feb-Jan fiscal year convention used across Southern Europe operations.",
+      "nodeIds": [
+        "file:ci_fiscal.py"
+      ],
+      "languageLesson": "Fiscal calendars are often non-standard. By centralizing period normalization in one module, the entire system can refer to periods symbolically (e.g., 'THIS_QUARTER') without hardcoding dates, making queries maintainable across fiscal year changes."
+    },
+    {
+      "order": 7,
+      "title": "LLM Prompt Templates",
+      "description": "The prompts.py module is a library of 18 template functions that generate structured prompts for Claude, covering quarterly analysis, partner engagement health, competitive insights, and forecast reporting. Server.py uses these templates to provide intelligent, narrative-driven reporting on top of raw analytics.",
+      "nodeIds": [
+        "file:prompts.py"
+      ],
+      "languageLesson": "Prompt templates extract boilerplate questions and context setup into reusable functions, reducing duplication and ensuring consistent framing across different reports. Templates accept parameters (metrics, filters) and inject them into structured prompts."
+    },
+    {
+      "order": 8,
+      "title": "CLI Interface & Formatters",
+      "description": "The cli/channel_cli.py module exposes 9 Click commands (kpi, revenue, pipeline, partner, qbr, risk, etc.) and 24+ formatter functions, allowing analysts to run analytics from the terminal and output results in JSON, tabular, or KPI card formats. It imports channel_intelligence and salesforce_client directly, bypassing the MCP server for automation workflows.",
+      "nodeIds": [
+        "file:cli/channel_cli.py"
+      ]
+    },
+    {
+      "order": 9,
+      "title": "Environment & Authentication",
+      "description": "The .env.example file documents required environment variables for Salesforce authentication (SALESFORCE_BASE_URL, SALESFORCE_SID) and MCP transport configuration. These credentials are loaded at runtime by server.py and salesforce_client.py to authenticate API requests and enable secure communication.",
+      "nodeIds": [
+        "config:.env.example"
+      ]
+    },
+    {
+      "order": 10,
+      "title": "Remote Access via Proxy",
+      "description": "The proxy.py script enables a two-laptop architecture: Claude Desktop on one laptop connects to the FastMCP server on another via a stdio-to-HTTP bridge over Tailscale. This pattern allows secure, seamless interaction with Salesforce data without exposing the server to the internet.",
+      "nodeIds": [
+        "file:proxy.py"
+      ],
+      "languageLesson": "stdio-to-HTTP bridges decouple local development environments from remote servers. The proxy handles session management and error recovery, ensuring robust communication over unreliable networks or Tailscale tunnels."
+    },
+    {
+      "order": 11,
+      "title": "Analytics Unit Tests",
+      "description": "The tests/test_analytics.py module provides 28 unit test assertions for core analytics functions using mocked Salesforce responses. These tests validate revenue calculations, pipeline aggregations, growth metrics, KPI snapshots, and multi-period trends without requiring live API access, enabling fast feedback during development.",
+      "nodeIds": [
+        "file:tests/test_analytics.py"
+      ],
+      "languageLesson": "Unit tests with mocked external dependencies (Salesforce API) run in milliseconds, enabling rapid iteration. Fixtures capture real API response shapes, ensuring test assertions reflect actual data structures without needing live accounts."
+    },
+    {
+      "order": 12,
+      "title": "Integration Tests",
+      "description": "The tests/test_integration.py module contains 59 integration tests that validate the entire system against a live MCP server and Salesforce instance. These tests exercise all major workflows (revenue, pipeline, KPI, QBR, risk, registrations) and edge cases (period normalization, orphan hygiene, stalled deal detection), ensuring end-to-end correctness.",
+      "nodeIds": [
+        "file:tests/test_integration.py"
+      ]
+    },
+    {
+      "order": 13,
+      "title": "Channel Director Playbook",
+      "description": "The CHANNEL_DIRECTOR_PLAYBOOK.md is the primary user guide for channel directors using Claude Desktop (MCP interface). It maps daily, weekly, and monthly workflows to the 54 MCP tools, organized by business context (revenue tracking, pipeline health, partner engagement, QBR prep, risk management).",
+      "nodeIds": [
+        "document:CHANNEL_DIRECTOR_PLAYBOOK.md"
+      ]
+    },
+    {
+      "order": 14,
+      "title": "CLI Automation Guide",
+      "description": "The CLI_PLAYBOOK.md targets automation engineers and provides 10 command examples, workflow templates for daily/weekly/monthly reporting, Hermes agent integration, and advanced jq piping for custom reporting. It shows how to automate analytics retrieval and integrate with external scheduling systems.",
+      "nodeIds": [
+        "document:CLI_PLAYBOOK.md"
+      ]
+    },
+    {
+      "order": 15,
+      "title": "Architecture & Future Roadmap",
+      "description": "The PHASE_1_IMPLEMENTATION.md documents the technical architecture, tool categories, and design patterns used in the current system, while SCALING_PRIORITIZATION.md outlines the strategic roadmap for future phases (Salesforce completeness, performance optimization, multi-org support, and advanced analytics).",
+      "nodeIds": [
+        "document:PHASE_1_IMPLEMENTATION.md",
+        "document:SCALING_PRIORITIZATION.md"
+      ]
+    }
+  ]
+}

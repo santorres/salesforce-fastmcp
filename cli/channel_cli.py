@@ -308,7 +308,7 @@ def revenue(period, breakdown, output_json, channel_manager):
         result = asyncio.run(ci.get_revenue(
             get_sf(),
             _normalize_period(period),
-            breakdown=breakdown if breakdown != "total" else None,
+            breakdown=breakdown,
             channel_manager=channel_manager or None
         ))
         if output_json:
@@ -330,7 +330,7 @@ def pipeline(period, breakdown, output_json, channel_manager):
         result = asyncio.run(ci.get_pipeline(
             get_sf(),
             _normalize_period(period),
-            breakdown=breakdown if breakdown != "total" else None,
+            breakdown=breakdown,
             channel_manager=channel_manager or None
         ))
         if output_json:

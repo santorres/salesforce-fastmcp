@@ -455,6 +455,90 @@ def top_partners(period, metric, limit, output_json):
         handle_error(e, f"top-partners ({metric})")
 
 
+@cli.command()
+@click.argument("query", required=True)
+@click.option("--period", default="THIS_FISCAL_YEAR", help="Fiscal period")
+@click.option("--partner", default=None, help="Filter by partner name")
+@click.option("--country", default=None, help="Filter by country")
+@click.option("--limit", default=10, type=int, help="Max results to return")
+@click.option("--json", "output_json", is_flag=True, help="Output as JSON")
+def search(query, period, partner, country, limit, output_json):
+    """Search opportunities by name fragment."""
+    try:
+        result = asyncio.run(ci.search_opportunities(
+            get_sf(),
+            query=query,
+            partner_name=partner,
+            country=country,
+            period=_normalize_period(period),
+            limit=limit
+        ))
+        if output_json:
+            click.echo(format_json(result))
+        else:
+            click.echo(format_opportunity_list(result))
+    except Exception as e:
+        handle_error(e, f"search ({query})")
+
+
+@cli.command()
+@click.option("--period", default="THIS_FISCAL_YEAR", help="Fiscal period (open opps only)")
+@click.option("--partner", default=None, help="Filter by partner name")
+@click.option("--country", default=None, help="Filter by country")
+@click.option("--stage", default=None, help="Filter by stage (Prospecting, Validation, etc.)")
+@click.option("--min-amount", default=None, type=float, help="Minimum opportunity amount")
+@click.option("--limit", default=20, type=int, help="Max results (1-100)")
+@click.option("--json", "output_json", is_flag=True, help="Output as JSON")
+@click.option("--channel-manager", default=None, help="Filter by channel manager")
+def list_opps(period, partner, country, stage, min_amount, limit, output_json, channel_manager):
+    """List open opportunities with optional filters."""
+    try:
+        result = asyncio.run(ci.get_opportunity_list(
+            get_sf(),
+            partner_name=partner,
+            country=country,
+            stage=stage,
+            min_amount=min_amount,
+            period=_normalize_period(period),
+            limit=limit,
+            channel_manager=channel_manager or None
+        ))
+        if output_json:
+            click.echo(format_json(result))
+        else:
+            click.echo(format_opportunity_list(result))
+    except Exception as e:
+        handle_error(e, "list-opps")
+
+
+def format_opportunity_list(data: dict) -> str:
+    """Pretty-format opportunity list."""
+    opps = data.get("data", [])
+    lines = []
+    lines.append(f"Opportunities ({len(opps)} found)")
+    lines.append("=" * 120)
+
+    if not opps:
+        lines.append("No opportunities found.")
+        return "\n".join(lines)
+
+    # Header
+    lines.append(f"{'Name':<40} {'Amount':>12} {'Stage':<20} {'Close Date':<12} {'Partner':<25}")
+    lines.append("-" * 120)
+
+    # Rows
+    for opp in opps:
+        name = opp.get("name", "-")[:38]
+        amount = opp.get("amount", 0)
+        stage = opp.get("stage", "-")[:18] if opp.get("stage") else "-"
+        close_date = opp.get("closeDate", "-")
+        partner = opp.get("partnerName", "-")[:23] if opp.get("partnerName") else "-"
+
+        lines.append(f"{name:<40} ${amount:>11,.0f} {stage:<20} {close_date:<12} {partner:<25}")
+
+    return "\n".join(lines)
+
+
 def _normalize_period(period: str) -> str:
     """Normalize period string (delegates to channel_intelligence)."""
     return ci._normalize_period(period)

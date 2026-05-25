@@ -461,7 +461,7 @@ def top_partners(period, metric, limit, output_json):
 @click.option("--stage", default=None, help="Filter by stage (e.g., 'Closed Won' for closed deals)")
 @click.option("--partner", default=None, help="Filter by partner name")
 @click.option("--country", default=None, help="Filter by country")
-@click.option("--limit", default=10, type=int, help="Max results to return")
+@click.option("--limit", default=30, type=int, help="Max results to return (default 30 to include multiple stages)")
 @click.option("--json", "output_json", is_flag=True, help="Output as JSON")
 def search(query, period, stage, partner, country, limit, output_json):
     """Search opportunities by name fragment (returns all stages by default).

@@ -54,24 +54,29 @@ def format_kpi(data: dict) -> str:
     lines.append("KPI Snapshot")
     lines.append("-" * 50)
 
-    revenue = result.get("revenue", {})
+    revenue = result.get("revenue", 0)
     if revenue:
-        lines.append(f"Revenue (Closed-Won): ${revenue.get('total_amount', 0):,.0f}")
-        lines.append(f"  Deals: {revenue.get('count', 0)}")
-        lines.append(f"  Attainment: {revenue.get('attainment_pct', 0):.1f}%")
+        lines.append(f"Revenue (Closed-Won): ${revenue:,.0f}")
+        lines.append(f"  Deals: {result.get('dealCount', 0)}")
+        attainment = result.get("attainmentPct")
+        if attainment:
+            lines.append(f"  Attainment: {attainment:.1f}%")
 
-    pipeline = result.get("pipeline", {})
+    pipeline = result.get("pipeline", 0)
     if pipeline:
-        lines.append(f"\nPipeline (Open): ${pipeline.get('total_amount', 0):,.0f}")
-        lines.append(f"  Deals: {pipeline.get('count', 0)}")
+        lines.append(f"\nPipeline (Open): ${pipeline:,.0f}")
 
-    coverage = result.get("coverage_ratio", 0)
+    coverage = result.get("coverageRatio")
     if coverage:
         lines.append(f"\nCoverage Ratio: {coverage:.1f}x")
 
-    win_rate = result.get("win_rate_pct", 0)
+    win_rate = result.get("winRate", 0)
     if win_rate:
-        lines.append(f"Win Rate: {win_rate:.1f}%")
+        lines.append(f"Win Rate: {win_rate * 100:.1f}%")
+
+    active_partners = result.get("activePartners")
+    if active_partners:
+        lines.append(f"Active Partners: {active_partners}")
 
     return "\n".join(lines)
 
@@ -86,20 +91,27 @@ def format_revenue(data: dict) -> str:
     if isinstance(result, list):
         # Breakdown response
         for item in result:
-            label = item.get("partner") or item.get("country") or "Total"
-            amount = item.get("closed_won_amount", 0)
-            attainment = item.get("attainment_pct", 0)
-            lines.append(f"{label}: ${amount:,.0f} ({attainment:.1f}% attainment)")
+            label = item.get("partner") or item.get("country") or item.get("quarter") or item.get("stage") or "Unknown"
+            amount = item.get("totalRevenue", 0)
+            deal_count = item.get("dealCount", 0)
+            attainment = item.get("attainmentPct")
+
+            if attainment:
+                lines.append(f"{label}: ${amount:,.0f} ({attainment:.1f}% attainment, {deal_count} deals)")
+            else:
+                lines.append(f"{label}: ${amount:,.0f} ({deal_count} deals)")
     else:
         # Summary response
-        amount = result.get("closed_won_amount", 0)
-        attainment = result.get("attainment_pct", 0)
-        count = result.get("count", 0)
+        amount = result.get("totalRevenue", 0)
+        attainment = result.get("attainmentPct")
+        count = result.get("dealCount", 0)
         lines.append(f"Closed-Won: ${amount:,.0f}")
         lines.append(f"Deals: {count}")
-        lines.append(f"Attainment: {attainment:.1f}%")
-        if result.get("average_deal_size"):
-            lines.append(f"Avg Deal Size: ${result.get('average_deal_size', 0):,.0f}")
+        if attainment:
+            lines.append(f"Attainment: {attainment:.1f}%")
+        target = result.get("target")
+        if target:
+            lines.append(f"Target: ${target:,.0f}")
 
     return "\n".join(lines)
 
@@ -114,18 +126,18 @@ def format_pipeline(data: dict) -> str:
     if isinstance(result, list):
         # Breakdown response
         for item in result:
-            label = item.get("partner") or item.get("country") or item.get("stage") or "Total"
-            amount = item.get("total_amount", 0)
-            count = item.get("count", 0)
+            label = item.get("partner") or item.get("country") or item.get("stage") or item.get("quarter") or "Unknown"
+            amount = item.get("totalAmount", 0)
+            count = item.get("dealCount", 0)
             lines.append(f"{label}: ${amount:,.0f} ({count} deals)")
     else:
         # Summary response
-        amount = result.get("total_amount", 0)
-        count = result.get("count", 0)
+        amount = result.get("totalAmount", 0)
+        count = result.get("dealCount", 0)
         lines.append(f"Open Pipeline: ${amount:,.0f}")
         lines.append(f"Deal Count: {count}")
 
-        by_stage = result.get("by_stage", {})
+        by_stage = result.get("byStage", {})
         if by_stage:
             lines.append("\nBy Stage:")
             for stage, value in by_stage.items():
@@ -287,7 +299,7 @@ def kpi(period, output_json, channel_manager):
 
 @cli.command()
 @click.option("--period", default="THIS_QUARTER", help="Fiscal period")
-@click.option("--breakdown", default="total", type=click.Choice(["total", "partner", "country", "stage"]), help="Breakdown dimension")
+@click.option("--breakdown", default="total", type=click.Choice(["total", "partner", "country", "quarter"]), help="Breakdown dimension")
 @click.option("--json", "output_json", is_flag=True, help="Output as JSON")
 @click.option("--channel-manager", default=None, help="Filter by channel manager")
 def revenue(period, breakdown, output_json, channel_manager):
@@ -309,7 +321,7 @@ def revenue(period, breakdown, output_json, channel_manager):
 
 @cli.command()
 @click.option("--period", default="THIS_QUARTER", help="Fiscal period")
-@click.option("--breakdown", default="total", type=click.Choice(["total", "partner", "country", "stage"]), help="Breakdown dimension")
+@click.option("--breakdown", default="total", type=click.Choice(["total", "partner", "country", "stage", "quarter"]), help="Breakdown dimension")
 @click.option("--json", "output_json", is_flag=True, help="Output as JSON")
 @click.option("--channel-manager", default=None, help="Filter by channel manager")
 def pipeline(period, breakdown, output_json, channel_manager):

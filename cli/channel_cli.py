@@ -458,12 +458,16 @@ def top_partners(period, metric, limit, output_json):
 @cli.command()
 @click.argument("query", required=True)
 @click.option("--period", default="THIS_FISCAL_YEAR", help="Fiscal period")
+@click.option("--stage", default=None, help="Filter by stage (e.g., 'Closed Won' for closed deals)")
 @click.option("--partner", default=None, help="Filter by partner name")
 @click.option("--country", default=None, help="Filter by country")
 @click.option("--limit", default=10, type=int, help="Max results to return")
 @click.option("--json", "output_json", is_flag=True, help="Output as JSON")
-def search(query, period, partner, country, limit, output_json):
-    """Search opportunities by name fragment."""
+def search(query, period, stage, partner, country, limit, output_json):
+    """Search opportunities by name fragment (returns all stages by default).
+
+    Use --stage 'Closed Won' to see only closed-won deals.
+    """
     try:
         result = asyncio.run(ci.search_opportunities(
             get_sf(),
@@ -473,6 +477,12 @@ def search(query, period, partner, country, limit, output_json):
             period=_normalize_period(period),
             limit=limit
         ))
+
+        # Filter by stage if specified
+        if stage:
+            result["data"] = [opp for opp in result.get("data", []) if opp.get("stageName") == stage]
+            result["stage_filter"] = stage
+
         if output_json:
             click.echo(format_json(result))
         else:
@@ -512,29 +522,33 @@ def list_opps(period, partner, country, stage, min_amount, limit, output_json, c
 
 
 def format_opportunity_list(data: dict) -> str:
-    """Pretty-format opportunity list."""
+    """Pretty-format opportunity list (works for both search and list-opps)."""
     opps = data.get("data", [])
     lines = []
     lines.append(f"Opportunities ({len(opps)} found)")
-    lines.append("=" * 120)
+    lines.append("=" * 130)
 
     if not opps:
         lines.append("No opportunities found.")
         return "\n".join(lines)
 
     # Header
-    lines.append(f"{'Name':<40} {'Amount':>12} {'Stage':<20} {'Close Date':<12} {'Partner':<25}")
-    lines.append("-" * 120)
+    lines.append(f"{'Name':<40} {'Amount':>12} {'Stage':<20} {'Close Date':<12} {'Partner':<25} {'Prob %':>6}")
+    lines.append("-" * 130)
 
     # Rows
     for opp in opps:
         name = opp.get("name", "-")[:38]
         amount = opp.get("amount", 0)
-        stage = opp.get("stage", "-")[:18] if opp.get("stage") else "-"
+        # Handle both stageName (from search) and stage (from list-opps)
+        stage = opp.get("stage") or opp.get("stageName") or "-"
+        stage = str(stage)[:18]
         close_date = opp.get("closeDate", "-")
-        partner = opp.get("partnerName", "-")[:23] if opp.get("partnerName") else "-"
+        partner = opp.get("partnerName") or opp.get("partner") or "-"
+        partner = str(partner)[:23]
+        probability = opp.get("probability", 0)
 
-        lines.append(f"{name:<40} ${amount:>11,.0f} {stage:<20} {close_date:<12} {partner:<25}")
+        lines.append(f"{name:<40} ${amount:>11,.0f} {stage:<20} {close_date:<12} {partner:<25} {probability:>5.0f}%")
 
     return "\n".join(lines)
 

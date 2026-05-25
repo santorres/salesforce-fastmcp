@@ -213,7 +213,7 @@ def format_risk(data: dict) -> str:
     lines.append(f"Found: {total} deal(s)\n")
 
     for deal in result:
-        lines.append(f"{deal.get('name', 'Unknown')}")
+        lines.append(f"\n{deal.get('name', 'Unknown')}")
         lines.append("-" * 60)
         lines.append(f"  Amount: ${deal.get('amount', 0):,.0f}")
         lines.append(f"  Probability: {deal.get('probability', 0):.0f}%")
@@ -223,7 +223,6 @@ def format_risk(data: dict) -> str:
         lines.append(f"  Partner: {deal.get('partner', 'N/A')}")
         lines.append(f"  Risk Score: {deal.get('riskScore', 0):.0f}")
         lines.append(f"  Action: {deal.get('recommendation', 'Monitor')}")
-        lines.append()
 
     return "\n".join(lines)
 

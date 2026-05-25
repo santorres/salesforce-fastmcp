@@ -198,23 +198,32 @@ def format_qbr(data: dict) -> str:
 
 def format_risk(data: dict) -> str:
     """Pretty-format high-risk deals."""
-    result = data.get("data", [])
+    result = data.get("deals", [])
     lines = []
-    lines.append(f"High-Risk Deals (closing in next 30 days)")
+    threshold = data.get("probability_threshold_pct", 40)
+    total = data.get("total_high_risk", 0)
+
+    lines.append(f"High-Risk Deals (probability < {threshold}%, closing within 30 days)")
     lines.append("=" * 80)
 
     if not result:
-        lines.append("No high-risk deals found.")
+        lines.append("No high-risk deals found. ✓")
         return "\n".join(lines)
 
+    lines.append(f"Found: {total} deal(s)\n")
+
     for deal in result:
-        lines.append(f"\n{deal.get('opportunity_name', 'Unknown')}")
+        lines.append(f"{deal.get('name', 'Unknown')}")
         lines.append("-" * 60)
         lines.append(f"  Amount: ${deal.get('amount', 0):,.0f}")
-        lines.append(f"  Probability: {deal.get('probability_pct', 0):.0f}%")
-        lines.append(f"  Close Date: {deal.get('close_date', 'N/A')}")
-        lines.append(f"  Days to Close: {deal.get('days_to_close', 0)}")
-        lines.append(f"  Partner: {deal.get('partner_name', 'N/A')}")
+        lines.append(f"  Probability: {deal.get('probability', 0):.0f}%")
+        lines.append(f"  Close Date: {deal.get('closeDate', 'N/A')}")
+        lines.append(f"  Days to Close: {deal.get('daysUntilClose', 0)}")
+        lines.append(f"  Stage: {deal.get('stage', 'N/A')}")
+        lines.append(f"  Partner: {deal.get('partner', 'N/A')}")
+        lines.append(f"  Risk Score: {deal.get('riskScore', 0):.0f}")
+        lines.append(f"  Action: {deal.get('recommendation', 'Monitor')}")
+        lines.append()
 
     return "\n".join(lines)
 

@@ -8,10 +8,20 @@ FastMCP server providing Salesforce analytics and CRUD tools, purpose-built for 
 
 ## Quick Start for Channel Directors
 
-If you just want to use it, start here:
+### 📖 Documentation (Pick Your Interface)
 
-- **[CHANNEL_DIRECTOR_PLAYBOOK.md](CHANNEL_DIRECTOR_PLAYBOOK.md)** — Complete reference for all tools, organized by daily/weekly/monthly workflows
+**Using Claude Desktop (MCP - Interactive):**
+- **[CHANNEL_DIRECTOR_PLAYBOOK.md](CHANNEL_DIRECTOR_PLAYBOOK.md)** — Complete reference for all 54 MCP tools, organized by daily/weekly/monthly workflows
 - **[CHANNEL_DIRECTOR_PROMPTS.md](CHANNEL_DIRECTOR_PROMPTS.md)** — Copy-paste prompts for Claude Desktop, grouped by topic
+
+**Using CLI (Command-line - Automation):**
+- **[CLI_PLAYBOOK.md](CLI_PLAYBOOK.md)** — Comprehensive CLI guide for automated workflows, scheduled reports, and Hermes Agent integration
+  - ✅ 10 commands with real examples
+  - ✅ Daily/weekly/monthly workflow templates
+  - ✅ Hermes automation setup
+  - ✅ Advanced jq piping for custom reporting
+
+**Quick decision:** Use **MCP** for questions ("What's happening with Accenture?"), use **CLI** for automation ("Generate QBRs every month-end")
 
 ---
 

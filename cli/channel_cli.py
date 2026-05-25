@@ -148,45 +148,52 @@ def format_pipeline(data: dict) -> str:
 
 def format_partner(data: dict) -> str:
     """Pretty-format partner scorecard."""
+    name = data.get("partner", "Partner")
     result = data.get("data", {})
     lines = []
-    name = result.get("partner_name", "Partner")
     lines.append(f"Partner Scorecard: {name}")
     lines.append("=" * 60)
 
     # Revenue
-    revenue = result.get("revenue", {})
+    revenue = result.get("revenue", 0)
     if revenue:
         lines.append("\nRevenue")
         lines.append("-" * 40)
-        lines.append(f"  Closed-Won: ${revenue.get('total_amount', 0):,.0f}")
-        lines.append(f"  Deals: {revenue.get('count', 0)}")
-        if revenue.get("attainment_pct"):
-            lines.append(f"  Attainment: {revenue.get('attainment_pct', 0):.1f}%")
+        lines.append(f"  Closed-Won: ${revenue:,.0f}")
+        lines.append(f"  Deals: {result.get('dealCount', 0)}")
 
     # Pipeline
-    pipeline = result.get("pipeline", {})
+    pipeline = result.get("pipeline", 0)
     if pipeline:
         lines.append("\nPipeline")
         lines.append("-" * 40)
-        lines.append(f"  Open: ${pipeline.get('total_amount', 0):,.0f}")
-        lines.append(f"  Deals: {pipeline.get('count', 0)}")
+        lines.append(f"  Open: ${pipeline:,.0f}")
 
     # Metrics
-    win_rate = result.get("win_rate_pct")
-    if win_rate:
-        lines.append(f"\nWin Rate: {win_rate:.1f}%")
-
-    avg_deal = result.get("average_deal_size")
+    avg_deal = result.get("avgDealSize", 0)
     if avg_deal:
-        lines.append(f"Avg Deal Size: ${avg_deal:,.0f}")
+        lines.append(f"\nAvg Deal Size: ${avg_deal:,.0f}")
+
+    # Top countries
+    top_countries = result.get("topCountries", [])
+    if top_countries:
+        lines.append(f"\nTop Countries: {', '.join(top_countries)}")
+
+    # Stages
+    open_stages = result.get("openStages", [])
+    if open_stages:
+        lines.append("\nOpen by Stage:")
+        for stage_info in open_stages:
+            stage = stage_info.get("stage", "Unknown")
+            count = stage_info.get("count", 0)
+            lines.append(f"  {stage}: {count} deals")
 
     return "\n".join(lines)
 
 
 def format_qbr(data: dict) -> str:
-    """QBR is markdown, just return it as-is."""
-    return data.get("data", "")
+    """QBR returns markdown report."""
+    return data.get("markdown_report", "No QBR data available")
 
 
 def format_risk(data: dict) -> str:

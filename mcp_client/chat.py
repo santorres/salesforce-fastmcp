@@ -13,7 +13,7 @@ from .config import (
     RETRY_DELAY_MS,
     MCP_SERVER_MODE,
 )
-from .ollama_llm import OllamaClient, ToolCall
+from .ollama_llm import MLXOmniClient, ToolCall
 from .mcp_bridge import MCPBridge
 from .mcp_bridge_stdio import MCPBridgeStdio
 
@@ -43,7 +43,7 @@ class ChatSession:
         else:
             self.mcp = MCPBridge(mcp_url) if mcp_url else MCPBridge()
 
-        self.ollama = OllamaClient(base_url=ollama_url) if ollama_url else OllamaClient()
+        self.ollama = MLXOmniClient(base_url=ollama_url) if ollama_url else MLXOmniClient()
         self.tools = self.mcp.list_tools()
         self.conversation_history = []
 
@@ -105,11 +105,14 @@ class ChatSession:
             else:
                 # Truncate large results
                 result_str = json.dumps(result, indent=2)
-                if len(result_str) > 1000:
-                    result_str = result_str[:1000] + "\n... (truncated)"
+                if len(result_str) > 2000:
+                    result_str = result_str[:2000] + "\n... (truncated)"
                 output.append(f"✅ {tool_name}:\n{result_str}")
 
-        return "\n\n".join(output)
+        formatted = "\n\n".join(output)
+        if VERBOSE:
+            logger.info(f"Formatted tool results: {len(formatted)} chars")
+        return formatted
 
     def chat(self, question: str) -> str:
         """
@@ -147,11 +150,21 @@ class ChatSession:
             f"Provide a concise, business-focused answer to: {question}"
         )
 
+        if VERBOSE:
+            logger.info(f"Synthesis prompt: {synthesis_prompt[:200]}...")
+
         final_response = self.ollama.call(
             synthesis_prompt, self.tools, self.conversation_history
         )
 
+        if VERBOSE:
+            logger.info(f"Synthesis response text: '{final_response.text}'")
+            logger.info(f"Synthesis tool calls: {len(final_response.tool_calls)}")
+
         answer = final_response.text
+        if not answer:
+            answer = f"Tool executed successfully. Result: {formatted_results}"
+
         self.conversation_history.append({"role": "assistant", "content": answer})
 
         return answer
@@ -165,7 +178,7 @@ class ChatSession:
 def main():
     """Interactive REPL chat interface."""
     print("\n" + "=" * 70)
-    print("Salesforce Channel Analytics — Local LLM Interface")
+    print("Salesforce Channel Analytics — MLX Omni Server + MCP Interface")
     print("=" * 70)
     print(get_config_summary())
     print("\nType 'quit' or 'exit' to end session")

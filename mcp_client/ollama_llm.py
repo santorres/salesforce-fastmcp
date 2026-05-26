@@ -1,10 +1,9 @@
-"""Ollama LLM backend — handles tool calling and reasoning."""
+"""MLX Omni Server LLM backend — handles tool calling and reasoning."""
 import json
-import re
-import httpx
 import logging
 from typing import Optional
 from dataclasses import dataclass
+from openai import OpenAI
 
 from .config import (
     OLLAMA_MODEL,
@@ -12,7 +11,6 @@ from .config import (
     OLLAMA_TEMPERATURE,
     OLLAMA_TOP_P,
     VERBOSE,
-    TIMEOUT_SECONDS,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,16 +31,54 @@ class LLMResponse:
     raw: dict
 
 
-class OllamaClient:
-    """Ollama LLM client with tool calling support."""
+class MLXOmniClient:
+    """MLX Omni Server LLM client with OpenAI-compatible tool calling."""
 
-    def __init__(self, base_url: str = OLLAMA_BASE_URL, model: str = OLLAMA_MODEL):
-        self.base_url = base_url.rstrip("/")
+    def __init__(self, base_url: str = "http://localhost:8000/v1", model: str = "mlx"):
+        """
+        Initialize MLX Omni client.
+
+        Args:
+            base_url: OpenAI-compatible endpoint (MLX Omni Server default: http://localhost:8000/v1)
+            model: Model name (MLX Omni uses "mlx" by default)
+        """
+        self.base_url = base_url
         self.model = model
-        self.client = httpx.Client(timeout=TIMEOUT_SECONDS)
+        self.client = OpenAI(api_key="not-needed", base_url=base_url)
+
+    def _convert_mcp_tools_to_openai(self, tools: list[dict]) -> list[dict]:
+        """Convert MCP tool schemas to OpenAI-compatible function calling format."""
+        openai_tools = []
+
+        for tool in tools:
+            name = tool.get("name", "")
+            description = tool.get("description", "No description")
+
+            # Extract parameters from MCP inputSchema
+            input_schema = tool.get("inputSchema", {})
+            properties = input_schema.get("properties", {})
+            required = input_schema.get("required", [])
+
+            # Build OpenAI-compatible function schema (same as Ollama format)
+            openai_tool = {
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": description.split("\n")[0],  # Use first line only
+                    "parameters": {
+                        "type": "object",
+                        "properties": properties,
+                        "required": required,
+                    },
+                },
+            }
+
+            openai_tools.append(openai_tool)
+
+        return openai_tools
 
     def _format_tools_for_prompt(self, tools: list[dict]) -> str:
-        """Format tool schema for Nous-Hermes tool calling."""
+        """Format tool schema for display."""
         tools_text = "Available tools:\n"
         for tool in tools:
             name = tool.get("name", "unknown")
@@ -54,41 +90,7 @@ class OllamaClient:
 
         return tools_text
 
-    def _parse_tool_calls(self, text: str) -> list[ToolCall]:
-        """Parse tool calls from LLM response (Nous-Hermes format)."""
-        calls = []
 
-        # Look for XML-style tool calls: <tool_call name="tool_name">{"param": "value"}</tool_call>
-        pattern = r'<tool_call\s+name="([^"]+)">({.*?})</tool_call>'
-        matches = re.finditer(pattern, text, re.DOTALL)
-
-        for match in matches:
-            tool_name = match.group(1)
-            params_str = match.group(2)
-            try:
-                params = json.loads(params_str)
-                calls.append(ToolCall(name=tool_name, parameters=params))
-                if VERBOSE:
-                    logger.info(f"Parsed tool call: {tool_name}({params})")
-            except json.JSONDecodeError as e:
-                logger.warning(f"Failed to parse tool params for {tool_name}: {e}")
-
-        return calls
-
-    def _build_system_prompt(self, tools: list[dict]) -> str:
-        """Build system prompt with tool calling instructions."""
-        tools_desc = self._format_tools_for_prompt(tools)
-
-        return f"""You are a Salesforce channel analytics assistant. You have access to tools that query sales data.
-
-{tools_desc}
-
-When you need to call a tool, use this format:
-<tool_call name="tool_name">{{"param1": "value1", "param2": "value2"}}</tool_call>
-
-You can call multiple tools in sequence. After receiving tool results, analyze them and provide a clear answer to the user's question.
-
-Be concise and focus on business insights relevant to channel directors (revenue, pipeline, partner performance, risk, etc.)."""
 
     def call(
         self,
@@ -97,7 +99,7 @@ Be concise and focus on business insights relevant to channel directors (revenue
         conversation_history: Optional[list[dict]] = None,
     ) -> LLMResponse:
         """
-        Send a question to Ollama with available tools.
+        Send a question to MLX Omni Server with available tools using native function calling.
 
         Args:
             question: User's question
@@ -107,49 +109,64 @@ Be concise and focus on business insights relevant to channel directors (revenue
         Returns:
             LLMResponse with text and parsed tool calls
         """
-        system_prompt = self._build_system_prompt(tools)
-
         # Build message history
         messages = conversation_history or []
         messages.append({"role": "user", "content": question})
 
         if VERBOSE:
-            logger.info(f"Calling Ollama ({self.model}) with {len(tools)} tools available")
+            logger.info(f"Calling MLX Omni Server ({self.model}) with {len(tools)} tools available")
 
         try:
-            response = self.client.post(
-                f"{self.base_url}/api/chat",
-                json={
-                    "model": self.model,
-                    "messages": messages,
-                    "system": system_prompt,
-                    "stream": False,
-                    "options": {
-                        "temperature": OLLAMA_TEMPERATURE,
-                        "top_p": OLLAMA_TOP_P,
-                        "num_predict": 1024,  # Limit output length
-                    },
-                },
-            )
-            response.raise_for_status()
-
-            data = response.json()
-            text = data.get("message", {}).get("content", "")
+            # Convert MCP tools to OpenAI format
+            openai_tools = self._convert_mcp_tools_to_openai(tools)
 
             if VERBOSE:
-                logger.info(f"Ollama response: {text[:200]}...")
+                logger.info(f"Converted {len(openai_tools)} MCP tools to OpenAI format")
 
-            tool_calls = self._parse_tool_calls(text)
-
-            return LLMResponse(text=text, tool_calls=tool_calls, raw=data)
-
-        except httpx.ConnectError:
-            raise RuntimeError(
-                f"Cannot connect to Ollama at {self.base_url}. "
-                "Is Ollama running? Try: `ollama serve`"
+            # Use OpenAI SDK with native function calling
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                tools=openai_tools,
+                temperature=OLLAMA_TEMPERATURE,
+                max_tokens=1024,
             )
-        except httpx.HTTPStatusError as e:
-            raise RuntimeError(f"Ollama API error: {e.response.text}")
+
+            if VERBOSE:
+                logger.info(f"MLX response: {response.choices[0].message.content[:200] if response.choices[0].message.content else '(no text)'}")
+
+            text = response.choices[0].message.content or ""
+            tool_calls = []
+
+            # Parse native tool_calls from response
+            if response.choices[0].message.tool_calls:
+                if VERBOSE:
+                    logger.info(f"Tool calls in response: {len(response.choices[0].message.tool_calls)}")
+
+                for call in response.choices[0].message.tool_calls:
+                    tool_name = call.function.name
+                    # Parse arguments (OpenAI SDK returns as JSON string)
+                    try:
+                        params = json.loads(call.function.arguments) if isinstance(call.function.arguments, str) else call.function.arguments
+                    except json.JSONDecodeError:
+                        params = {}
+
+                    if VERBOSE:
+                        logger.info(f"Parsed: name='{tool_name}', params={params}")
+
+                    if tool_name:
+                        tool_calls.append(ToolCall(name=tool_name, parameters=params))
+
+            return LLMResponse(text=text, tool_calls=tool_calls, raw=response.model_dump())
+
+        except Exception as e:
+            error_msg = str(e)
+            if "Connection" in error_msg or "refused" in error_msg.lower():
+                raise RuntimeError(
+                    f"Cannot connect to MLX Omni Server at {self.base_url}. "
+                    "Is it running? Try: `mlx_omni_server` or check localhost:8000"
+                )
+            raise RuntimeError(f"MLX API error: {error_msg}")
 
     def close(self):
         """Close HTTP client."""

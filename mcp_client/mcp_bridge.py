@@ -112,7 +112,9 @@ class MCPBridge:
                 "Is it running? Try: MCP_TRANSPORT=streamable-http MCP_PORT=8000 python3 server.py"
             )
         except httpx.HTTPStatusError as e:
-            raise RuntimeError(f"MCP server HTTP error: {e.response.status_code} — {e.response.text}")
+            status_code = e.response.status_code if hasattr(e, 'response') and e.response else "unknown"
+            error_text = e.response.text if hasattr(e, 'response') and e.response else str(e)
+            raise RuntimeError(f"MCP server HTTP error: {status_code} — {error_text}")
 
     def _initialize(self):
         """Initialize MCP protocol handshake."""

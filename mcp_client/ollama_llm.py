@@ -77,6 +77,31 @@ class MLXOmniClient:
 
         return openai_tools
 
+    def _build_system_prompt(self) -> str:
+        """Build system prompt that prevents hallucination."""
+        return """You are a Salesforce channel analytics assistant connected to real Salesforce data.
+
+CRITICAL RULES:
+1. NEVER invent or estimate numbers - always use tool results
+2. If tool results show specific values, use EXACTLY those values
+3. Do NOT hallucinate data - if you don't have real data, say so
+4. Always cite the exact numbers from tool results
+5. If synthesis step: use ONLY the tool results provided, do NOT make up alternatives
+
+When users ask questions:
+- First, determine which tool(s) to call
+- Call the tool with appropriate parameters
+- Wait for real Salesforce data in results
+- Use ONLY that data in your response
+
+Example:
+- Tool returns: Spain revenue €326,652
+- You respond: "Spain's revenue was €326,652"
+- NOT: "Spain had around €300K" (hallucination)
+- NOT: "Spain: €500,000" (fabrication)
+
+Be concise and business-focused. Always use exact values from tool results."""
+
     def _format_tools_for_prompt(self, tools: list[dict]) -> str:
         """Format tool schema for display."""
         tools_text = "Available tools:\n"
@@ -109,8 +134,19 @@ class MLXOmniClient:
         Returns:
             LLMResponse with text and parsed tool calls
         """
-        # Build message history
-        messages = conversation_history or []
+        # Build message history with system prompt
+        messages = []
+
+        # Add system prompt only if this is the first turn (not continuation)
+        if not conversation_history:
+            messages.append({
+                "role": "system",
+                "content": self._build_system_prompt()
+            })
+
+        if conversation_history:
+            messages.extend(conversation_history)
+
         messages.append({"role": "user", "content": question})
 
         if VERBOSE:

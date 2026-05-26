@@ -101,6 +101,15 @@ class ChatSession:
         results = []
         for tool_call in tool_calls:
             result = self._execute_tool_call(tool_call)
+
+            # Validate that we got real data, not fabricated
+            if "error" in result:
+                logger.error(f"Tool {tool_call.name} returned error: {result['error']}")
+            else:
+                logger.info(f"Tool {tool_call.name} executed successfully")
+                if VERBOSE:
+                    logger.info(f"Result keys: {list(result.keys())}")
+
             results.append(
                 {
                     "tool": tool_call.name,
@@ -158,12 +167,25 @@ class ChatSession:
         # Step 3: Execute tools
         logger.info(f"Executing {len(llm_response.tool_calls)} tool calls")
         tool_results = self._execute_tool_calls(llm_response.tool_calls)
+
+        # Check if any tools had errors
+        errors = [r for r in tool_results if "error" in r["result"]]
+        if errors:
+            error_summary = "\n".join([f"- {e['tool']}: {e['result']['error']}" for e in errors])
+            error_msg = f"⚠️ Tool execution failed:\n{error_summary}\n\nCannot provide accurate data without tool results."
+            logger.error(error_msg)
+            self.conversation_history.append({"role": "assistant", "content": error_msg})
+            return error_msg
+
         formatted_results = self._format_tool_results(tool_results)
 
         # Step 4: Ask Ollama to synthesize final answer with tool results
+        # CRITICAL: Instruct model to use exact values from tool results
         synthesis_prompt = (
-            f"Based on these tool results:\n\n{formatted_results}\n\n"
-            f"Provide a concise, business-focused answer to: {question}"
+            f"Based on these REAL tool results from Salesforce:\n\n{formatted_results}\n\n"
+            f"Answer the question using ONLY the data above. Do NOT invent or estimate numbers.\n"
+            f"Always reference the exact values shown in the tool results.\n"
+            f"Question: {question}"
         )
 
         if VERBOSE:

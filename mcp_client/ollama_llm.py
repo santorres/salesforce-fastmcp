@@ -34,13 +34,13 @@ class LLMResponse:
 class MLXOmniClient:
     """MLX Omni Server LLM client with OpenAI-compatible tool calling."""
 
-    def __init__(self, base_url: str = "http://localhost:8000/v1", model: str = "mlx"):
+    def __init__(self, base_url: str = OLLAMA_BASE_URL, model: str = OLLAMA_MODEL):
         """
         Initialize MLX Omni client.
 
         Args:
             base_url: OpenAI-compatible endpoint (MLX Omni Server default: http://localhost:8000/v1)
-            model: Model name (MLX Omni uses "mlx" by default)
+            model: Model ID from MLX Omni /v1/models endpoint (e.g., Qwen/Qwen2.5-3B-Instruct)
         """
         self.base_url = base_url
         self.model = model

@@ -2,11 +2,11 @@
 import os
 from typing import Optional
 
-# Ollama settings
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "nous-hermes2:latest")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_TEMPERATURE = float(os.getenv("OLLAMA_TEMPERATURE", "0.3"))  # Lower = more deterministic
-OLLAMA_TOP_P = float(os.getenv("OLLAMA_TOP_P", "0.9"))
+# MLX Omni Server settings
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mlx")  # MLX Omni uses "mlx" as model name
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:8000/v1")  # MLX Omni OpenAI-compatible endpoint
+OLLAMA_TEMPERATURE = float(os.getenv("OLLAMA_TEMPERATURE", "0.0"))  # Lower = more deterministic, 0 for tool calling
+OLLAMA_TOP_P = float(os.getenv("OLLAMA_TOP_P", "1.0"))
 
 # MCP server settings — flexible local or remote
 MCP_SERVER_MODE = os.getenv("MCP_SERVER_MODE", "http")  # "stdio" or "http"
@@ -23,14 +23,14 @@ VERBOSE = os.getenv("VERBOSE", "false").lower() == "true"
 
 # Tool calling settings
 MAX_TOOLS_PER_CALL = 3  # Prevent LLM from calling too many tools at once
-TIMEOUT_SECONDS = 30
+TIMEOUT_SECONDS = 300  # Increased for slower models
 
 def get_config_summary() -> str:
     """Return human-readable config for debugging."""
     return f"""
 MCP Client Configuration:
-  Model: {OLLAMA_MODEL}
-  Ollama URL: {OLLAMA_BASE_URL}
+  LLM Model: {OLLAMA_MODEL}
+  MLX Omni URL: {OLLAMA_BASE_URL}
   Temperature: {OLLAMA_TEMPERATURE}
 
   MCP Mode: {MCP_SERVER_MODE}

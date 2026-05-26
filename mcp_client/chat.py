@@ -1,21 +1,37 @@
-"""REPL Chat Interface — interactive Ollama + MCP client."""
+"""REPL Chat Interface — interactive MLX Omni + MCP client."""
 import sys
 import json
 import time
 import logging
 from typing import Optional
+import os
 
-from .config import (
-    get_config_summary,
-    LOG_LEVEL,
-    VERBOSE,
-    MAX_RETRIES,
-    RETRY_DELAY_MS,
-    MCP_SERVER_MODE,
-)
-from .ollama_llm import MLXOmniClient, ToolCall
-from .mcp_bridge import MCPBridge
-from .mcp_bridge_stdio import MCPBridgeStdio
+# Handle both module and direct script execution
+if __name__ == "__main__" and __package__ is None:
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from mcp_client.config import (
+        get_config_summary,
+        LOG_LEVEL,
+        VERBOSE,
+        MAX_RETRIES,
+        RETRY_DELAY_MS,
+        MCP_SERVER_MODE,
+    )
+    from mcp_client.ollama_llm import MLXOmniClient, ToolCall
+    from mcp_client.mcp_bridge import MCPBridge
+    from mcp_client.mcp_bridge_stdio import MCPBridgeStdio
+else:
+    from .config import (
+        get_config_summary,
+        LOG_LEVEL,
+        VERBOSE,
+        MAX_RETRIES,
+        RETRY_DELAY_MS,
+        MCP_SERVER_MODE,
+    )
+    from .ollama_llm import MLXOmniClient, ToolCall
+    from .mcp_bridge import MCPBridge
+    from .mcp_bridge_stdio import MCPBridgeStdio
 
 # Setup logging
 logging.basicConfig(

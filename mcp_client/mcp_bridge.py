@@ -22,13 +22,30 @@ class MCPBridge:
         self.client = httpx.Client(timeout=TIMEOUT_SECONDS)
         self._tools_cache = None
         self._request_id = 0
+        self._session_id = None
+        self._initialized = False
 
     def _get_request_id(self) -> int:
         """Get next JSON-RPC request ID."""
         self._request_id += 1
         return self._request_id
 
-    def _send_jsonrpc(self, method: str, params: Optional[dict] = None) -> dict:
+    def _parse_sse_response(self, text: str) -> dict:
+        """Parse Server-Sent Events (SSE) response format."""
+        lines = text.strip().split("\n")
+        result = {}
+
+        for line in lines:
+            if line.startswith("data: "):
+                json_str = line[6:]  # Remove "data: " prefix
+                try:
+                    result = json.loads(json_str)
+                except json.JSONDecodeError:
+                    logger.warning(f"Failed to parse JSON from SSE line: {json_str}")
+
+        return result
+
+    def _send_jsonrpc(self, method: str, params: Optional[dict] = None, retry_count: int = 0) -> dict:
         """Send a JSON-RPC 2.0 request to MCP server."""
         payload = {
             "jsonrpc": "2.0",
@@ -42,10 +59,40 @@ class MCPBridge:
             logger.info(f"JSON-RPC request: {method} {params or ''}")
 
         try:
-            response = self.client.post(self.server_url, json=payload)
+            headers = {
+                "Content-Type": "application/json",
+                "Accept": "application/json, text/event-stream",
+            }
+            # Include session ID if we have one
+            if self._session_id:
+                headers["mcp-session-id"] = self._session_id
+
+            response = self.client.post(
+                self.server_url,
+                json=payload,
+                headers=headers,
+            )
+
+            # Extract session ID from response headers (even on error)
+            if "mcp-session-id" in response.headers:
+                self._session_id = response.headers["mcp-session-id"]
+                if VERBOSE:
+                    logger.info(f"Session ID: {self._session_id}")
+
+            # If we got a 400 "Missing session ID" error but now have a session ID, retry
+            if response.status_code == 400 and self._session_id and retry_count == 0:
+                if VERBOSE:
+                    logger.info("Retrying with session ID...")
+                return self._send_jsonrpc(method, params, retry_count=1)
+
             response.raise_for_status()
 
-            data = response.json()
+            # Parse SSE format if response contains streaming data
+            response_text = response.text
+            if response_text.startswith("event:"):
+                data = self._parse_sse_response(response_text)
+            else:
+                data = response.json()
 
             # Check for JSON-RPC error response
             if "error" in data:
@@ -65,7 +112,34 @@ class MCPBridge:
                 "Is it running? Try: MCP_TRANSPORT=streamable-http MCP_PORT=8000 python3 server.py"
             )
         except httpx.HTTPStatusError as e:
-            raise RuntimeError(f"MCP server HTTP error: {e.status_code} — {e.response.text}")
+            raise RuntimeError(f"MCP server HTTP error: {e.response.status_code} — {e.response.text}")
+
+    def _initialize(self):
+        """Initialize MCP protocol handshake."""
+        if self._initialized:
+            return
+
+        if VERBOSE:
+            logger.info("Initializing MCP protocol")
+
+        try:
+            result = self._send_jsonrpc(
+                "initialize",
+                {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {},
+                    "clientInfo": {"name": "ollama-mcp-client", "version": "1.0.0"},
+                },
+            )
+
+            if VERBOSE:
+                logger.info(f"MCP initialized: {result.get('serverInfo', {}).get('name')}")
+
+            self._initialized = True
+
+        except Exception as e:
+            logger.error(f"Failed to initialize MCP: {e}")
+            raise
 
     def list_tools(self) -> list[dict]:
         """
@@ -81,6 +155,10 @@ class MCPBridge:
             logger.info(f"Discovering tools from {self.server_url}")
 
         try:
+            # Initialize first if not already done
+            self._initialize()
+
+            # Then list tools
             result = self._send_jsonrpc("tools/list")
             tools = result.get("tools", [])
 

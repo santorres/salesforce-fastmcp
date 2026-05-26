@@ -3,7 +3,7 @@ import os
 from typing import Optional
 
 # MLX Omni Server settings
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mlx")  # MLX Omni uses "mlx" as model name
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "Qwen/Qwen2.5-3B-Instruct")  # Model ID from MLX Omni /v1/models endpoint
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:8000/v1")  # MLX Omni OpenAI-compatible endpoint
 OLLAMA_TEMPERATURE = float(os.getenv("OLLAMA_TEMPERATURE", "0.0"))  # Lower = more deterministic, 0 for tool calling
 OLLAMA_TOP_P = float(os.getenv("OLLAMA_TOP_P", "1.0"))

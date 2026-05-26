@@ -11,9 +11,11 @@ from .config import (
     VERBOSE,
     MAX_RETRIES,
     RETRY_DELAY_MS,
+    MCP_SERVER_MODE,
 )
 from .ollama_llm import OllamaClient, ToolCall
 from .mcp_bridge import MCPBridge
+from .mcp_bridge_stdio import MCPBridgeStdio
 
 # Setup logging
 logging.basicConfig(
@@ -26,9 +28,21 @@ logger = logging.getLogger(__name__)
 class ChatSession:
     """Interactive chat session with Ollama + MCP."""
 
-    def __init__(self, mcp_url: Optional[str] = None, ollama_url: Optional[str] = None):
-        """Initialize chat session."""
-        self.mcp = MCPBridge(mcp_url) if mcp_url else MCPBridge()
+    def __init__(self, mcp_url: Optional[str] = None, mcp_cmd: Optional[str] = None, ollama_url: Optional[str] = None):
+        """
+        Initialize chat session.
+
+        Args:
+            mcp_url: HTTP MCP server URL (if using HTTP mode)
+            mcp_cmd: MCP server command (if using stdio mode)
+            ollama_url: Ollama server URL
+        """
+        # Choose MCP bridge based on mode
+        if MCP_SERVER_MODE == "stdio":
+            self.mcp = MCPBridgeStdio(mcp_cmd) if mcp_cmd else MCPBridgeStdio()
+        else:
+            self.mcp = MCPBridge(mcp_url) if mcp_url else MCPBridge()
+
         self.ollama = OllamaClient(base_url=ollama_url) if ollama_url else OllamaClient()
         self.tools = self.mcp.list_tools()
         self.conversation_history = []

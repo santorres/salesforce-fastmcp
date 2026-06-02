@@ -7,6 +7,10 @@ import sys
 from typing import Annotated, Any
 from logging.handlers import RotatingFileHandler
 
+# Add project root to path so core/ and other modules are importable
+# when server.py is run from mcp/ subdirectory
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 from pydantic import Field

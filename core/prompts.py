@@ -6,7 +6,7 @@ and leads from a Channel Director perspective covering Southern Europe.
 Region: Portugal, Spain, Italy, Greece, Cyprus
 """
 
-from channel_intelligence import _get_period_range, _normalize_period, _fiscal_quarter_range
+from .channel_intelligence import _get_period_range, _normalize_period, _fiscal_quarter_range
 from datetime import date as _date
 
 # =============================================================================

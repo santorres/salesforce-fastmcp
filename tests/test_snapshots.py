@@ -6,20 +6,21 @@ import ast
 import pytest
 import yaml
 
-import channel_intelligence as ci
-import prompts
+from core import channel_intelligence as ci
+from core import prompts
 
 
 def _count_mcp_tools_in_server() -> int:
-    with open("server.py", "r") as f:
+    with open("mcp/server.py", "r") as f:
         content = f.read()
     return content.count("@mcp.tool")
 
 
 def _readme_claimed_tool_count() -> int | None:
-    with open("README.md", "r") as f:
+    with open("README.md", "r") as f:  # README stays at root
         content = f.read()
-    m = re.search(r"\*\*Total:\s*(\d+)\s*tools\*\*", content)
+    # Match patterns like "54 tools" or "Total: 54 tools"
+    m = re.search(r"(?:Total:\s*)?(\d+)\s+tools", content, re.IGNORECASE)
     return int(m.group(1)) if m else None
 
 
@@ -93,7 +94,7 @@ class TestPeriodListComplete:
 
 class TestModuleImports:
     def test_channel_intelligence_importable(self):
-        import channel_intelligence  # noqa: F401
+        from core import channel_intelligence  # noqa: F401
 
     def test_server_importable_without_env(self):
         # server.py should not crash on import without Salesforce credentials
@@ -101,8 +102,8 @@ class TestModuleImports:
         # Skip if FastMCP isn't installed in this environment
         fastmcp = pytest.importorskip("fastmcp", reason="fastmcp not installed")
         import sys
-        sys.modules.pop("server", None)
+        sys.modules.pop("mcp.server", None)
         try:
-            import server  # noqa: F401
+            from mcp import server  # noqa: F401
         except Exception as e:
-            pytest.fail(f"server.py raised on import: {e}")
+            pytest.fail(f"mcp/server.py raised on import: {e}")

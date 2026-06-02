@@ -9,7 +9,7 @@ import re
 from datetime import date, timedelta
 from typing import Any
 
-from ci_config import get_config, COUNTRIES_SQL
+from .ci_config import get_config, COUNTRIES_SQL
 
 # ---------------------------------------------------------------------------
 # Fiscal-year / date utilities

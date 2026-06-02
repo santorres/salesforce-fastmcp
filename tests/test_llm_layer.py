@@ -12,7 +12,7 @@ import json
 import logging
 import pytest
 
-import channel_intelligence as ci
+from core import channel_intelligence as ci
 
 # Mark server-dependent tests to skip when fastmcp is not installed
 _has_fastmcp = importlib.util.find_spec("fastmcp") is not None

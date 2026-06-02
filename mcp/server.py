@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 from fastmcp import FastMCP
 from pydantic import Field
 
-from salesforce_client import SalesforceClient, SalesforceError
-import channel_intelligence as ci
-from prompts import (
+from core.salesforce_client import SalesforceClient, SalesforceError
+from core import channel_intelligence as ci
+from core.prompts import (
     quarterly_pipeline_analysis,
     closed_won_partner_analysis,
     partner_engagement_health,

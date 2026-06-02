@@ -31,8 +31,8 @@ from dotenv import load_dotenv
 # Add parent dir to path so we can import sibling modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from salesforce_client import SalesforceClient
-import channel_intelligence as ci
+from core.salesforce_client import SalesforceClient
+from core import channel_intelligence as ci
 
 load_dotenv()
 

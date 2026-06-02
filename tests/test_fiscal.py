@@ -3,7 +3,7 @@
 import pytest
 from datetime import date
 
-import channel_intelligence as ci
+from core import channel_intelligence as ci
 
 
 class TestFiscalYearBoundaries:

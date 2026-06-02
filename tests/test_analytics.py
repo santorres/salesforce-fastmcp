@@ -2,7 +2,7 @@
 
 import pytest
 
-import channel_intelligence as ci
+from core import channel_intelligence as ci
 from tests.conftest import MockSF, soql_response, agg_response
 
 

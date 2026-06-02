@@ -11,11 +11,11 @@ FastMCP server providing Salesforce analytics and CRUD tools, purpose-built for 
 ### 📖 Documentation (Pick Your Interface)
 
 **Using Claude Desktop (MCP - Interactive):**
-- **[CHANNEL_DIRECTOR_PLAYBOOK.md](CHANNEL_DIRECTOR_PLAYBOOK.md)** — Complete reference for all 54 MCP tools, organized by daily/weekly/monthly workflows
-- **[CHANNEL_DIRECTOR_PROMPTS.md](CHANNEL_DIRECTOR_PROMPTS.md)** — Copy-paste prompts for Claude Desktop, grouped by topic
+- **[docs/channel-director/PLAYBOOK.md](docs/channel-director/PLAYBOOK.md)** — Complete reference for all 54 MCP tools, organized by daily/weekly/monthly workflows
+- **[docs/channel-director/PROMPTS.md](docs/channel-director/PROMPTS.md)** — Copy-paste prompts for Claude Desktop, grouped by topic
 
 **Using CLI (Command-line - Automation):**
-- **[CLI_PLAYBOOK.md](CLI_PLAYBOOK.md)** — Comprehensive CLI guide for automated workflows, scheduled reports, and Hermes Agent integration
+- **[cli/docs/PLAYBOOK.md](cli/docs/PLAYBOOK.md)** — Comprehensive CLI guide for automated workflows, scheduled reports, and Hermes Agent integration
   - ✅ 10 commands with real examples
   - ✅ Daily/weekly/monthly workflow templates
   - ✅ Hermes automation setup
@@ -29,14 +29,14 @@ FastMCP server providing Salesforce analytics and CRUD tools, purpose-built for 
 
 | File | What it does |
 |------|-------------|
-| `server.py` | FastMCP server entry point — registers all 54 MCP tools, middleware, HTTP/stdio transport |
-| `channel_intelligence.py` | All channel analytics tool implementations (revenue, pipeline, partners, hygiene, QBR, etc.) |
-| `ci_config.py` | Constants, `ConfigManager` (YAML target lookups), partner key normalisation |
-| `ci_fiscal.py` | Fiscal calendar helpers, period arithmetic, SOQL query builders |
-| `salesforce_client.py` | Async Salesforce REST API client (httpx-based) |
-| `prompts.py` | 14 structured MCP prompt templates for common analyses |
-| `proxy.py` | stdio↔HTTP proxy — used by `wrapper.sh` to connect Claude Desktop to the remote server |
-| `wrapper.sh` | Shell script Claude Desktop calls; proxies MCP traffic to the remote server over Tailscale |
+| `mcp/server.py` | FastMCP server entry point — registers all 54 MCP tools, middleware, HTTP/stdio transport |
+| `core/channel_intelligence.py` | All channel analytics tool implementations (revenue, pipeline, partners, hygiene, QBR, etc.) |
+| `core/ci_config.py` | Constants, `ConfigManager` (YAML target lookups), partner key normalisation |
+| `core/ci_fiscal.py` | Fiscal calendar helpers, period arithmetic, SOQL query builders |
+| `core/salesforce_client.py` | Async Salesforce REST API client (httpx-based) |
+| `core/prompts.py` | 14 structured MCP prompt templates for common analyses |
+| `mcp/proxy.py` | stdio↔HTTP proxy — used by `wrapper.sh` to connect Claude Desktop to the remote server |
+| `mcp/wrapper.sh` | Shell script Claude Desktop calls; proxies MCP traffic to the remote server over Tailscale |
 | `config/sales_targets.yaml` | Revenue targets by territory, country, and partner — no Salesforce fields needed |
 
 ### Test files

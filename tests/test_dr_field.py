@@ -11,7 +11,7 @@ load_dotenv()
 
 # Import Salesforce client
 sys.path.insert(0, '/Users/santiago/Projects/salesforce-fastmcp')
-from server import get_client
+from mcp.server import get_client
 
 async def test_queries():
     """Test progressive SOQL queries to isolate the issue."""

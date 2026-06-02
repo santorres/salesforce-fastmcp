@@ -17,7 +17,8 @@ dev = [
 ]
 
 [project.scripts]
-salesforce-mcp = "server:main"
+salesforce-mcp = "mcp.server:main"
+channel = "cli.channel_cli:cli"
 
 [build-system]
 requires = ["hatchling"]

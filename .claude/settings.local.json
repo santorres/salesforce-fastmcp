@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:gofastmcp.com)",
+      "mcp__salesforce-connector__salesforce_query",
+      "Bash(python3:*)"
+    ]
+  }
+}

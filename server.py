@@ -1,5 +1,6 @@
 """FastMCP server for Salesforce integration."""
 
+import asyncio
 import json
 import logging
 import os
@@ -12,6 +13,7 @@ from fastmcp import FastMCP
 from pydantic import Field
 
 from salesforce_client import SalesforceClient, SalesforceError
+from auth_provider import create_auth_provider, AuthProvider, Credentials
 import channel_intelligence as ci
 from prompts import (
     quarterly_pipeline_analysis,
@@ -52,16 +54,48 @@ logger = _setup_logger()
 # Initialize FastMCP server
 mcp = FastMCP("Salesforce Connector")
 
-# Global client instance (lazy initialized)
+# Global client instance and auth provider
 _client: SalesforceClient | None = None
+_auth_provider: AuthProvider | None = None
+_credentials: Credentials | None = None
 
 
 def get_client() -> SalesforceClient:
     """Get or create the Salesforce client instance."""
     global _client
     if _client is None:
-        _client = SalesforceClient()
+        raise RuntimeError(
+            "Salesforce client not initialized. "
+            "Call initialize_client() first."
+        )
     return _client
+
+
+async def initialize_client() -> None:
+    """Initialize Salesforce client with authentication provider.
+    
+    This sets up the auth provider based on SALESFORCE_AUTH_METHOD env var
+    and retrieves credentials.
+    """
+    global _client, _auth_provider, _credentials
+    
+    try:
+        logger.info("Initializing authentication provider...")
+        _auth_provider = create_auth_provider()
+        
+        logger.info("Retrieving credentials...")
+        _credentials = await _auth_provider.get_credentials()
+        
+        logger.info(f"Creating Salesforce client (auth: {_credentials.auth_method})")
+        _client = SalesforceClient(
+            base_url=_credentials.base_url,
+            access_token=_credentials.access_token
+        )
+        
+        logger.info(f"Authentication successful for {_credentials.username or 'unknown user'}")
+    except Exception as e:
+        logger.error(f"Failed to initialize authentication: {e}")
+        raise
 
 
 # User authentication cache (token → user info)
@@ -1618,24 +1652,26 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
 # =============================================================================
 
 
-async def _initialize_user_cache():
-    """Initialize the user cache on startup."""
+async def _startup():
+    """Initialize client and cache on startup."""
     try:
+        logger.info("Starting up MCP server...")
+        await initialize_client()
         user = await get_authenticated_user()
-        logger.info(f"Server initialized for user: {user}")
+        logger.info(f"Server ready for user: {user}")
     except Exception as e:
-        logger.warning(f"Failed to initialize user cache on startup: {e}")
+        logger.error(f"Failed to initialize during startup: {e}")
+        raise
 
 
 def main():
     """Run the MCP server."""
-    import asyncio
-    
-    # Initialize user cache on startup
+    # Initialize client on startup
     try:
-        asyncio.run(_initialize_user_cache())
+        asyncio.run(_startup())
     except Exception as e:
-        logger.warning(f"Could not pre-cache user on startup: {e}")
+        logger.error(f"Startup failed: {e}")
+        sys.exit(1)
     
     transport = os.getenv("MCP_TRANSPORT", "stdio")
     host = os.getenv("MCP_HOST", "0.0.0.0")

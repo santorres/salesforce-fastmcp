@@ -31,12 +31,12 @@ FastMCP server providing Salesforce analytics and CRUD tools, purpose-built for 
 |------|-------------|
 | `server.py` | FastMCP server entry point — registers all 54 MCP tools, middleware, HTTP/stdio transport |
 | `channel_intelligence.py` | All channel analytics tool implementations (revenue, pipeline, partners, hygiene, QBR, etc.) |
-| `ci_config.py` | Constants, `ConfigManager` (YAML target lookups), partner key normalisation |
-| `ci_fiscal.py` | Fiscal calendar helpers, period arithmetic, SOQL query builders |
+| `config/ci_config.py` | Constants, `ConfigManager` (YAML target lookups), partner key normalisation |
+| `config/ci_fiscal.py` | Fiscal calendar helpers, period arithmetic, SOQL query builders |
 | `salesforce_client.py` | Async Salesforce REST API client (httpx-based) |
 | `prompts.py` | 14 structured MCP prompt templates for common analyses |
 | `proxy.py` | stdio↔HTTP proxy — used by `wrapper.sh` to connect Claude Desktop to the remote server |
-| `wrapper.sh` | Shell script Claude Desktop calls; proxies MCP traffic to the remote server over Tailscale |
+| `wrapper.sh` | Shell script Claude Desktop calls; proxies MCP traffic to the remote server |
 | `config/sales_targets.yaml` | Revenue targets by territory, country, and partner — no Salesforce fields needed |
 
 ### Test files
@@ -253,46 +253,19 @@ cp .env.example .env
 # Edit .env with SALESFORCE_BASE_URL and SALESFORCE_SID
 ```
 
-### Running the server
+## Deployment Modes
+
+Choose one based on your setup:
+
+### Mode 1: Local (Single Laptop)
+**For development and local Claude Desktop use:**
 
 ```bash
-# HTTP mode — default, used by Claude Desktop via wrapper.sh
-MCP_TRANSPORT=streamable-http MCP_PORT=8000 python3 server.py
-
-# stdio mode — for local Claude Desktop without proxy
+source .venv/bin/activate
 MCP_TRANSPORT=stdio python3 server.py
 ```
 
-Environment variables:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MCP_TRANSPORT` | `stdio` | `stdio` or `streamable-http` |
-| `MCP_PORT` | `8000` | HTTP port |
-| `MCP_HOST` | `0.0.0.0` | HTTP bind address |
-| `MCP_LOG_FILE` | `mcp_requests.log` | Request log path (rotates at 5 MB) |
-| `DEFAULT_CHANNEL_MANAGER` | — | Default filter for all tools |
-
----
-
-## Two-Laptop Setup
-
-The server runs on the laptop with Salesforce auth. Claude Desktop on the other laptop connects via `wrapper.sh` over Tailscale.
-
-```
-Claude Desktop (AI laptop)
-    └── wrapper.sh (proxy.py)
-            └── HTTP → Tailscale → server.py (Salesforce laptop)
-                                        └── Salesforce REST API
-```
-
-**Server laptop** — start the server:
-```bash
-source .venv/bin/activate
-MCP_TRANSPORT=streamable-http MCP_PORT=8000 python3 server.py
-```
-
-**AI laptop** — Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
@@ -303,12 +276,59 @@ MCP_TRANSPORT=streamable-http MCP_PORT=8000 python3 server.py
 }
 ```
 
-Set the server address:
+Set MCP server to local:
 ```bash
-export SALESFORCE_MCP_URL="http://100.x.x.x:8000/mcp"
+export MCP_SERVER_URL="http://localhost:8000/mcp"
+```
+
+### Mode 2: Remote (Two Laptops)
+**For production or when Salesforce access is on a different machine:**
+
+**Server laptop** (with Salesforce auth) — start in HTTP mode:
+```bash
+source .venv/bin/activate
+MCP_TRANSPORT=streamable-http MCP_PORT=8000 python3 server.py
+```
+
+**AI laptop** (where Claude Desktop runs) — Claude Desktop config:
+```json
+{
+  "mcpServers": {
+    "salesforceMCP": {
+      "command": "/path/to/salesforce-fastmcp/wrapper.sh"
+    }
+  }
+}
+```
+
+Set the remote server address:
+```bash
+export SALESFORCE_MCP_URL="http://SERVER_IP:8000/mcp"
+```
+
+Architecture:
+```
+Claude Desktop (AI laptop)
+    └── wrapper.sh → proxy.py
+            └── HTTP → server.py (Salesforce laptop)
+                          └── Salesforce REST API
 ```
 
 **After every `git pull` on the server laptop, restart `server.py`** — the running process uses the code it loaded at startup.
+
+---
+
+## Server Configuration
+
+Environment variables for `server.py`:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MCP_TRANSPORT` | `stdio` | `stdio` or `streamable-http` |
+| `MCP_PORT` | `8000` | HTTP port (HTTP mode only) |
+| `MCP_HOST` | `0.0.0.0` | HTTP bind address (HTTP mode only) |
+| `MCP_LOG_FILE` | `mcp_requests.log` | Request log path (rotates at 5 MB) |
+| `DEFAULT_CHANNEL_MANAGER` | — | Default filter for all tools |
 
 ---
 

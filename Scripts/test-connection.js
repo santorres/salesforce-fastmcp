@@ -46,14 +46,16 @@ async function testConnection() {
   console.log(`   Token: ${ACCESS_TOKEN.substring(0, 20)}...\n`);
 
   try {
-    // Test 1: Identity endpoint
-    console.log('📌 Test 1: Checking identity endpoint...');
-    const identityRes = await api.get('/services/oauth2/token');
-    console.log('   ✅ Identity endpoint reachable\n');
+    // Test 1: Query basic data (first to validate connection)
+    console.log('📌 Test 1: Validating Bearer token...');
+    const testRes = await api.get('/query', {
+      params: { q: "SELECT Id FROM Account LIMIT 1" }
+    });
+    console.log('   ✅ Bearer token is valid\n');
 
     // Test 2: Query basic data
     console.log('📌 Test 2: Querying Accounts...');
-    const queryRes = await api.get('/services/data/v60.0/query', {
+    const queryRes = await api.get('/query', {
       params: { q: "SELECT Id, Name FROM Account LIMIT 5" }
     });
     
@@ -69,7 +71,7 @@ async function testConnection() {
 
     // Test 3: Check Opportunities with Partner fields
     console.log('📌 Test 3: Checking Partner__r relationship...');
-    const oppRes = await api.get('/services/data/v60.0/query', {
+    const oppRes = await api.get('/query', {
       params: { 
         q: "SELECT Id, Name, Partner__r.Name FROM Opportunity WHERE Partner__r.Name != null LIMIT 3" 
       }

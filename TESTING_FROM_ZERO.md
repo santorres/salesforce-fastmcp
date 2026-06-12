@@ -3,33 +3,51 @@
 ## Prerequisites
 You have:
 - ✅ Salesforce CLI installed (`sf org login web` already run)
-- ✅ No `.env` file (or one with old browser cookie auth)
+- ✅ Existing `.env` file with MCP and old browser cookie settings
 
-## Test Scenario: Fresh Start (RECOMMENDED)
+## Test Scenario: Fresh Start (RECOMMENDED) - Keep .env, Invalidate Token
 
-### Step 1: Remove/Clear Old .env (optional, but clearest test)
+### Step 1: Update .env to Use Auto-Detection
+
+Edit your existing `.env` file to enable auto-detection:
 
 ```bash
 cd /Users/santiagot/Applications/salesforce-fastmcp
 
-# Option A: Remove old .env completely
-rm .env
-
-# Option B: Create minimal .env with only MCP settings
+# Edit .env and make these changes:
 cat > .env << 'EOF'
-MCP_TRANSPORT=stdio
+MCP_TRANSPORT=streamable-http
 MCP_HOST=0.0.0.0
 MCP_PORT=8000
+
+# Salesforce Authentication
+# Set auth method to auto-detect (tries SF CLI first, then browser cookie)
+SALESFORCE_AUTH_METHOD=auto
+
+# Browser cookie method (only used if SF CLI not available)
+# Keep these for fallback, but SF CLI will be used if available
+# Uncomment and set a real token only if SF CLI is not available
+# SALESFORCE_SID=INVALID_TOKEN
+# SALESFORCE_BASE_URL=https://semperis.my.salesforce.com/services/data/v62.0
+
+# For explicit SF CLI with specific org, uncomment and set:
+# SALESFORCE_ORG_USERNAME=santiagot@semperis.com
 EOF
 ```
+
+**Why this works:**
+- `SALESFORCE_AUTH_METHOD=auto` tells server to auto-detect
+- Old `SALESFORCE_SID` is commented out (invalid/expired token)
+- Browser cookie env vars are not set or invalid
+- SF CLI IS available → auto-detection will use SF CLI ✓
 
 ### Step 2: Verify SF CLI is Ready
 
 ```bash
-# Check SF CLI works
+# Check SF CLI works and you have authenticated orgs
 sf org list
 
-# Should show your authenticated org
+# Should show your authenticated org(s)
 ```
 
 ### Step 3: Run Server (It Will Auto-Detect SF CLI!)
@@ -41,18 +59,18 @@ python server.py
 **What happens automatically:**
 
 1. Server starts
-2. `initialize_client()` is called during startup
-3. `create_auth_provider()` checks `SALESFORCE_AUTH_METHOD` env var
-4. Env var not set → defaults to `"auto"`
+2. Loads `.env` file (has `SALESFORCE_AUTH_METHOD=auto`)
+3. `initialize_client()` is called during startup
+4. `create_auth_provider("auto")` is called
 5. Auto-detection runs:
-   - ✓ Checks: Is SF CLI available?
-   - ✓ Answer: YES
-   - ✓ Uses: SFCliAuthProvider
+   - Checks: Is SF CLI available? → YES ✓
+   - Checks: Are browser cookie env vars valid? → NO (commented out)
+   - Uses: SFCliAuthProvider ✓
 6. SF CLI provider automatically:
-   - Queries: `sf org list --json`
+   - Queries `sf org list --json`
    - Finds your authenticated org
-   - Retrieves: Access token via `sf org auth show-access-token`
-   - Constructs: Correct base URL with API version
+   - Retrieves access token via `sf org auth show-access-token`
+   - Constructs correct base URL with API version
    - Initializes SalesforceClient
 7. Server ready and authenticated! ✓
 
@@ -61,38 +79,33 @@ python server.py
 You should see logs like:
 
 ```
-2026-06-12 22:30:06 | Initializing authentication provider...
-2026-06-12 22:30:06 | Retrieving credentials...
-2026-06-12 22:30:11 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
-2026-06-12 22:30:11 | Creating Salesforce client (auth: sf_cli)
-2026-06-12 22:30:11 | Authentication successful for santiagot@semperis.com
-2026-06-12 22:30:12 | Server ready for user: santiagot@semperis.com
+2026-06-12 22:44:07 | Initializing authentication provider...
+2026-06-12 22:44:08 | Retrieving credentials...
+2026-06-12 22:44:13 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-12 22:44:13 | Creating Salesforce client (auth: sf_cli)
+2026-06-12 22:44:13 | Authentication successful for santiagot@semperis.com
 ```
 
-**✅ SUCCESS!** Server auto-detected SF CLI and is ready.
+**SUCCESS!** Server auto-detected SF CLI and bypassed the invalid browser cookie token!
 
 ---
 
 ## Test Scenario 2: Explicit SF CLI (More Verbose)
 
-To be 100% explicit about using SF CLI:
+To be more explicit about using SF CLI, uncomment in `.env`:
 
 ```bash
-# Create .env
-cat > .env << 'EOF'
+# In .env, uncomment these lines:
 SALESFORCE_AUTH_METHOD=sf_cli
-SALESFORCE_ORG_USERNAME=santiagot@semperis.com
 
-MCP_TRANSPORT=stdio
-MCP_HOST=0.0.0.0
-MCP_PORT=8000
-EOF
+# Optionally specify org if you have multiple:
+# SALESFORCE_ORG_USERNAME=santiagot@semperis.com
 
 # Run server
 python server.py
 ```
 
-**Behavior:** Same as fresh start, but you're explicitly telling it to use SF CLI.
+**Behavior:** Explicitly uses SF CLI (skips auto-detection).
 
 ---
 
@@ -184,24 +197,27 @@ Testing Salesforce connectivity...
 ## Authentication Flow Diagram
 
 ```
-START: python server.py (no .env or minimal .env)
+START: python server.py
+  ↓
+Load .env file
   ↓
 initialize_client() called
   ↓
-create_auth_provider() called with no explicit method
-  ↓
-Check SALESFORCE_AUTH_METHOD env var
-  ├─ If set: Use that method
+create_auth_provider() checks SALESFORCE_AUTH_METHOD
+  ├─ If set to "sf_cli": Use SFCliAuthProvider ✓
+  ├─ If set to "browser_cookie": Use BrowserCookieAuthProvider ✓
+  ├─ If set to "auto": Auto-detect (see below)
   └─ If NOT set: Default to "auto"
   ↓
-Auto-detection logic:
+Auto-detection logic (when SALESFORCE_AUTH_METHOD=auto):
   ├─ Is SF CLI available?
   │  ├─ YES → Use SFCliAuthProvider ✓
+  │  │         (ignores invalid/expired browser cookie tokens)
   │  └─ NO → Check browser cookie env vars
-  │     ├─ Set → Use BrowserCookieAuthProvider ✓
-  │     └─ NOT set → Error (provide setup instructions)
+  │     ├─ Valid → Use BrowserCookieAuthProvider ✓
+  │     └─ Invalid/NOT set → Error with setup instructions
   ↓
-Get credentials:
+Get credentials from selected provider:
   ├─ SF CLI: Query `sf org list` → get token → construct URL
   ├─ Browser Cookie: Read from env vars
   ↓
@@ -209,6 +225,12 @@ Initialize SalesforceClient with credentials
   ↓
 Server ready! ✓
 ```
+
+**In your case:**
+- `.env` has `SALESFORCE_AUTH_METHOD=auto`
+- `SALESFORCE_SID` is commented out (invalid)
+- SF CLI is available
+- Result: Uses SF CLI auth, ignores invalid token ✓
 
 ---
 
@@ -226,27 +248,32 @@ Server ready! ✓
 
 ## The Simple Answer
 
-**To test from zero:**
+**To test from zero with your existing `.env`:**
 
 ```bash
-# Option 1: Simplest (let it auto-detect)
+# Option 1: Simplest (keep .env, enable auto-detect)
 cd /Users/santiagot/Applications/salesforce-fastmcp
-rm .env  # optional, removes old config
+
+# Edit .env: 
+# - Add: SALESFORCE_AUTH_METHOD=auto
+# - Comment out: SALESFORCE_SID and SALESFORCE_BASE_URL
+
 python server.py
 
-# Option 2: With minimal config
-echo "MCP_TRANSPORT=stdio" > .env
+# Option 2: Even simpler (if .env already has SALESFORCE_AUTH_METHOD=auto)
 python server.py
 ```
 
 **That's it!** The server will:
-1. See that SF CLI is available ✓
-2. Query SF CLI for your authenticated org ✓
-3. Retrieve your access token ✓
-4. Connect to Salesforce ✓
-5. Start serving MCP requests ✓
+1. Load `.env` with `SALESFORCE_AUTH_METHOD=auto`
+2. See that SF CLI is available ✓
+3. Ignore the commented-out/invalid browser cookie token
+4. Query SF CLI for your authenticated org ✓
+5. Retrieve your access token ✓
+6. Connect to Salesforce ✓
+7. Start serving MCP requests ✓
 
-**No manual token copying, no env vars to set, no configuration needed!** 🚀
+**No token refresh needed, automatic, secure!** 🚀
 
 ---
 

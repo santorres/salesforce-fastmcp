@@ -10,14 +10,14 @@ import re
 from datetime import date, timedelta
 from typing import Any
 
-from ci_config import (
+from config.ci_config import (
     TOOL_VERSION,
     COUNTRIES, COUNTRIES_SQL,
     PERIODS, METRICS, BREAKDOWNS_REVENUE, BREAKDOWNS_PIPELINE,
     DEFAULT_CHANNEL_MANAGER, ADMIN_KEY, DEFAULT_PARTNER_TARGET,
     ConfigManager, get_config, _normalize_partner_key,
 )
-from ci_fiscal import (
+from config.ci_fiscal import (
     _start_of_fiscal_year, _end_of_fiscal_year, _fiscal_year_number,
     _fiscal_year_label, _fiscal_quarter_range, _fiscal_quarter_from_date_str,
     _get_period_range,

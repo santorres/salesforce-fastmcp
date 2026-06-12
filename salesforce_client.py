@@ -93,6 +93,21 @@ class SalesforceClient:
         self._handle_error(response)
         return response.json()
 
+    async def get_current_user(self) -> dict[str, Any]:
+        """Get the currently authenticated user information.
+        
+        Returns a dict with:
+        - email: User's email address
+        - firstName: First name
+        - lastName: Last name
+        - id: Salesforce user ID
+        - displayName: Full display name
+        """
+        client = await self._get_client()
+        response = await client.get("/connect/user-info")
+        self._handle_error(response)
+        return response.json()
+
     async def search(self, sosl: str) -> dict[str, Any]:
         """Execute a SOSL search."""
         client = await self._get_client()

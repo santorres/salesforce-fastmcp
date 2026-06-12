@@ -64,11 +64,60 @@ def get_client() -> SalesforceClient:
     return _client
 
 
+# User authentication cache (token → user info)
+_user_cache: dict[str, dict[str, str]] = {}
+
+
+async def get_authenticated_user() -> str:
+    """Get the authenticated user's email address, with caching.
+    
+    Calls Salesforce /connect/user-info endpoint on first request,
+    then caches the result for subsequent requests.
+    
+    Returns:
+        User email address (e.g., 'santiagot@semperis.com'), or 'unknown' on error
+    """
+    client = get_client()
+    token = client.access_token
+    
+    # Return cached user if available
+    if token in _user_cache:
+        return _user_cache[token].get("email", "unknown")
+    
+    # Fetch user info from Salesforce
+    try:
+        user_info = await client.get_current_user()
+        _user_cache[token] = user_info
+        return user_info.get("email", "unknown")
+    except Exception as e:
+        logger.warning(f"Failed to get authenticated user info: {e}")
+        return "unknown"
+
+
 def format_result(data: Any) -> str:
     """Format result data as JSON string. Logs truncation warnings at WARN level."""
     if isinstance(data, dict) and data.get("truncationWarning"):
         logger.warning(f"TRUNCATION | {data.get('tool', '?')} | {data['truncationWarning']}")
     return json.dumps(data, indent=2, default=str)
+
+
+def _log_tool_call(tool_name: str) -> None:
+    """Log a tool call with the authenticated user.
+    
+    This is called when a tool is executed to create an audit trail.
+    """
+    import asyncio
+    try:
+        # Get user from cache (should be cached by now)
+        client = get_client()
+        token = client.access_token
+        if token in _user_cache:
+            user = _user_cache[token].get("email", "unknown")
+        else:
+            user = "unknown"
+        logger.info(f"{user} | tools/call | tool={tool_name}")
+    except Exception as e:
+        logger.warning(f"unknown | tools/call | tool={tool_name} | Failed to log user: {e}")
 
 
 def _coerce_period(period: str | None) -> str | None:
@@ -110,6 +159,7 @@ async def salesforce_query(
 
     For custom lookup fields ending in __c, use __r.Name to access the related record's name.
     """
+    _log_tool_call("salesforce_query")
     try:
         client = get_client()
         result = await client.query(q)
@@ -901,6 +951,7 @@ async def get_revenue(
     Example: get_revenue(period="THIS_FISCAL_YEAR", territory="South_Europe", country="Italy")
     → Returns revenue + target from config + attainment %
     """
+    _log_tool_call("get_revenue")
     try:
         result = await ci.get_revenue(
             get_client(), _coerce_period(period), breakdown, limit,
@@ -922,6 +973,7 @@ async def get_pipeline(
     country: Annotated[str | None, Field(description="Filter by billing country")] = None,
 ) -> str:
     """Open pipeline analytics for Southern Europe. Excludes Closed Won and Closed Lost."""
+    _log_tool_call("get_pipeline")
     try:
         result = await ci.get_pipeline(
             get_client(), _coerce_period(period), breakdown, limit,
@@ -1542,13 +1594,21 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
                 body_bytes = await request.body()
                 body = json.loads(body_bytes)
                 method = body.get("method", "?")
+                
+                # Get authenticated user (cached after first call)
+                user = await get_authenticated_user()
+                
                 if method == "tools/call":
                     tool = body.get("params", {}).get("name", "?")
-                    logger.info(f"{client_ip} | {method} | tool={tool}")
+                    logger.info(f"{user} | {client_ip} | {method} | tool={tool}")
                 else:
-                    logger.info(f"{client_ip} | {method}")
-            except Exception:
-                logger.info(f"{client_ip} | [unparseable request]")
+                    logger.info(f"{user} | {client_ip} | {method}")
+            except Exception as e:
+                try:
+                    user = await get_authenticated_user()
+                except Exception:
+                    user = "unknown"
+                logger.warning(f"{user} | {client_ip} | [unparseable request] Error: {e}")
 
         return await call_next(request)
 
@@ -1558,8 +1618,25 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
 # =============================================================================
 
 
+async def _initialize_user_cache():
+    """Initialize the user cache on startup."""
+    try:
+        user = await get_authenticated_user()
+        logger.info(f"Server initialized for user: {user}")
+    except Exception as e:
+        logger.warning(f"Failed to initialize user cache on startup: {e}")
+
+
 def main():
     """Run the MCP server."""
+    import asyncio
+    
+    # Initialize user cache on startup
+    try:
+        asyncio.run(_initialize_user_cache())
+    except Exception as e:
+        logger.warning(f"Could not pre-cache user on startup: {e}")
+    
     transport = os.getenv("MCP_TRANSPORT", "stdio")
     host = os.getenv("MCP_HOST", "0.0.0.0")
     port = int(os.getenv("MCP_PORT", "8000"))

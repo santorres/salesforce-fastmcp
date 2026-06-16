@@ -381,62 +381,6 @@ async def salesforce_find_partner(
         return f"Error: {e}"
 
 
-@mcp.tool
-async def salesforce_create(
-    object_name: Annotated[
-        str,
-        Field(description="The name of the Salesforce object (e.g., Account, Contact)"),
-    ],
-    record_data: Annotated[
-        dict[str, Any], Field(description="The field values for the new record")
-    ],
-) -> str:
-    """Create a new record in Salesforce."""
-    try:
-        client = get_client()
-        result = await client.create_record(object_name, record_data)
-        return format_result(result)
-    except SalesforceError as e:
-        return f"Error: {e}"
-
-
-@mcp.tool
-async def salesforce_update(
-    object_name: Annotated[
-        str,
-        Field(description="The name of the Salesforce object (e.g., Account, Contact)"),
-    ],
-    record_id: Annotated[str, Field(description="The ID of the record to update")],
-    record_data: Annotated[
-        dict[str, Any], Field(description="The field values to update")
-    ],
-) -> str:
-    """Update an existing record in Salesforce."""
-    try:
-        client = get_client()
-        result = await client.update_record(object_name, record_id, record_data)
-        return format_result(result)
-    except SalesforceError as e:
-        return f"Error: {e}"
-
-
-@mcp.tool
-async def salesforce_delete(
-    object_name: Annotated[
-        str,
-        Field(description="The name of the Salesforce object (e.g., Account, Contact)"),
-    ],
-    record_id: Annotated[str, Field(description="The ID of the record to delete")],
-) -> str:
-    """Delete a record from Salesforce."""
-    try:
-        client = get_client()
-        result = await client.delete_record(object_name, record_id)
-        return format_result(result)
-    except SalesforceError as e:
-        return f"Error: {e}"
-
-
 # =============================================================================
 # Navigation & Relationships Tools (3 tools)
 # =============================================================================

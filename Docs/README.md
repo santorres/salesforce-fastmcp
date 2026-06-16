@@ -63,9 +63,6 @@ FastMCP server providing Salesforce analytics and CRUD tools, purpose-built for 
 | `salesforce_recent` | Fetch recently accessed records |
 | `salesforce_search` | Execute SOSL searches |
 | `salesforce_describe` | Get object/field metadata |
-| `salesforce_create` | Create a record |
-| `salesforce_update` | Update a record |
-| `salesforce_delete` | Delete a record |
 
 ### Navigation & Relationships (4 tools)
 | Tool | Purpose |

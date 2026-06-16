@@ -928,21 +928,6 @@ salesforce_describe(sobject="Opportunity")
 
 ---
 
-### Updating Records (Use with Caution)
-
-```
-# Update an opportunity
-salesforce_update(sobject="Opportunity", record_id="006...", fields={"StageName": "Negotiation"})
-
-# Create a new record
-salesforce_create(sobject="Opportunity", fields={"Name": "...", "AccountId": "...", ...})
-
-# Delete a record
-salesforce_delete(sobject="Opportunity", record_id="006...")
-```
-
----
-
 ### Direct SOQL Queries (Advanced)
 
 ```

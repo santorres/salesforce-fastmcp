@@ -161,7 +161,8 @@ def format_revenue(data: dict) -> str:
     if isinstance(result, list):
         # Breakdown response
         for item in result:
-            label = item.get("partner") or item.get("country") or item.get("quarter") or item.get("stage") or "Unknown"
+            label = (item.get("partnerName") or item.get("partner") or 
+                    item.get("country") or item.get("quarter") or item.get("stage") or "Unknown")
             amount = item.get("totalRevenue", 0)
             deal_count = item.get("dealCount", 0)
             attainment = item.get("attainmentPct")
@@ -340,16 +341,18 @@ def format_top_partners(data: dict) -> str:
     lines.append("-" * 80)
 
     for i, partner in enumerate(result, 1):
-        # Try multiple name fields
-        name = (partner.get("partner_name") or 
+        # Try multiple name fields (camelCase and snake_case)
+        name = (partner.get("partnerName") or
+                partner.get("partner_name") or 
                 partner.get("partner") or 
                 partner.get("name") or 
                 "Unknown")
         name = str(name)[:38]
         
-        # Get the metric value
+        # Get the metric value (camelCase and snake_case)
         metric_lower = metric.lower()
-        value = (partner.get(f"total_{metric_lower}") or 
+        value = (partner.get(f"total{metric}") or
+                partner.get(f"total_{metric_lower}") or 
                 partner.get(f"{metric_lower}") or 
                 partner.get("total_amount") or 
                 partner.get("total_revenue") or 

@@ -23,23 +23,62 @@ Examples:
 import asyncio
 import json
 import sys
+import logging
 from pathlib import Path
 
 import click
-from dotenv import load_dotenv
 
 # Add parent dir to path so we can import sibling modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from salesforce_client import SalesforceClient
 import channel_intelligence as ci
+from auth_provider import create_auth_provider
 
-load_dotenv()
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# Global auth provider and credentials
+_auth_provider = None
+_credentials = None
+
+
+async def _initialize_auth():
+    """Initialize authentication using auth_provider.
+    
+    Uses SF CLI if available, falls back to .env environment variables.
+    """
+    global _auth_provider, _credentials
+    
+    try:
+        _auth_provider = create_auth_provider()
+        _credentials = await _auth_provider.get_credentials()
+        
+        logger.debug(
+            f"Authentication successful: "
+            f"{_credentials.auth_method} (user: {_credentials.username or 'unknown'})"
+        )
+    except Exception as e:
+        logger.error(f"Authentication initialization failed: {e}")
+        raise
 
 
 def get_sf() -> SalesforceClient:
-    """Lazy SalesforceClient instantiation."""
-    return SalesforceClient()
+    """Lazy SalesforceClient instantiation using secure authentication.
+    
+    Returns a Salesforce client configured with credentials from either
+    SF CLI (if available) or environment variables (.env file).
+    """
+    if _credentials is None:
+        raise click.ClickException(
+            "Authentication not initialized. "
+            "This should not happen - auth should be initialized on CLI startup."
+        )
+    
+    return SalesforceClient(
+        base_url=_credentials.base_url,
+        access_token=_credentials.access_token
+    )
 
 
 def format_json(data) -> str:
@@ -289,7 +328,21 @@ def handle_error(error: Exception, context: str = "") -> None:
 @click.group()
 def cli():
     """Channel Intelligence CLI — Salesforce analytics from the command line."""
-    pass
+    # Initialize authentication when CLI starts
+    try:
+        asyncio.run(_initialize_auth())
+    except Exception as e:
+        raise click.ClickException(
+            f"Failed to initialize authentication: {e}\n\n"
+            "Please ensure one of the following:\n"
+            "  1. Salesforce CLI is installed and authenticated:\n"
+            "     https://developer.salesforce.com/tools/salesforcecli\n"
+            "     Run: sf org login web\n\n"
+            "  2. Or set environment variables:\n"
+            "     export SALESFORCE_BASE_URL=https://your-org.salesforce.com/services/data/v59.0\n"
+            "     export SALESFORCE_ACCESS_TOKEN=<your_token>\n\n"
+            "For more info, see: AUTHENTICATION_QUICKSTART.md"
+        )
 
 
 @cli.command()

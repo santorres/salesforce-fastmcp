@@ -91,31 +91,62 @@ def format_kpi(data: dict) -> str:
     result = data.get("data", {})
     lines = []
     lines.append("KPI Snapshot")
-    lines.append("-" * 50)
+    lines.append("=" * 80)
 
+    # Revenue Section
     revenue = result.get("revenue", 0)
     if revenue:
-        lines.append(f"Revenue (Closed-Won): ${revenue:,.0f}")
-        lines.append(f"  Deals: {result.get('dealCount', 0)}")
+        lines.append("\nRevenue (Closed-Won)")
+        lines.append("-" * 40)
+        lines.append(f"  Amount: ${revenue:,.0f}")
+        deal_count = result.get("dealCount", 0)
+        lines.append(f"  Deals: {deal_count}")
         attainment = result.get("attainmentPct")
         if attainment:
             lines.append(f"  Attainment: {attainment:.1f}%")
+        avg_deal = result.get("averageDealSizeClosed", 0)
+        if avg_deal:
+            lines.append(f"  Avg Deal Size: ${avg_deal:,.0f}")
 
+    # Pipeline Section
     pipeline = result.get("pipeline", 0)
     if pipeline:
-        lines.append(f"\nPipeline (Open): ${pipeline:,.0f}")
+        lines.append("\nPipeline (Open)")
+        lines.append("-" * 40)
+        lines.append(f"  Amount: ${pipeline:,.0f}")
 
-    coverage = result.get("coverageRatio")
-    if coverage:
-        lines.append(f"\nCoverage Ratio: {coverage:.1f}x")
-
+    # Performance Section
+    lines.append("\nPerformance Metrics")
+    lines.append("-" * 40)
+    
     win_rate = result.get("winRate", 0)
     if win_rate:
-        lines.append(f"Win Rate: {win_rate * 100:.1f}%")
-
+        lines.append(f"  Win Rate: {win_rate * 100:.1f}%")
+    
+    coverage = result.get("coverageRatio")
+    if coverage:
+        lines.append(f"  Coverage Ratio: {coverage:.1f}x")
+    
     active_partners = result.get("activePartners")
     if active_partners:
-        lines.append(f"Active Partners: {active_partners}")
+        lines.append(f"  Active Partners: {active_partners}")
+    
+    focus_partners = result.get("focusPartners")
+    if focus_partners:
+        lines.append(f"  Focus Partners: {focus_partners:.0f}")
+
+    # Risk Section
+    lines.append("\nRisk Assessment")
+    lines.append("-" * 40)
+    
+    orphan_open = result.get("orphanOpenCount", 0)
+    orphan_pct = result.get("orphanOpenPct", 0)
+    if orphan_open:
+        lines.append(f"  Orphan Opportunities: {orphan_open:.0f} ({orphan_pct:.1f}%)")
+    
+    concentration = result.get("revenueConcentrationTop3", 0)
+    if concentration:
+        lines.append(f"  Revenue Concentration (Top 3): {concentration:.1f}%")
 
     return "\n".join(lines)
 
@@ -298,23 +329,36 @@ def format_top_partners(data: dict) -> str:
     lines = []
     metric = data.get("metric", "revenue").title()
     lines.append(f"Top Partners by {metric}")
-    lines.append("=" * 60)
+    lines.append("=" * 80)
 
     if not result:
         lines.append("No data available.")
         return "\n".join(lines)
 
     # Header row
-    lines.append(f"{'#':<3} {'Partner Name':<30} {metric:>15}")
-    lines.append("-" * 60)
+    lines.append(f"{'#':<3} {'Partner Name':<40} {metric:>20}")
+    lines.append("-" * 80)
 
     for i, partner in enumerate(result, 1):
-        name = partner.get("partner_name", "Unknown")[:28]
-        value = partner.get(f"total_{metric.lower()}", partner.get("total_amount", 0))
+        # Try multiple name fields
+        name = (partner.get("partner_name") or 
+                partner.get("partner") or 
+                partner.get("name") or 
+                "Unknown")
+        name = str(name)[:38]
+        
+        # Get the metric value
+        metric_lower = metric.lower()
+        value = (partner.get(f"total_{metric_lower}") or 
+                partner.get(f"{metric_lower}") or 
+                partner.get("total_amount") or 
+                partner.get("total_revenue") or 
+                0)
+        
         if isinstance(value, (int, float)):
-            lines.append(f"{i:<3} {name:<30} ${value:>14,.0f}")
+            lines.append(f"{i:<3} {name:<40} ${value:>19,.0f}")
         else:
-            lines.append(f"{i:<3} {name:<30} {value:>15}")
+            lines.append(f"{i:<3} {name:<40} {value:>20}")
 
     return "\n".join(lines)
 

@@ -1,12 +1,26 @@
 """Salesforce API client using httpx for async HTTP requests."""
 
 import asyncio
+import logging
 import os
 from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import quote
 
 import httpx
+
+from config.ci_fiscal import _escape_soql
+
+audit_logger = logging.getLogger("mcp.audit")
+
+
+def log_soql_query(query: str, username: str | None = None, tool_name: str | None = None) -> None:
+    """Log SOQL queries for audit trail. Optional: include username and tool name for tracking."""
+    if audit_logger.isEnabledFor(logging.INFO):
+        audit_logger.info(
+            f"SOQL_QUERY | tool={tool_name} | user={username or 'unknown'} | query={query[:200]}..."
+            if len(query) > 200 else f"SOQL_QUERY | tool={tool_name} | user={username or 'unknown'} | query={query}"
+        )
 
 
 class SalesforceError(Exception):
@@ -378,10 +392,12 @@ class SalesforceClient:
 
         # If reportName provided, find the report ID
         if report_name and not report_id:
+            escaped_report_name = _escape_soql(report_name)
             report_query = (
                 f"SELECT Id, Name, DeveloperName FROM Report "
-                f"WHERE Name LIKE '%{report_name}%' OR DeveloperName LIKE '%{report_name}%' LIMIT 10"
+                f"WHERE Name LIKE '%{escaped_report_name}%' OR DeveloperName LIKE '%{escaped_report_name}%' LIMIT 10"
             )
+            log_soql_query(report_query, tool_name="get_report_data")
             response = await client.get(f"/query?q={quote(report_query)}")
             self._handle_error(response)
             data = response.json()
@@ -794,12 +810,12 @@ class SalesforceClient:
         client = await self._get_client()
 
         # Build WHERE conditions using relationship syntax
-        conditions = [f"Partner__r.Name = '{partner_name}'"]
+        conditions = [f"Partner__r.Name = '{_escape_soql(partner_name)}'"]
 
         if is_closed is not None:
             conditions.append(f"IsClosed = {str(is_closed).lower()}")
         if stage_name:
-            conditions.append(f"StageName = '{stage_name}'")
+            conditions.append(f"StageName = '{_escape_soql(stage_name)}'")
         if min_amount is not None:
             conditions.append(f"Amount >= {min_amount}")
         if start_date:
@@ -820,6 +836,7 @@ class SalesforceClient:
             LIMIT {limit}
         """.strip()
 
+        log_soql_query(query, tool_name="get_opportunities_by_partner")
         response = await client.get(f"/query?q={quote(query)}")
         self._handle_error(response)
 

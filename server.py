@@ -1673,7 +1673,9 @@ def main():
         logger.error(f"Startup failed: {e}")
         sys.exit(1)
     
-    transport = os.getenv("MCP_TRANSPORT", "stdio")
+    # Default to streamable-http transport to match OpenCode MCP configuration
+    # Can be overridden with MCP_TRANSPORT env var for stdio mode
+    transport = os.getenv("MCP_TRANSPORT", "streamable-http")
     host = os.getenv("MCP_HOST", "0.0.0.0")
     port = int(os.getenv("MCP_PORT", "8000"))
     ssl_certfile = os.getenv("MCP_SSL_CERTFILE")

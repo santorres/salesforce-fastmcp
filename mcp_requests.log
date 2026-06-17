@@ -1,0 +1,224 @@
+2026-06-16 11:02:34 | Starting up MCP server...
+2026-06-16 11:02:34 | Initializing authentication provider...
+2026-06-16 11:02:37 | Retrieving credentials...
+2026-06-16 11:02:51 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:02:51 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:02:51 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:02:51 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:02:51 | Failed to get authenticated user info: Salesforce API Error: The requested resource does not exist
+2026-06-16 11:02:51 | Server ready for user: unknown
+2026-06-16 11:02:51 | HTTP Request: GET https://pypi.org/pypi/fastmcp/json "HTTP/1.1 200 OK"
+2026-06-16 11:05:47 | Starting up MCP server...
+2026-06-16 11:05:47 | Initializing authentication provider...
+2026-06-16 11:05:47 | Retrieving credentials...
+2026-06-16 11:05:52 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:05:52 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:05:52 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:05:52 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:05:52 | Failed to get authenticated user info: Salesforce API Error: The requested resource does not exist
+2026-06-16 11:05:52 | Server ready for user: unknown
+2026-06-16 11:13:00 | Starting up MCP server...
+2026-06-16 11:13:00 | Initializing authentication provider...
+2026-06-16 11:13:00 | Retrieving credentials...
+2026-06-16 11:13:06 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:13:06 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:13:06 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:13:06 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:13:06 | Failed to get authenticated user info: Salesforce API Error: The requested resource does not exist
+2026-06-16 11:13:06 | Server ready for user: unknown
+2026-06-16 11:17:15 | Starting up MCP server...
+2026-06-16 11:17:15 | Initializing authentication provider...
+2026-06-16 11:17:15 | Retrieving credentials...
+2026-06-16 11:17:21 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:17:21 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:17:21 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:17:21 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:17:21 | Failed to get authenticated user info: Salesforce API Error: The requested resource does not exist
+2026-06-16 11:17:21 | Server ready for user: unknown
+2026-06-16 11:18:32 | Starting up MCP server...
+2026-06-16 11:18:32 | Initializing authentication provider...
+2026-06-16 11:18:32 | Retrieving credentials...
+2026-06-16 11:18:37 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:18:37 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:18:37 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:18:38 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:18:38 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/query?q=SELECT+Id%2C+Name%2C+Email%2C+FirstName%2C+LastName+FROM+User+WHERE+Id%3Duserinfo%28%27UserId%27%29+LIMIT+1 "HTTP/1.1 400 Bad Request"
+2026-06-16 11:18:38 | Server ready for user: 
+2026-06-16 11:18:51 | Starting up MCP server...
+2026-06-16 11:18:51 | Initializing authentication provider...
+2026-06-16 11:18:51 | Retrieving credentials...
+2026-06-16 11:18:56 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:18:56 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:18:56 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:18:57 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:18:57 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/limits "HTTP/1.1 403 Forbidden"
+2026-06-16 11:18:57 | Server ready for user: 
+2026-06-16 11:19:23 | Starting up MCP server...
+2026-06-16 11:19:23 | Initializing authentication provider...
+2026-06-16 11:19:23 | Retrieving credentials...
+2026-06-16 11:19:28 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:19:28 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:19:28 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:19:28 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:19:29 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/sobjects "HTTP/1.1 200 OK"
+2026-06-16 11:19:29 | Server ready for user: authenticated
+2026-06-16 11:34:29 | Starting up MCP server...
+2026-06-16 11:34:29 | Initializing authentication provider...
+2026-06-16 11:34:32 | Retrieving credentials...
+2026-06-16 11:34:42 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:34:42 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:34:42 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:34:42 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:34:43 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/sobjects "HTTP/1.1 200 OK"
+2026-06-16 11:34:43 | Server ready for user: authenticated
+2026-06-16 11:38:29 | Starting up MCP server...
+2026-06-16 11:38:29 | Initializing authentication provider...
+2026-06-16 11:38:32 | Retrieving credentials...
+2026-06-16 11:38:41 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:38:41 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:38:41 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:38:42 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:38:42 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/sobjects "HTTP/1.1 200 OK"
+2026-06-16 11:38:43 | Server ready for user: authenticated
+2026-06-16 11:39:11 | Starting up MCP server...
+2026-06-16 11:39:11 | Initializing authentication provider...
+2026-06-16 11:39:11 | Retrieving credentials...
+2026-06-16 11:39:16 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:39:16 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:39:16 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:39:17 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:39:17 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/sobjects "HTTP/1.1 200 OK"
+2026-06-16 11:39:17 | Server ready for user: authenticated
+2026-06-16 11:39:18 | StreamableHTTP session manager started
+2026-06-16 11:39:20 | StreamableHTTP session manager shutting down
+2026-06-16 11:39:26 | Starting up MCP server...
+2026-06-16 11:39:26 | Initializing authentication provider...
+2026-06-16 11:39:27 | Retrieving credentials...
+2026-06-16 11:39:32 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:39:32 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:39:32 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:39:32 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:39:32 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/sobjects "HTTP/1.1 200 OK"
+2026-06-16 11:39:33 | Server ready for user: authenticated
+2026-06-16 11:39:33 | StreamableHTTP session manager started
+2026-06-16 11:39:48 | Created new transport with session ID: c546c9c89c4340d68d30c493453a863f
+2026-06-16 11:40:03 | Created new transport with session ID: dcb3db1473294818b59e5c2168ba8fb2
+2026-06-16 11:40:08 | Created new transport with session ID: 388d1db3b2c546fbb3e583dc6f075873
+2026-06-16 11:40:08 | Processing request of type ListToolsRequest
+2026-06-16 11:40:39 | Terminating session: c546c9c89c4340d68d30c493453a863f
+2026-06-16 11:40:39 | Terminating session: dcb3db1473294818b59e5c2168ba8fb2
+2026-06-16 11:40:39 | Terminating session: 388d1db3b2c546fbb3e583dc6f075873
+2026-06-16 11:40:39 | StreamableHTTP session manager shutting down
+2026-06-16 11:40:45 | Starting up MCP server...
+2026-06-16 11:40:45 | Initializing authentication provider...
+2026-06-16 11:40:46 | Retrieving credentials...
+2026-06-16 11:40:51 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:40:51 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:40:51 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:40:51 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:40:52 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/sobjects "HTTP/1.1 200 OK"
+2026-06-16 11:40:52 | Server ready for user: authenticated
+2026-06-16 11:40:52 | StreamableHTTP session manager started
+2026-06-16 11:41:06 | Created new transport with session ID: 396f1c2eff8048fdb06e0101c6559f2b
+2026-06-16 11:41:06 | Processing request of type ListToolsRequest
+2026-06-16 11:42:04 | Starting up MCP server...
+2026-06-16 11:42:04 | Initializing authentication provider...
+2026-06-16 11:42:05 | Retrieving credentials...
+2026-06-16 11:42:09 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:42:09 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:42:09 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:42:10 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:42:10 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/sobjects "HTTP/1.1 200 OK"
+2026-06-16 11:42:10 | Server ready for user: authenticated
+2026-06-16 11:42:10 | StreamableHTTP session manager started
+2026-06-16 11:42:10 | StreamableHTTP session manager shutting down
+2026-06-16 11:42:37 | Terminating session: 396f1c2eff8048fdb06e0101c6559f2b
+2026-06-16 11:42:37 | StreamableHTTP session manager shutting down
+2026-06-16 11:42:46 | Starting up MCP server...
+2026-06-16 11:42:46 | Initializing authentication provider...
+2026-06-16 11:42:46 | Retrieving credentials...
+2026-06-16 11:42:51 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-16 11:42:51 | Creating Salesforce client (auth: sf_cli)
+2026-06-16 11:42:51 | Authentication successful for santiagot@semperis.com
+2026-06-16 11:42:52 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-16 11:42:53 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/sobjects "HTTP/1.1 200 OK"
+2026-06-16 11:42:53 | Server ready for user: authenticated
+2026-06-16 11:42:53 | StreamableHTTP session manager started
+2026-06-16 11:43:03 | Created new transport with session ID: bf4354f26b3745b8812650aa0e90698e
+2026-06-16 11:43:03 | Processing request of type ListToolsRequest
+2026-06-16 11:43:08 | Created new transport with session ID: 4851a9e81f884b19b230fd60db061004
+2026-06-16 11:43:09 | Processing request of type ListToolsRequest
+2026-06-16 11:43:09 | Processing request of type ListResourcesRequest
+2026-06-16 11:43:09 | Processing request of type ListPromptsRequest
+2026-06-16 11:43:09 | Processing request of type GetPromptRequest
+2026-06-16 11:43:09 | Processing request of type GetPromptRequest
+2026-06-16 11:43:09 | Processing request of type GetPromptRequest
+2026-06-16 11:43:09 | Processing request of type GetPromptRequest
+2026-06-16 11:43:09 | Processing request of type GetPromptRequest
+2026-06-16 11:43:09 | Processing request of type GetPromptRequest
+2026-06-16 11:43:09 | Processing request of type GetPromptRequest
+2026-06-16 11:43:09 | Processing request of type GetPromptRequest
+2026-06-16 11:43:09 | Processing request of type GetPromptRequest
+2026-06-16 11:43:10 | Processing request of type GetPromptRequest
+2026-06-16 11:43:10 | Processing request of type GetPromptRequest
+2026-06-16 11:43:10 | Processing request of type GetPromptRequest
+2026-06-16 11:43:10 | Processing request of type GetPromptRequest
+2026-06-16 11:43:11 | Processing request of type GetPromptRequest
+2026-06-16 11:43:18 | Processing request of type CallToolRequest
+2026-06-16 11:43:18 | authenticated | tools/call | tool=get_revenue
+2026-06-16 11:43:20 | Processing request of type CallToolRequest
+2026-06-16 11:43:20 | authenticated | tools/call | tool=get_revenue
+2026-06-16 11:43:21 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/query?q=SELECT+SUM%28Amount%29+totalRevenue%2C+COUNT%28Id%29+dealCount+FROM+Opportunity+WHERE+Account.BillingCountry+IN+%28%27Italy%27%2C%27Spain%27%2C%27Portugal%27%2C%27Greece%27%2C%27Cyprus%27%2C%27Malta%27%29+AND+CloseDate+%3E%3D+2025-02-01+AND+CloseDate+%3C%3D+2026-01-31+AND+StageName+%3D+%27Closed+Won%27 "HTTP/1.1 200 OK"
+2026-06-16 11:43:32 | Processing request of type CallToolRequest
+2026-06-16 11:43:32 | authenticated | tools/call | tool=get_revenue
+2026-06-16 11:43:33 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/query?q=SELECT+Account.BillingCountry+country%2C+SUM%28Amount%29+totalRevenue%2C+COUNT%28Id%29+dealCount+FROM+Opportunity+WHERE+Account.BillingCountry+IN+%28%27Italy%27%2C%27Spain%27%2C%27Portugal%27%2C%27Greece%27%2C%27Cyprus%27%2C%27Malta%27%29+AND+CloseDate+%3E%3D+2025-02-01+AND+CloseDate+%3C%3D+2026-01-31+AND+StageName+%3D+%27Closed+Won%27+GROUP+BY+Account.BillingCountry+ORDER+BY+SUM%28Amount%29+DESC+LIMIT+10 "HTTP/1.1 200 OK"
+2026-06-16 11:46:06 | Terminating session: bf4354f26b3745b8812650aa0e90698e
+2026-06-16 11:46:06 | Terminating session: 4851a9e81f884b19b230fd60db061004
+2026-06-16 11:46:06 | StreamableHTTP session manager shutting down
+2026-06-17 16:40:21 | Starting up MCP server...
+2026-06-17 16:40:21 | Initializing authentication provider...
+2026-06-17 16:40:24 | Retrieving credentials...
+2026-06-17 16:40:36 | SF CLI auth: using org santiagot@semperis.com (00D5w000004rH0yEAE)
+2026-06-17 16:40:36 | Creating Salesforce client (auth: sf_cli)
+2026-06-17 16:40:36 | Authentication successful for santiagot@semperis.com
+2026-06-17 16:40:36 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/connect/user-info "HTTP/1.1 404 Not Found"
+2026-06-17 16:40:37 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/sobjects "HTTP/1.1 200 OK"
+2026-06-17 16:40:37 | Server ready for user: authenticated
+2026-06-17 16:40:37 | HTTP Request: GET https://pypi.org/pypi/fastmcp/json "HTTP/1.1 200 OK"
+2026-06-17 16:40:37 | StreamableHTTP session manager started
+2026-06-17 16:40:44 | Created new transport with session ID: e5d01b95a77a4da4aff4471061c35684
+2026-06-17 16:40:44 | Processing request of type ListToolsRequest
+2026-06-17 16:40:50 | Created new transport with session ID: a707972e86d94f71a320d5fb1a16069c
+2026-06-17 16:40:50 | Processing request of type ListToolsRequest
+2026-06-17 16:40:51 | Processing request of type ListResourcesRequest
+2026-06-17 16:40:51 | Processing request of type ListPromptsRequest
+2026-06-17 16:40:51 | Processing request of type GetPromptRequest
+2026-06-17 16:40:51 | Processing request of type GetPromptRequest
+2026-06-17 16:40:51 | Processing request of type GetPromptRequest
+2026-06-17 16:40:51 | Processing request of type GetPromptRequest
+2026-06-17 16:40:51 | Processing request of type GetPromptRequest
+2026-06-17 16:40:51 | Processing request of type GetPromptRequest
+2026-06-17 16:40:51 | Processing request of type GetPromptRequest
+2026-06-17 16:40:51 | Processing request of type GetPromptRequest
+2026-06-17 16:40:51 | Processing request of type GetPromptRequest
+2026-06-17 16:40:51 | Processing request of type GetPromptRequest
+2026-06-17 16:40:51 | Processing request of type GetPromptRequest
+2026-06-17 16:40:51 | Processing request of type GetPromptRequest
+2026-06-17 16:40:51 | Processing request of type GetPromptRequest
+2026-06-17 16:40:52 | Processing request of type GetPromptRequest
+2026-06-17 16:42:12 | Processing request of type CallToolRequest
+2026-06-17 16:42:12 | authenticated | tools/call | tool=get_revenue
+2026-06-17 16:42:13 | Processing request of type CallToolRequest
+2026-06-17 16:42:13 | authenticated | tools/call | tool=get_revenue
+2026-06-17 16:42:13 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/query?q=SELECT+SUM%28Amount%29+totalRevenue%2C+COUNT%28Id%29+dealCount+FROM+Opportunity+WHERE+Account.BillingCountry+IN+%28%27Italy%27%2C%27Spain%27%2C%27Portugal%27%2C%27Greece%27%2C%27Cyprus%27%2C%27Malta%27%29+AND+CloseDate+%3E%3D+2026-05-01+AND+CloseDate+%3C%3D+2026-07-31+AND+StageName+%3D+%27Closed+Won%27 "HTTP/1.1 200 OK"
+2026-06-17 16:42:27 | Processing request of type CallToolRequest
+2026-06-17 16:42:27 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/query?q=SELECT+Partner__c+partnerId%2C+Partner__r.Name+partnerName%2C+SUM%28Amount%29+totalRevenue%2C+COUNT%28Id%29+dealCount+FROM+Opportunity+WHERE+Account.BillingCountry+IN+%28%27Italy%27%2C%27Spain%27%2C%27Portugal%27%2C%27Greece%27%2C%27Cyprus%27%2C%27Malta%27%29+AND+CloseDate+%3E%3D+2026-02-01+AND+CloseDate+%3C%3D+2027-01-31+AND+StageName+%3D+%27Closed+Won%27+AND+Partner__c+%21%3D+null+GROUP+BY+Partner__c%2C+Partner__r.Name+ORDER+BY+SUM%28Amount%29+DESC+LIMIT+10 "HTTP/1.1 200 OK"
+2026-06-17 16:42:44 | Processing request of type CallToolRequest
+2026-06-17 16:42:44 | authenticated | tools/call | tool=get_revenue
+2026-06-17 16:42:45 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/query?q=SELECT+Account.BillingCountry+country%2C+SUM%28Amount%29+totalRevenue%2C+COUNT%28Id%29+dealCount+FROM+Opportunity+WHERE+Account.BillingCountry+IN+%28%27Italy%27%2C%27Spain%27%2C%27Portugal%27%2C%27Greece%27%2C%27Cyprus%27%2C%27Malta%27%29+AND+CloseDate+%3E%3D+2026-02-01+AND+CloseDate+%3C%3D+2027-01-31+AND+StageName+%3D+%27Closed+Won%27+GROUP+BY+Account.BillingCountry+ORDER+BY+SUM%28Amount%29+DESC+LIMIT+10 "HTTP/1.1 200 OK"
+2026-06-17 16:43:08 | Processing request of type CallToolRequest
+2026-06-17 16:43:08 | authenticated | tools/call | tool=get_pipeline
+2026-06-17 16:43:08 | HTTP Request: GET https://semperis.my.salesforce.com/services/data/v66.0/query?q=SELECT+SUM%28Amount%29+totalPipeline%2C+COUNT%28Id%29+dealCount+FROM+Opportunity+WHERE+Account.BillingCountry+IN+%28%27Italy%27%2C%27Spain%27%2C%27Portugal%27%2C%27Greece%27%2C%27Cyprus%27%2C%27Malta%27%29+AND+CloseDate+%3E%3D+2026-02-01+AND+CloseDate+%3C%3D+2027-01-31+AND+IsClosed+%3D+false+AND+StageName+NOT+IN+%28%27Closed+Won%27%2C+%27Closed+Lost%27%29 "HTTP/1.1 200 OK"
+2026-06-17 17:31:49 | Terminating session: e5d01b95a77a4da4aff4471061c35684
+2026-06-17 17:31:49 | Terminating session: a707972e86d94f71a320d5fb1a16069c
+2026-06-17 17:31:49 | StreamableHTTP session manager shutting down

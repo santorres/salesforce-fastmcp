@@ -6,26 +6,87 @@ FastMCP server providing Salesforce analytics and CRUD tools, purpose-built for 
 
 ---
 
-## Quick Start for Channel Directors
+## Documentation Structure
 
-### 📖 Documentation (Pick Your Interface)
+### 🚀 Quick Start (Pick Your Interface)
 
-**Using Claude Desktop (MCP - Interactive):**
-- **[CHANNEL_DIRECTOR_PLAYBOOK.md](CHANNEL_DIRECTOR_PLAYBOOK.md)** — Complete reference for all 54 MCP tools, organized by daily/weekly/monthly workflows
-- **[CHANNEL_DIRECTOR_PROMPTS.md](CHANNEL_DIRECTOR_PROMPTS.md)** — Copy-paste prompts for Claude Desktop, grouped by topic
+| Use Case | Read This |
+|----------|-----------|
+| **Claude Desktop (MCP)** — Ask questions | `MCP/CHANNEL_DIRECTOR_PLAYBOOK.md` — All 54 tools, daily/weekly/monthly workflows |
+| **Claude Desktop Setup** — Get Ollama running | `MCP/MCP_SETUP.md` — Installation, quick test, troubleshooting |
+| **CLI** — Automation & scheduled reports | `CLI_QUICK_REFERENCE.md` + `CLI_SETUP_GUIDE.md` — Commands, examples, automation |
+| **Future Roadmap** — Q3+ initiatives | `ROADMAP.md` — Langfuse observability, multi-user scalability, cloud architecture |
+| **Security** — Assessments & reports | `Security/` folder — Assessment reports, compliance docs |
 
-**Using CLI (Command-line - Automation):**
-- **[CLI_PLAYBOOK.md](CLI_PLAYBOOK.md)** — Comprehensive CLI guide for automated workflows, scheduled reports, and Hermes Agent integration
-  - ✅ 10 commands with real examples
-  - ✅ Daily/weekly/monthly workflow templates
-  - ✅ Hermes automation setup
-  - ✅ Advanced jq piping for custom reporting
+### 📁 Folder Structure
 
-**Quick decision:** Use **MCP** for questions ("What's happening with Accenture?"), use **CLI** for automation ("Generate QBRs every month-end")
+```
+Docs/
+├── README.md (this file — navigation hub)
+│
+├── MCP/ (Claude Desktop / MCP usage)
+│   ├── MCP_SETUP.md ...................... How to set up Ollama locally
+│   └── CHANNEL_DIRECTOR_PLAYBOOK.md ..... All 54 tools with examples
+│
+├── Security/ (Assessment & compliance)
+│   ├── SECURITY_BRIEF.md ................ Executive summary
+│   ├── SECURITY_ASSESSMENT_REPORT.md ... Full assessment
+│   ├── SECURITY_ASSESSMENT_REPORT.pdf .. (PDF version)
+│   └── SECURITY_ASSESSMENT_SUMMARY.pdf . (Summary PDF)
+│
+├── CLI_QUICK_REFERENCE.md .............. Command reference with examples
+├── CLI_SETUP_GUIDE.md .................. Installation & troubleshooting
+├── ROADMAP.md .......................... Future initiatives (Q3 2026+)
+└── (archived docs deleted)
+```
+
+### 👥 By Role
+
+**Channel Directors:**
+1. For questions: Read `MCP/CHANNEL_DIRECTOR_PLAYBOOK.md`
+2. For setup: Read `MCP/MCP_SETUP.md`
+3. For scripting: Read `CLI_QUICK_REFERENCE.md`
+
+**Engineers:**
+1. For architecture: Read `Codebase Overview` below
+2. For roadmap: Read `ROADMAP.md`
+3. For testing: See `Running Tests` below
+
+**Security/Compliance:**
+1. For assessments: Read `Security/SECURITY_ASSESSMENT_REPORT.md`
+2. For summary: Read `Security/SECURITY_BRIEF.md`
+3. For PDFs: See `Security/` folder
+
+---
+
+## Quick Decision Tree
+
+**"I want to ask questions about my channel"**
+→ Use Claude Desktop MCP
+→ Read `MCP/CHANNEL_DIRECTOR_PLAYBOOK.md`
+→ Setup: `MCP/MCP_SETUP.md`
+
+**"I want to automate reports"**
+→ Use CLI
+→ Read `CLI_QUICK_REFERENCE.md`
+→ Setup: `CLI_SETUP_GUIDE.md`
+
+**"I want to know the security assessment"**
+→ Read `Security/SECURITY_BRIEF.md`
+→ Full report: `Security/SECURITY_ASSESSMENT_REPORT.md`
+
+**"I want to know what's coming next"**
+→ Read `ROADMAP.md`
+→ Topics: Langfuse (observability), YAML scalability, cloud architecture
+
+**"I want to understand the code"**
+→ See `Codebase Overview` below
 
 ---
 
 ## Codebase Overview
+
+**Start here to understand the code structure.**
 
 | File | What it does |
 |------|-------------|

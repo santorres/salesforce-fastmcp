@@ -542,7 +542,7 @@ def registrations(period, output_json, channel_manager):
 
 
 @cli.command()
-@click.option("--period", default="THIS_FISCAL_YEAR", help="Fiscal period")
+@click.option("--period", default="THIS_QUARTER", help="Fiscal period")
 @click.option("--metric", default="revenue", type=click.Choice(["revenue", "pipeline"]), help="Ranking metric")
 @click.option("--limit", default=10, type=int, help="Number of partners to show")
 @click.option("--json", "output_json", is_flag=True, help="Output as JSON")
@@ -565,7 +565,7 @@ def top_partners(period, metric, limit, output_json):
 
 @cli.command()
 @click.argument("query", required=True)
-@click.option("--period", default="THIS_FISCAL_YEAR", help="Fiscal period")
+@click.option("--period", default="THIS_QUARTER", help="Fiscal period")
 @click.option("--stage", default=None, help="Filter by stage (e.g., 'Closed Won' for closed deals)")
 @click.option("--partner", default=None, help="Filter by partner name")
 @click.option("--country", default=None, help="Filter by country")
@@ -600,7 +600,7 @@ def search(query, period, stage, partner, country, limit, output_json):
 
 
 @cli.command()
-@click.option("--period", default="THIS_FISCAL_YEAR", help="Fiscal period (open opps only)")
+@click.option("--period", default="THIS_QUARTER", help="Fiscal period (open opps only)")
 @click.option("--partner", default=None, help="Filter by partner name")
 @click.option("--country", default=None, help="Filter by country")
 @click.option("--stage", default=None, help="Filter by stage (Prospecting, Validation, etc.)")

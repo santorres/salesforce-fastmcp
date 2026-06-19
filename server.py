@@ -15,6 +15,7 @@ from pydantic import Field
 from salesforce_client import SalesforceClient, SalesforceError
 from auth_provider import create_auth_provider, AuthProvider, Credentials
 import channel_intelligence as ci
+from api import ChannelAnalyticsAPIImpl, DEFAULT_CHANNEL_MANAGER as API_DEFAULT_CHANNEL_MANAGER
 from prompts import (
     quarterly_pipeline_analysis,
     closed_won_partner_analysis,
@@ -69,6 +70,11 @@ def get_client() -> SalesforceClient:
             "Call initialize_client() first."
         )
     return _client
+
+
+def get_api() -> ChannelAnalyticsAPIImpl:
+    """Get Analytics API instance with authenticated client."""
+    return ChannelAnalyticsAPIImpl(get_client())
 
 
 async def initialize_client() -> None:
@@ -972,10 +978,14 @@ async def get_top_partners(
 ) -> str:
     """Top partners ranked by closed-won revenue or open pipeline for Southern Europe."""
     try:
-        result = await ci.get_top_partners(
-            get_client(), metric, period, limit,
-            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+        api = get_api()
+        response = await api.get_top_partners(
+            period=period,
+            metric=metric,
+            limit=limit,
+            channel_manager=channel_manager or API_DEFAULT_CHANNEL_MANAGER,
         )
+        result = response.__dict__
         return format_result(result)
     except (ValueError, Exception) as e:
         return f"Error: {e}"

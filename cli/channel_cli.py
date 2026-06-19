@@ -34,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from salesforce_client import SalesforceClient
 import channel_intelligence as ci
 from auth_provider import create_auth_provider
+from api import ChannelAnalyticsAPIImpl, AnalyticsRequest, DEFAULT_CHANNEL_MANAGER
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -65,7 +66,7 @@ async def _initialize_auth():
 
 def get_sf() -> SalesforceClient:
     """Lazy SalesforceClient instantiation using secure authentication.
-    
+
     Returns a Salesforce client configured with credentials from either
     SF CLI (if available) or environment variables (.env file).
     """
@@ -74,11 +75,16 @@ def get_sf() -> SalesforceClient:
             "Authentication not initialized. "
             "This should not happen - auth should be initialized on CLI startup."
         )
-    
+
     return SalesforceClient(
         base_url=_credentials.base_url,
         access_token=_credentials.access_token
     )
+
+
+def get_api() -> ChannelAnalyticsAPIImpl:
+    """Get Analytics API instance with authenticated client."""
+    return ChannelAnalyticsAPIImpl(get_sf())
 
 
 def format_json(data) -> str:
@@ -399,11 +405,12 @@ def cli():
 def kpi(period, output_json, channel_manager):
     """Get KPI snapshot: revenue, pipeline, win rate, coverage."""
     try:
-        result = asyncio.run(ci.get_kpi_snapshot(
-            get_sf(),
+        api = get_api()
+        response = asyncio.run(api.get_kpi_snapshot(
             _normalize_period(period),
-            channel_manager=channel_manager or None
+            channel_manager=channel_manager or DEFAULT_CHANNEL_MANAGER
         ))
+        result = response.__dict__
         if output_json:
             click.echo(format_json(result))
         else:
@@ -420,12 +427,14 @@ def kpi(period, output_json, channel_manager):
 def revenue(period, breakdown, output_json, channel_manager):
     """Get revenue: closed-won amount, attainment %, deals."""
     try:
-        result = asyncio.run(ci.get_revenue(
-            get_sf(),
-            _normalize_period(period),
-            breakdown=breakdown,
-            channel_manager=channel_manager or None
-        ))
+        api = get_api()
+        req = AnalyticsRequest(
+            period=_normalize_period(period),
+            breakdown=breakdown if breakdown != "total" else None,
+            channel_manager=channel_manager or DEFAULT_CHANNEL_MANAGER
+        )
+        response = asyncio.run(api.get_revenue(req))
+        result = response.__dict__
         if output_json:
             click.echo(format_json(result))
         else:
@@ -442,12 +451,14 @@ def revenue(period, breakdown, output_json, channel_manager):
 def pipeline(period, breakdown, output_json, channel_manager):
     """Get pipeline: open opportunities, by stage, by partner."""
     try:
-        result = asyncio.run(ci.get_pipeline(
-            get_sf(),
-            _normalize_period(period),
-            breakdown=breakdown,
-            channel_manager=channel_manager or None
-        ))
+        api = get_api()
+        req = AnalyticsRequest(
+            period=_normalize_period(period),
+            breakdown=breakdown if breakdown != "total" else None,
+            channel_manager=channel_manager or DEFAULT_CHANNEL_MANAGER
+        )
+        response = asyncio.run(api.get_pipeline(req))
+        result = response.__dict__
         if output_json:
             click.echo(format_json(result))
         else:
@@ -549,12 +560,14 @@ def registrations(period, output_json, channel_manager):
 def top_partners(period, metric, limit, output_json):
     """Get top partners: ranked by revenue or pipeline."""
     try:
-        result = asyncio.run(ci.get_top_partners(
-            get_sf(),
-            metric=metric,
+        api = get_api()
+        response = asyncio.run(api.get_top_partners(
             period=_normalize_period(period),
-            limit=limit
+            metric=metric,
+            limit=limit,
+            channel_manager=DEFAULT_CHANNEL_MANAGER
         ))
+        result = response.__dict__
         if output_json:
             click.echo(format_json(result))
         else:

@@ -1,0 +1,128 @@
+================================================================================
+CHANNEL DIRECTOR AUTOMATION - QUICK START
+================================================================================
+
+YOUR AUTOMATED REPORTS ARE READY! ✅
+
+Location: ~/reports/
+├── weekly/2026/         → Friday reports (automatically saved)
+├── monthly/2026/        → Month-end reports (automatically saved)
+├── qbr/                 → Quarterly reports (automatically saved)
+└── .logs/               → Execution logs
+
+================================================================================
+SCHEDULE
+================================================================================
+
+📅 WEEKLY
+   When: Every Friday at 4:00 PM
+   Files: weekly_YYYYMMDD.xlsx, .md, .json
+   Sheets: 5 (Summary, Revenue by Partner, by Country, Pipeline, Risk)
+
+📊 MONTH-END
+   When: 30th & 31st of month at 11:00 PM
+   Files: month_end_YYYYMM.xlsx, .md, .json
+   Sheets: 10 (includes health, aging, registrations, forecast)
+
+📈 QUARTERLY
+   When: Apr 30, Jul 31, Oct 31, Jan 31 at 10:00 PM
+   Files: qbr_summary_YYYYMMDD.xlsx, .md, .json
+   Sheets: 13+ (summary + individual partner detail sheets)
+
+================================================================================
+QUICK COMMANDS
+================================================================================
+
+View this week's report:
+  open ~/reports/weekly/2026/weekly_20260619.xlsx
+
+View this month's analysis:
+  open ~/reports/monthly/2026/month_end_202606.md
+
+Check automation logs:
+  tail -f ~/reports/.logs/weekly_cron.log
+
+Run manual report (any time):
+  bash ~/Applications/salesforce-fastmcp/scripts/weekly_friday_pulse.sh
+
+Check cron schedule:
+  crontab -l | grep "Channel Director"
+
+================================================================================
+REPORT CONTENTS
+================================================================================
+
+WEEKLY REPORT:
+  ✓ Current quarter KPIs (Revenue, Pipeline, Win Rate, Coverage)
+  ✓ Top 5 partners by revenue
+  ✓ Revenue by country breakdown
+  ✓ Pipeline by sales stage
+  ✓ High-risk deals alert
+
+MONTH-END REPORT:
+  ✓ All weekly metrics PLUS
+  ✓ Month-over-month growth analysis
+  ✓ Quarter-over-quarter trends
+  ✓ Year-over-year comparisons
+  ✓ Top 10 partner health scoring
+  ✓ New partner registrations
+  ✓ Pipeline aging analysis
+  ✓ Quarterly forecast & coverage
+
+QBR REPORT:
+  ✓ Quarterly summary metrics
+  ✓ Top 10 partners overview with QoQ growth
+  ✓ Individual detail sheets for each of Top 12 partners
+  ✓ Revenue by country analysis
+  ✓ Pipeline stage distribution
+  ✓ High-risk deals & action items
+
+================================================================================
+TECHNICAL SETUP
+================================================================================
+
+✅ Cron jobs installed
+✅ Scripts are executable
+✅ Report directories created
+✅ Logging enabled
+✅ All 3 workflows tested with real data
+
+Reports auto-generate every week, month-end, and quarter-end.
+No manual work required—just check ~/reports/ folder when you need them!
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+⚠️ Report missing?
+   → Check ~/reports/.logs/weekly_cron.log for errors
+   → Run manually: bash ~/Applications/salesforce-fastmcp/scripts/weekly_friday_pulse.sh
+
+⚠️ Permission denied?
+   → chmod +x ~/Applications/salesforce-fastmcp/scripts/*.sh
+
+⚠️ CLI connection error?
+   → Verify: python3 -m cli.channel_cli kpi
+   → Check: auth credentials are active
+
+================================================================================
+NOTES
+================================================================================
+
+• Territory: Southern Europe + Eastern Europe + Turkey (auto-filtered)
+• Timezone: Europe/Madrid (UTC+1/+2)
+• Format: Excel + Markdown + JSON (for each report)
+• Storage: ~10 MB per monthly report, ~15 MB per QBR
+• Retention: Keep in ~/reports/ for historical analysis
+
+================================================================================
+DOCUMENTATION
+================================================================================
+
+Full guide: AUTOMATION_GUIDE.md (in project root)
+Questions? Check the guide or run: tail ~/reports/.logs/
+
+Generated: June 18, 2026
+Ready to use!
+
+================================================================================

@@ -1,0 +1,16 @@
+# Channel Director Automation - Cron Schedule
+# ==============================================
+
+# Weekly Pulse Report - Every Friday at 4:00 PM (16:00)
+0 16 * * 5 cd /Users/santiagot/Applications/salesforce-fastmcp && bash scripts/weekly_friday_pulse.sh >> ~/reports/.logs/weekly_cron.log 2>&1
+
+# Month-End Business Review - Last day of month at 11:00 PM (23:00)
+0 23 L * * cd /Users/santiagot/Applications/salesforce-fastmcp && bash scripts/month_end_business_review.sh >> ~/reports/.logs/month_end_cron.log 2>&1
+
+# Quarterly QBR Preparation - Quarter-end at 10:00 PM (22:00)
+# Q1 (Apr 30), Q2 (Jul 31), Q3 (Oct 31), Q4 (Jan 31)
+0 22 30 4 * cd /Users/santiagot/Applications/salesforce-fastmcp && bash scripts/quarterly_qbr_prep.sh >> ~/reports/.logs/qbr_cron.log 2>&1
+0 22 31 7 * cd /Users/santiagot/Applications/salesforce-fastmcp && bash scripts/quarterly_qbr_prep.sh >> ~/reports/.logs/qbr_cron.log 2>&1
+0 22 31 10 * cd /Users/santiagot/Applications/salesforce-fastmcp && bash scripts/quarterly_qbr_prep.sh >> ~/reports/.logs/qbr_cron.log 2>&1
+0 22 31 1 * cd /Users/santiagot/Applications/salesforce-fastmcp && bash scripts/quarterly_qbr_prep.sh >> ~/reports/.logs/qbr_cron.log 2>&1
+

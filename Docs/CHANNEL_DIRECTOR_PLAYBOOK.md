@@ -1,6 +1,8 @@
 # Channel Director Playbook — Complete MCP Tool Reference
 
-Your comprehensive guide to using the Salesforce FastMCP server for reporting, analysis, and decision-making. All 60 tools organized by use case.
+**Version:** 2.1 | **Updated:** June 21, 2026 | **Multi-Region Support:** ✅ SE/EE Territory Management
+
+Your comprehensive guide to using the Salesforce FastMCP server for reporting, analysis, and decision-making. All 64 tools organized by use case, including new multi-region sales rep analytics for SE (Southern Europe) and EE (Eastern Europe) territories.
 
 ---
 
@@ -16,10 +18,11 @@ Your comprehensive guide to using the Salesforce FastMCP server for reporting, a
 8. [Pipeline & Forecasting](#pipeline--forecasting)
 9. [Risk & Activity Tracking](#risk--activity-tracking)
 10. [Revenue & Quota Analysis](#revenue--quota-analysis)
-11. [Deal Registrations](#deal-registrations)
-12. [Data Exploration & Ad-Hoc](#data-exploration--ad-hoc)
-13. [Raw Data Access (CRUD)](#raw-data-access-crud)
-14. [Period & Breakdown Reference](#period--breakdown-reference)
+11. [Sales Rep Performance by Region](#sales-rep-performance-by-region-multi-region-analytics) ⭐ **NEW**
+12. [Deal Registrations](#deal-registrations)
+13. [Data Exploration & Ad-Hoc](#data-exploration--ad-hoc)
+14. [Raw Data Access (CRUD)](#raw-data-access-crud)
+15. [Period & Breakdown Reference](#period--breakdown-reference)
 
 ---
 
@@ -788,6 +791,135 @@ get_new_vs_existing(period="THIS_QUARTER", breakdown="country")
 
 ---
 
+## Sales Rep Performance by Region (Multi-Region Analytics)
+
+**For managing distributed teams across SE (Southern Europe) and EE (Eastern Europe) territories**
+
+### Regional Overview
+
+```
+# What regions do we cover?
+# SE (Southern Europe): Italy, Spain, Portugal, Greece, Cyprus, Malta
+# EE (Eastern Europe): Poland, Czech Republic, Hungary, Slovakia, Romania, Bulgaria, Croatia, Serbia, Slovenia, Turkey
+```
+
+---
+
+### Sales Rep Revenue by Region
+
+```
+# All regions combined (default)
+get_revenue_by_sales_rep(period="THIS_QUARTER")
+  → Returns all 7 reps with [SE]/[EE] labels
+  → Alessia shows [SE+EE] (only multi-region rep)
+
+# Southern Europe only
+get_revenue_by_sales_rep(period="THIS_QUARTER", region="SE")
+  → Returns 7 reps: Ray Mills, Daniel Gaspar, Bruno, Jacopo, Nuno, Ionatan, Alessia [SE]
+
+# Eastern Europe only
+get_revenue_by_sales_rep(period="THIS_QUARTER", region="EE")
+  → Returns 1 rep: Alessia [EE]
+
+# Specific period and region
+get_revenue_by_sales_rep(period="THIS_FISCAL_YEAR", region="SE")
+```
+
+---
+
+### Pipeline by Region
+
+```
+# SE pipeline this quarter
+get_revenue_by_sales_rep(period="THIS_QUARTER", region="SE", metric="pipeline")
+
+# EE pipeline - full year
+get_revenue_by_sales_rep(period="THIS_FISCAL_YEAR", region="EE", metric="pipeline")
+
+# Compare: SE revenue vs pipeline
+get_revenue_by_sales_rep(period="THIS_QUARTER", region="SE", metric="revenue")
+get_revenue_by_sales_rep(period="THIS_QUARTER", region="SE", metric="pipeline")
+```
+
+---
+
+### Deal Details by Rep and Region
+
+```
+# Closed deals: Alessia in SE only
+get_closed_deals_by_sales_rep(period="THIS_QUARTER", region="SE", sales_rep="Alessia Ashkenazi")
+
+# Closed deals: Alessia in EE only
+get_closed_deals_by_sales_rep(period="THIS_QUARTER", region="EE", sales_rep="Alessia Ashkenazi")
+
+# Pipeline: All SE reps' open deals
+get_pipeline_deals_by_sales_rep(period="THIS_QUARTER", region="SE")
+
+# Pipeline: EE rep (Alessia) open deals
+get_pipeline_deals_by_sales_rep(period="THIS_QUARTER", region="EE")
+
+# Specific rep: All deals in SE
+get_closed_deals_by_sales_rep(period="THIS_QUARTER", region="SE", sales_rep="Ray Mills")
+```
+
+---
+
+### Revenue by Rep and Country
+
+```
+# Which countries is each SE rep strong in?
+get_revenue_by_sales_rep_by_country(period="THIS_QUARTER", country="Italy")
+get_revenue_by_sales_rep_by_country(period="THIS_QUARTER", country="Spain")
+get_revenue_by_sales_rep_by_country(period="THIS_QUARTER", country="Portugal")
+
+# By partner within SE
+get_revenue_by_sales_rep_by_partner(period="THIS_QUARTER", partner="Accenture")
+```
+
+---
+
+### Multi-Region Rep Management (Alessia Ashkenazi)
+
+**Alessia is the only rep covering both SE and EE territories:**
+
+```
+# Alessia's SE performance (Italy + Greece)
+get_revenue_by_sales_rep(period="THIS_QUARTER", region="SE", sales_rep="Alessia")
+  → Italy + Greece revenue/pipeline
+
+# Alessia's EE performance (all 10 countries)
+get_revenue_by_sales_rep(period="THIS_QUARTER", region="EE", sales_rep="Alessia")
+  → Poland, Czech Republic, Hungary, Slovakia, Romania, Bulgaria, Croatia, Serbia, Slovenia, Turkey
+
+# Alessia's combined performance
+get_revenue_by_sales_rep(period="THIS_QUARTER")
+  → Shows [SE+EE] label, full 12-country portfolio
+
+# Split analysis: Which region drives more for her?
+Metric: "SE revenue" vs "EE revenue" for Alessia
+  → Helps prioritize where to focus her time
+```
+
+---
+
+### Regional Territory Health
+
+```
+# SE territory: All 7 reps, total revenue
+get_revenue_by_sales_rep(period="THIS_QUARTER", region="SE")
+  → Sum all reps for SE quota attainment
+
+# EE territory: Only Alessia, scaling up
+get_revenue_by_sales_rep(period="THIS_QUARTER", region="EE")
+  → Track growth potential in emerging market
+
+# Growth rates: SE maturity vs EE growth
+get_growth(period_a="THIS_QUARTER", period_b="LAST_QUARTER")
+  → Split by region to understand momentum
+```
+
+---
+
 ## Deal Registrations
 
 **For partner program metrics, deal flow monitoring**
@@ -1085,6 +1217,29 @@ get_pipeline(period="THIS_QUARTER", channel_manager="Maria")
 
 ---
 
+## Quick Reference: Regional Sales Rep Commands
+
+**New in v2.1:** Regional filtering for SE/EE territories
+
+| Use Case | Command |
+|----------|---------|
+| SE rep performance | `get_revenue_by_sales_rep(region="SE")` |
+| EE rep performance | `get_revenue_by_sales_rep(region="EE")` |
+| All regions combined | `get_revenue_by_sales_rep()` (default) |
+| SE pipeline | `get_revenue_by_sales_rep(region="SE", metric="pipeline")` |
+| Alessia's SE deals | `get_closed_deals_by_sales_rep(region="SE", sales_rep="Alessia")` |
+| Alessia's EE deals | `get_closed_deals_by_sales_rep(region="EE", sales_rep="Alessia")` |
+| Ray Mills (Spain+Greece) | `get_revenue_by_sales_rep(region="SE", sales_rep="Ray")` |
+| Bruno (Italy only) | `get_revenue_by_sales_rep(region="SE", sales_rep="Bruno")` |
+| Rep by country | `get_revenue_by_sales_rep_by_country(country="Italy")` |
+
+**Regions:**
+- **SE (Southern Europe):** Italy, Spain, Portugal, Greece, Cyprus, Malta — 7 reps
+- **EE (Eastern Europe):** Poland, Czech Republic, Hungary, Slovakia, Romania, Bulgaria, Croatia, Serbia, Slovenia, Turkey — 1 rep (Alessia)
+- **Multi-region:** Alessia Ashkenazi covers both SE and EE
+
+---
+
 ## Glossary
 
 | Term | Definition |
@@ -1113,6 +1268,9 @@ get_pipeline(period="THIS_QUARTER", channel_manager="Maria")
 
 ---
 
-**Last updated:** 2026-05-18  
-**Total tools available:** 60  
-**Southern Europe coverage:** Italy, Spain, Portugal, Greece, Cyprus, Malta
+**Last updated:** 2026-06-21  
+**Total tools available:** 64 (including 4 new region-aware functions + 2 utility tools)  
+**Multi-region support:** ✅ SE/EE Territory Management  
+**Southern Europe coverage:** Italy, Spain, Portugal, Greece, Cyprus, Malta (7 reps)  
+**Eastern Europe coverage:** Poland, Czech Republic, Hungary, Slovakia, Romania, Bulgaria, Croatia, Serbia, Slovenia, Turkey (1 multi-region rep)  
+**MCP Server:** ✅ All functions available + regional filtering

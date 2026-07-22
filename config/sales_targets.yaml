@@ -74,15 +74,52 @@ territories:
           fy27: 0
           fy26: 0
 
-  # Example: Add additional territories as needed
-  # Northern_Europe:
-  #   revenue_target:
-  #     fy27: 3000000
-  #   countries:
-  #     Germany:
-  #       revenue_target:
-  #         fy27: 1200000
-  #     ...
+  East_Europe:
+    # Eastern Europe territory (emerging market, Tier 3)
+    revenue_target:
+      fy27: null  # Placeholder; set when targets available
+      fy26: null
+    countries:
+      Poland:
+        revenue_target:
+          fy27: null
+          fy26: null
+      Czech Republic:
+        revenue_target:
+          fy27: null
+          fy26: null
+      Hungary:
+        revenue_target:
+          fy27: null
+          fy26: null
+      Slovakia:
+        revenue_target:
+          fy27: null
+          fy26: null
+      Romania:
+        revenue_target:
+          fy27: null
+          fy26: null
+      Bulgaria:
+        revenue_target:
+          fy27: null
+          fy26: null
+      Croatia:
+        revenue_target:
+          fy27: null
+          fy26: null
+      Serbia:
+        revenue_target:
+          fy27: null
+          fy26: null
+      Slovenia:
+        revenue_target:
+          fy27: null
+          fy26: null
+      Turkey:
+        revenue_target:
+          fy27: null
+          fy26: null
 
 
 # ============================================================================
@@ -194,3 +231,71 @@ accounts:
 #   → Uses Accenture Spain target (400,000 FY27)
 # - get_revenue("THIS_QUARTER", partner="UnknownPartner")
 #   → Uses default (100,000 FY27)
+
+
+# ============================================================================
+# SALES REP TARGETS (optional; supplements territory/country hierarchy)
+# ============================================================================
+
+sales_rep_targets:
+  Ray Mills:
+    region: SE
+    fy27: 0  # Placeholder; will be populated
+    fy26: 0
+    countries:
+      Spain: 0
+      Greece: 0
+
+  Daniel Gaspar:
+    region: SE
+    fy27: 0
+    fy26: 0
+    countries:
+      Spain: 0
+
+  Bruno Filippelli:
+    region: SE
+    fy27: 0
+    fy26: 0
+    countries:
+      Italy: 0
+
+  Jacopo Zumerle:
+    region: SE
+    fy27: 0
+    fy26: 0
+    countries:
+      Italy: 0
+
+  Nuno Antunes:
+    region: SE
+    fy27: 0
+    fy26: 0
+    countries:
+      Portugal: 0
+
+  Ionatan Ascher:
+    region: SE
+    fy27: 0
+    fy26: 0
+    countries:
+      Spain: 0
+
+  Alessia Ashkenazi:
+    region: SE+EE
+    fy27: 0
+    fy26: 0
+    se_breakdown:
+      Italy: 0
+      Greece: 0
+    ee_breakdown:
+      Poland: 0
+      Czech Republic: 0
+      Hungary: 0
+      Slovakia: 0
+      Romania: 0
+      Bulgaria: 0
+      Croatia: 0
+      Serbia: 0
+      Slovenia: 0
+      Turkey: 0

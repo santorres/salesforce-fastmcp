@@ -26,6 +26,61 @@ from config.ci_fiscal import (
 )
 
 # ---------------------------------------------------------------------------
+# Country Code Mapping (Salesforce ISO → Config Full Names)
+# ---------------------------------------------------------------------------
+# Salesforce stores BillingCountry as ISO 3166-1 alpha-2 codes (TR, CZ, PL, etc.)
+# Config uses full names (Turkey, Czech Republic, Poland, etc.)
+# This mapping converts query results to match config expectations
+
+ISO_TO_FULL_NAME: dict[str, str] = {
+    # Southern Europe (SE)
+    "IT": "Italy",
+    "ES": "Spain",
+    "PT": "Portugal",
+    "GR": "Greece",
+    "CY": "Cyprus",
+    "MT": "Malta",
+    # Eastern Europe (EE)
+    "PL": "Poland",
+    "CZ": "Czech Republic",
+    "HU": "Hungary",
+    "SK": "Slovakia",
+    "RO": "Romania",
+    "BG": "Bulgaria",
+    "HR": "Croatia",
+    "RS": "Serbia",
+    "SI": "Slovenia",
+    "TR": "Turkey",
+}
+
+# Also handle full names directly (in case Salesforce returns full names instead of ISO codes)
+# This is a fallback - if the country is already in full name format, return it as-is
+VALID_FULL_NAMES: set[str] = set(ISO_TO_FULL_NAME.values())
+
+def _normalize_country_name(country_code: str | None) -> str | None:
+    """Convert Salesforce country code/name to canonical full name.
+    
+    Handles both:
+    - ISO 3166-1 alpha-2 codes (e.g., 'TR', 'CZ', 'IT') → 'Turkey', 'Czech Republic', 'Italy'
+    - Full names already in correct format (e.g., 'Turkey') → 'Turkey' (pass-through)
+    
+    Args:
+        country_code: ISO code or full country name
+    
+    Returns:
+        Canonical full country name, or original if not recognized
+    """
+    if not country_code:
+        return country_code
+    
+    # First try as ISO code
+    if country_code in ISO_TO_FULL_NAME:
+        return ISO_TO_FULL_NAME[country_code]
+    
+    # Otherwise assume it's already a full name, return as-is
+    return country_code
+
+# ---------------------------------------------------------------------------
 # Tool implementations
 # ---------------------------------------------------------------------------
 
@@ -97,7 +152,7 @@ async def get_revenue(
         )
         data = []
         for r in res["records"]:
-            country_name = r.get("country")
+            country_name = _normalize_country_name(r.get("country"))
             revenue = _num(r, "totalRevenue", "expr0")
 
             item = {
@@ -173,78 +228,102 @@ async def get_pipeline(
     channel_manager: str = DEFAULT_CHANNEL_MANAGER,
     partner_name: str | None = None,
     country: str | None = None,
+    region: str | None = None,
 ) -> dict[str, Any]:
     period = _normalize_period(period)
     _assert_enum(period, PERIODS, "period")
     _assert_enum(breakdown, BREAKDOWNS_PIPELINE, "breakdown")
+    if region:
+         _assert_enum(region, ["SE", "EE", "all"], "region")
     safe_limit = _clamp_limit(limit, 10, 50)
     range_ = _get_period_range(period)
 
     extra: list[str] = ["StageName NOT IN ('Closed Won', 'Closed Lost')"]
     if partner_name:
-        extra.append(f"Partner__r.Name LIKE '%{_escape_soql(str(partner_name))}%'")
+         extra.append(f"Partner__r.Name LIKE '%{_escape_soql(str(partner_name))}%'")
     if country:
-        extra.append(f"Account.BillingCountry = '{_escape_soql(str(country))}'")
+         extra.append(f"Account.BillingCountry = '{_escape_soql(str(country))}'")
+    elif region and region != "all":
+         # Filter by region (SE or EE)
+         from config.ci_config import COUNTRIES as SE_COUNTRIES, COUNTRIES_EE
+         target_countries = SE_COUNTRIES if region == "SE" else COUNTRIES_EE
+         countries_sql = "('" + "','".join(target_countries) + "')"
+         extra.append(f"Account.BillingCountry IN {countries_sql}")
 
     where = _build_opp_where(closed_mode="open", range_=range_, channel_manager=channel_manager, extra_conditions=extra)
 
     if breakdown == "total":
-        res = await sf.query(f"SELECT SUM(Amount) totalPipeline, COUNT(Id) dealCount FROM Opportunity WHERE {where}")
-        return {
-            "tool": "get_pipeline", "period": _summarize_period(period),
-            "breakdown": breakdown, "channelManager": channel_manager or None,
-            "data": {
-                "totalPipeline": _num(res["records"][0], "totalPipeline", "expr0"),
-                "dealCount": _num(res["records"][0], "dealCount", "expr1"),
-            },
-        }
+         res = await sf.query(f"SELECT SUM(Amount) totalPipeline, COUNT(Id) dealCount FROM Opportunity WHERE {where}")
+         result = {
+             "tool": "get_pipeline", "period": _summarize_period(period),
+             "breakdown": breakdown, "channelManager": channel_manager or None,
+             "data": {
+                 "totalPipeline": _num(res["records"][0], "totalPipeline", "expr0"),
+                 "dealCount": _num(res["records"][0], "dealCount", "expr1"),
+             },
+         }
+         if region:
+             result["region"] = region
+         return result
 
     if breakdown == "country":
-        res = await sf.query(
-            f"SELECT Account.BillingCountry country, SUM(Amount) totalPipeline, COUNT(Id) dealCount "
-            f"FROM Opportunity WHERE {where} GROUP BY Account.BillingCountry ORDER BY SUM(Amount) DESC LIMIT {safe_limit}"
-        )
-        return {
-            "tool": "get_pipeline", "period": _summarize_period(period),
-            "breakdown": breakdown, "limit": safe_limit, "channelManager": channel_manager or None,
-            "data": [{"country": r.get("country"), "totalPipeline": _num(r, "totalPipeline", "expr0"), "dealCount": _num(r, "dealCount", "expr1")} for r in res["records"]],
-        }
+         res = await sf.query(
+             f"SELECT Account.BillingCountry country, SUM(Amount) totalPipeline, COUNT(Id) dealCount "
+             f"FROM Opportunity WHERE {where} GROUP BY Account.BillingCountry ORDER BY SUM(Amount) DESC LIMIT {safe_limit}"
+         )
+         result = {
+             "tool": "get_pipeline", "period": _summarize_period(period),
+             "breakdown": breakdown, "limit": safe_limit, "channelManager": channel_manager or None,
+             "data": [{"country": _normalize_country_name(r.get("country")), "totalPipeline": _num(r, "totalPipeline", "expr0"), "dealCount": _num(r, "dealCount", "expr1")} for r in res["records"]],
+         }
+         if region:
+             result["region"] = region
+         return result
 
     if breakdown == "stage":
-        res = await sf.query(
-            f"SELECT StageName stage, SUM(Amount) totalPipeline, COUNT(Id) dealCount "
-            f"FROM Opportunity WHERE {where} GROUP BY StageName ORDER BY SUM(Amount) DESC LIMIT {safe_limit}"
-        )
-        return {
-            "tool": "get_pipeline", "period": _summarize_period(period),
-            "breakdown": breakdown, "limit": safe_limit, "channelManager": channel_manager or None,
-            "data": [{"stage": r.get("stage"), "totalPipeline": _num(r, "totalPipeline", "expr0"), "dealCount": _num(r, "dealCount", "expr1")} for r in res["records"]],
-        }
+         res = await sf.query(
+             f"SELECT StageName stage, SUM(Amount) totalPipeline, COUNT(Id) dealCount "
+             f"FROM Opportunity WHERE {where} GROUP BY StageName ORDER BY SUM(Amount) DESC LIMIT {safe_limit}"
+         )
+         result = {
+             "tool": "get_pipeline", "period": _summarize_period(period),
+             "breakdown": breakdown, "limit": safe_limit, "channelManager": channel_manager or None,
+             "data": [{"stage": r.get("stage"), "totalPipeline": _num(r, "totalPipeline", "expr0"), "dealCount": _num(r, "dealCount", "expr1")} for r in res["records"]],
+         }
+         if region:
+             result["region"] = region
+         return result
 
     if breakdown == "partner":
-        res = await sf.query(
-            f"SELECT Partner__c partnerId, Partner__r.Name partnerName, SUM(Amount) totalPipeline, COUNT(Id) dealCount "
-            f"FROM Opportunity WHERE {where} AND Partner__c != null "
-            f"GROUP BY Partner__c, Partner__r.Name ORDER BY SUM(Amount) DESC LIMIT {safe_limit}"
-        )
-        return {
-            "tool": "get_pipeline", "period": _summarize_period(period),
-            "breakdown": breakdown, "limit": safe_limit, "channelManager": channel_manager or None,
-            "data": [{"partnerId": r.get("partnerId"), "partnerName": r.get("partnerName"),
-                      "totalPipeline": _num(r, "totalPipeline", "expr0"), "dealCount": _num(r, "dealCount", "expr1")} for r in res["records"]],
-        }
+         res = await sf.query(
+             f"SELECT Partner__c partnerId, Partner__r.Name partnerName, SUM(Amount) totalPipeline, COUNT(Id) dealCount "
+             f"FROM Opportunity WHERE {where} AND Partner__c != null "
+             f"GROUP BY Partner__c, Partner__r.Name ORDER BY SUM(Amount) DESC LIMIT {safe_limit}"
+         )
+         result = {
+             "tool": "get_pipeline", "period": _summarize_period(period),
+             "breakdown": breakdown, "limit": safe_limit, "channelManager": channel_manager or None,
+             "data": [{"partnerId": r.get("partnerId"), "partnerName": r.get("partnerName"),
+                       "totalPipeline": _num(r, "totalPipeline", "expr0"), "dealCount": _num(r, "dealCount", "expr1")} for r in res["records"]],
+         }
+         if region:
+             result["region"] = region
+         return result
 
     # quarter breakdown
     res = await sf.query(f"SELECT CloseDate, Amount FROM Opportunity WHERE {where}")
     by_q: dict[str, float] = {}
     for r in res["records"]:
-        q = _fiscal_quarter_from_date_str(r["CloseDate"])
-        by_q[q] = by_q.get(q, 0.0) + (r.get("Amount") or 0)
-    return {
-        "tool": "get_pipeline", "period": _summarize_period(period),
-        "breakdown": breakdown, "channelManager": channel_manager or None,
-        "data": [{"quarter": q, "totalPipeline": by_q.get(q, 0.0)} for q in ["Q1", "Q2", "Q3", "Q4"]],
+         q = _fiscal_quarter_from_date_str(r["CloseDate"])
+         by_q[q] = by_q.get(q, 0.0) + (r.get("Amount") or 0)
+    result = {
+         "tool": "get_pipeline", "period": _summarize_period(period),
+         "breakdown": breakdown, "channelManager": channel_manager or None,
+         "data": [{"quarter": q, "totalPipeline": by_q.get(q, 0.0)} for q in ["Q1", "Q2", "Q3", "Q4"]],
     }
+    if region:
+         result["region"] = region
+    return result
 
 
 async def get_top_partners(
@@ -569,6 +648,149 @@ async def get_opportunity_detail(
         "period": _summarize_period(period) if period else None,
         "answer_markdown": answer_md,
         "data": {"found": bool(records), "count": len(records), "primary": primary, "matches": records},
+    }
+
+
+async def get_opportunities_by_registration_status(
+    sf,
+    period: str,
+    registration_status: str | None = None,
+    channel_manager: str | None = None,
+    limit: int = 50,
+) -> dict[str, Any]:
+    """Get opportunities filtered by Partner_Registration_Approval__c status.
+    
+    Returns: List of opportunities with registration details including Allbound_Partner__c.
+    
+    Args:
+        sf: SalesforceClient instance
+        period: Time period for filtering (e.g., 'THIS_FISCAL_YEAR', 'THIS_QUARTER')
+        registration_status: Status filter - can be:
+                            - Single: 'Submitted', 'In Review', 'Approved', 'Rejected'
+                            - Multiple: 'Submitted,In Review' (comma-separated, no spaces)
+                            - None: returns all registrations
+        channel_manager: Optional channel manager filter
+        limit: Maximum number of opportunities to return (default 50, max 200)
+    """
+    period = _normalize_period(period)
+    _assert_enum(period, PERIODS, "period")
+    range_ = _get_period_range(period)
+    safe_limit = _clamp_limit(limit, 10, 200)
+    
+    # Handle multiple statuses (comma-separated)
+    valid_statuses = ["Submitted", "In Review", "Approved", "Rejected"]
+    status_list = []
+    if registration_status:
+        # Split by comma and validate each
+        status_list = [s.strip() for s in registration_status.split(",")]
+        for status in status_list:
+            if status not in valid_statuses:
+                raise ValueError(f"Invalid registration_status: '{status}'. Must be one of {valid_statuses}")
+    
+    where_conditions = [
+        f"Account.BillingCountry IN {COUNTRIES_SQL}",
+        f"Partner_Registration_Approval__c != null",
+        f"CreatedDate >= {range_['start'].isoformat()}T00:00:00Z",
+        f"CreatedDate <= {range_['end'].isoformat()}T23:59:59Z",
+    ]
+    
+    # Build status filter (supports multiple statuses)
+    if status_list:
+        if len(status_list) == 1:
+            where_conditions.append(f"Partner_Registration_Approval__c = '{_escape_soql(status_list[0])}'")
+        else:
+            statuses_sql = ",".join(f"'{_escape_soql(s)}'" for s in status_list)
+            where_conditions.append(f"Partner_Registration_Approval__c IN ({statuses_sql})")
+    
+    if channel_manager:
+        where_conditions.append(f"Channel_Manager__c = '{_escape_soql(channel_manager)}'")
+    
+    where = " AND ".join(where_conditions)
+    
+    # Query opportunities with key fields including Allbound_Partner__c
+    soql = (
+        "SELECT Id, Name, Amount, CloseDate, StageName, Probability, IsClosed, IsWon, "
+        "Account.Name, Account.BillingCountry, Owner.Name, Partner__r.Name, Allbound_Partner__c, "
+        "Partner_Registration_Approval__c, Channel_Manager__c, CreatedDate "
+        f"FROM Opportunity WHERE {where} ORDER BY Amount DESC, CreatedDate DESC LIMIT {safe_limit}"
+    )
+    
+    res = await sf.query(soql)
+    
+    opportunities = [
+        {
+            "id": r["Id"],
+            "name": r["Name"],
+            "amount": r.get("Amount") or 0,
+            "closeDate": r.get("CloseDate"),
+            "stageName": r.get("StageName"),
+            "probability": r.get("Probability"),
+            "isClosed": bool(r.get("IsClosed")),
+            "isWon": bool(r.get("IsWon")),
+            "accountName": (r.get("Account") or {}).get("Name"),
+            "country": (r.get("Account") or {}).get("BillingCountry"),
+            "ownerName": (r.get("Owner") or {}).get("Name"),
+            "partnerName": (r.get("Partner__r") or {}).get("Name"),
+            "allboundPartner": r.get("Allbound_Partner__c"),
+            "registrationStatus": r.get("Partner_Registration_Approval__c"),
+            "channelManager": r.get("Channel_Manager__c"),
+            "createdDate": r.get("CreatedDate"),
+        }
+        for r in res.get("records", [])
+    ]
+    
+    # Summary statistics
+    total_amount = sum(opp.get("amount", 0) for opp in opportunities)
+    
+    # Build markdown summary for better readability
+    period_info = _summarize_period(period)
+    period_label = period_info.get('label', period) if isinstance(period_info, dict) else period_info
+    date_range = f"{range_['start'].strftime('%b %d')} - {range_['end'].strftime('%b %d, %Y')}"
+    
+    markdown_lines = [
+        f"# Opportunities by Registration Status: {registration_status or 'All'}",
+        f"_{period_label} ({date_range})_",
+        "",
+        f"**Summary:** {len(opportunities)} opportunities, Total Amount: €{total_amount:,.2f}",
+        "",
+    ]
+    
+    if opportunities:
+        markdown_lines.append("## Opportunities")
+        markdown_lines.append("")
+        markdown_lines.append("| Deal Name | Amount | Stage | Allbound Partner | Owner | Country | Status | Close Date |")
+        markdown_lines.append("|-----------|--------|-------|-----------------|-------|---------|--------|------------|")
+        
+        for opp in opportunities:
+            name = opp.get("name", "N/A")[:35]  # Truncate long names
+            amount = f"€{opp.get('amount', 0):,.0f}"
+            stage = opp.get("stageName", "N/A")[:12]  # Truncate stage names
+            allbound_partner = opp.get("allboundPartner", "N/A")[:25]  # Allbound partner field
+            owner = opp.get("ownerName", "N/A")[:15]
+            country = opp.get("country", "N/A")
+            reg_status = opp.get("registrationStatus", "N/A")
+            close_date = opp.get("closeDate", "N/A")[:10] if opp.get("closeDate") else "N/A"
+            
+            markdown_lines.append(
+                f"| {name} | {amount} | {stage} | {allbound_partner} | {owner} | {country} | {reg_status} | {close_date} |"
+            )
+    else:
+        status_text = f"'{registration_status}'" if registration_status else "any status"
+        markdown_lines.append(
+            f"No Deal Registrations with status {status_text} created in {period_label} ({date_range})"
+        )
+    
+    return {
+        "tool": "get_opportunities_by_registration_status",
+        "period": _summarize_period(period),
+        "registration_status": registration_status or "All",
+        "channel_manager": channel_manager or None,
+        "answer_markdown": "\n".join(markdown_lines),
+        "data": {
+            "count": len(opportunities),
+            "total_amount": round(total_amount, 0),
+            "opportunities": opportunities,
+        },
     }
 
 
@@ -1080,6 +1302,7 @@ async def get_opportunity_list(
     sf,
     partner_name: str | None = None,
     country: str | None = None,
+    sales_rep: str | None = None,
     stage: str | None = None,
     min_amount: float | None = None,
     period: str = "THIS_FISCAL_YEAR",
@@ -1094,23 +1317,42 @@ async def get_opportunity_list(
     extra: list[str] = []
     if partner_name:
         extra.append(f"Partner__r.Name LIKE '%{_escape_soql(str(partner_name))}%'")
-    if country:
-        extra.append(f"Account.BillingCountry = '{_escape_soql(str(country))}'")
+    if sales_rep:
+        extra.append(f"Owner.Name LIKE '%{_escape_soql(str(sales_rep))}%'")
+    # NOTE: Don't add country to extra_conditions - if country is specified, we'll build a custom WHERE clause
+    # to avoid the double filter (ALL_COUNTRIES_SQL already includes it in _build_opp_where)
     if stage:
         extra.append(f"StageName = '{_escape_soql(str(stage))}'")
     if min_amount is not None and float(min_amount) > 0:
         extra.append(f"Amount >= {float(min_amount)}")
 
-    where = _build_opp_where(closed_mode="open", range_=range_, channel_manager=channel_manager, extra_conditions=extra)
+    # If a specific country is requested, build WHERE without ALL_COUNTRIES_SQL filter
+    if country:
+        clauses = [
+            f"Account.BillingCountry = '{_escape_soql(str(country))}'",
+            f"CloseDate >= {range_['start'].isoformat()}",
+            f"CloseDate <= {range_['end'].isoformat()}",
+            "IsClosed = false",
+        ]
+        if channel_manager:
+            clauses.append(f"Channel_Manager__c = '{_escape_soql(channel_manager)}'")
+        for cond in extra:
+            if cond:
+                clauses.append(cond)
+        where = " AND ".join(clauses)
+    else:
+        where = _build_opp_where(closed_mode="open", range_=range_, channel_manager=channel_manager, extra_conditions=extra)
+    # Note: In Salesforce SOQL, we cannot use aliases for relationship fields (Account.Name, Partner__r.Name, Owner.Name)
+    # We can only alias aggregate functions or simple fields. So we select without aliases and handle in the result mapping.
     soql = (
-        f"SELECT Id, Name, Account.Name accountName, Partner__r.Name partnerName, StageName, Amount, "
-        f"CloseDate, Account.BillingCountry, Owner.Name ownerName, Probability "
+        f"SELECT Id, Name, Account.Name, Partner__r.Name, StageName, Amount, "
+        f"CloseDate, Account.BillingCountry, Owner.Name, Probability "
         f"FROM Opportunity WHERE {where} ORDER BY CloseDate ASC LIMIT {safe_limit}"
     )
     res = await sf.query(soql)
     return {
         "tool": "get_opportunity_list", "period": _summarize_period(period),
-        "filters": {"partnerName": partner_name, "country": country, "stage": stage, "minAmount": min_amount},
+        "filters": {"partnerName": partner_name, "country": country, "salesRep": sales_rep, "stage": stage, "minAmount": min_amount},
         "data": [
             {"id": r["Id"], "name": r["Name"],
              "account": (r.get("Account") or {}).get("Name") or "-",
@@ -2302,7 +2544,7 @@ async def get_new_vs_existing(
                 "existing_won": 0,
                 "new_pipeline": 0,
                 "existing_pipeline": 0,
-            }
+             }
 
         is_new = r.get("Type") == "New Business"
         amount = r.get("Amount", 0)
@@ -2331,6 +2573,171 @@ async def get_new_vs_existing(
         "tool": "get_new_vs_existing",
         "period": _summarize_period(period),
         "breakdown": breakdown,
+        "data": data,
+    }
+
+
+async def get_partner_sourced_influenced_revenue(
+    sf,
+    period: str = "THIS_QUARTER",
+    breakdown: str | None = None,
+    channel_manager: str | None = None,
+) -> dict[str, Any]:
+    """
+    Revenue breakdown by partner involvement type: Source vs. Influence vs. Fulfillment vs. Unassigned/Direct.
+
+    Uses Opportunity.Partner_Source_Influence__c (synced from Quote.Partner_Deal_Type__c).
+
+    Note: Some opportunities may not have synced quotes; these appear as "Unassigned/Direct".
+
+    Breakdown options:
+    - None: Total across all opportunities
+    - 'country': Per-country breakdown
+    - 'partner': Per-partner breakdown
+    """
+    period = _normalize_period(period)
+    _assert_enum(period, PERIODS, "period")
+    if breakdown:
+        _assert_enum(breakdown, ["country", "partner"], "breakdown")
+    safe_limit = _clamp_limit(10, 10, 50)
+    range_ = _get_period_range(period)
+
+    where = _build_opp_where(closed_mode="won", range_=range_, channel_manager=channel_manager)
+
+    # Query all closed-won opportunities with partner source/influence info
+    res = await sf.query(
+        f"SELECT Amount, Partner_Source_Influence__c, Account.BillingCountry, Partner__r.Name "
+        f"FROM Opportunity WHERE {where} LIMIT 2000"
+    )
+    records = res.get("records", [])
+
+    if not breakdown:
+        # Total breakdown - aggregate all
+        sourced_revenue = 0
+        influenced_revenue = 0
+        fulfillment_revenue = 0
+        unassigned_revenue = 0
+        sourced_count = 0
+        influenced_count = 0
+        fulfillment_count = 0
+        unassigned_count = 0
+
+        for r in records:
+            amount = r.get("Amount", 0)
+            psi = r.get("Partner_Source_Influence__c")
+
+            if psi == "Source":
+                sourced_revenue += amount
+                sourced_count += 1
+            elif psi == "Influence":
+                influenced_revenue += amount
+                influenced_count += 1
+            elif psi == "Fulfillment":
+                fulfillment_revenue += amount
+                fulfillment_count += 1
+            else:
+                unassigned_revenue += amount
+                unassigned_count += 1
+
+        total_revenue = sourced_revenue + influenced_revenue + fulfillment_revenue + unassigned_revenue
+        total_count = sourced_count + influenced_count + fulfillment_count + unassigned_count
+
+        sourced_pct = (sourced_revenue / total_revenue * 100) if total_revenue > 0 else 0
+        influenced_pct = (influenced_revenue / total_revenue * 100) if total_revenue > 0 else 0
+        fulfillment_pct = (fulfillment_revenue / total_revenue * 100) if total_revenue > 0 else 0
+        unassigned_pct = (unassigned_revenue / total_revenue * 100) if total_revenue > 0 else 0
+
+        return {
+            "tool": "get_partner_sourced_influenced_revenue",
+            "period": _summarize_period(period),
+            "breakdown": None,
+            "channelManager": channel_manager or None,
+            "data": {
+                "total_revenue": round(total_revenue, 2),
+                "total_deal_count": total_count,
+                "sourced": {
+                    "revenue": round(sourced_revenue, 2),
+                    "deal_count": sourced_count,
+                    "percentage": round(sourced_pct, 1),
+                },
+                "influenced": {
+                    "revenue": round(influenced_revenue, 2),
+                    "deal_count": influenced_count,
+                    "percentage": round(influenced_pct, 1),
+                },
+                "fulfillment": {
+                    "revenue": round(fulfillment_revenue, 2),
+                    "deal_count": fulfillment_count,
+                    "percentage": round(fulfillment_pct, 1),
+                },
+                "unassigned_direct": {
+                    "revenue": round(unassigned_revenue, 2),
+                    "deal_count": unassigned_count,
+                    "percentage": round(unassigned_pct, 1),
+                },
+            },
+        }
+
+    # Breakdown by country or partner
+    group_map: dict[str, dict] = {}
+
+    for r in records:
+        if breakdown == "country":
+            key = (r.get("Account") or {}).get("BillingCountry") or "Unknown"
+        else:  # partner
+            key = (r.get("Partner__r") or {}).get("Name") or "Orphan"
+
+        if key not in group_map:
+            group_map[key] = {
+                breakdown: key,
+                "total_revenue": 0,
+                "sourced": {"revenue": 0, "deal_count": 0},
+                "influenced": {"revenue": 0, "deal_count": 0},
+                "fulfillment": {"revenue": 0, "deal_count": 0},
+                "unassigned_direct": {"revenue": 0, "deal_count": 0},
+            }
+
+        amount = r.get("Amount", 0)
+        psi = r.get("Partner_Source_Influence__c")
+
+        group_map[key]["total_revenue"] += amount
+
+        if psi == "Source":
+            group_map[key]["sourced"]["revenue"] += amount
+            group_map[key]["sourced"]["deal_count"] += 1
+        elif psi == "Influence":
+            group_map[key]["influenced"]["revenue"] += amount
+            group_map[key]["influenced"]["deal_count"] += 1
+        elif psi == "Fulfillment":
+            group_map[key]["fulfillment"]["revenue"] += amount
+            group_map[key]["fulfillment"]["deal_count"] += 1
+        else:
+            group_map[key]["unassigned_direct"]["revenue"] += amount
+            group_map[key]["unassigned_direct"]["deal_count"] += 1
+
+    # Calculate percentages for each group
+    for item in group_map.values():
+        total = item["total_revenue"]
+        for type_key in ["sourced", "influenced", "fulfillment", "unassigned_direct"]:
+            type_data = item[type_key]
+            pct = (type_data["revenue"] / total * 100) if total > 0 else 0
+            type_data["percentage"] = round(pct, 1)
+            type_data["revenue"] = round(type_data["revenue"], 2)
+
+    data = list(group_map.values())
+    data.sort(key=lambda x: x["total_revenue"], reverse=True)
+    data = data[:safe_limit]
+
+    # Round total_revenue in each item
+    for item in data:
+        item["total_revenue"] = round(item["total_revenue"], 2)
+
+    return {
+        "tool": "get_partner_sourced_influenced_revenue",
+        "period": _summarize_period(period),
+        "breakdown": breakdown,
+        "limit": safe_limit,
+        "channelManager": channel_manager or None,
         "data": data,
     }
 
@@ -2639,3 +3046,683 @@ async def get_stage_progression_velocity(
         "current_period": "THIS_QUARTER",
         "data": data,
     }
+
+
+async def get_revenue_by_sales_rep(
+    sf,
+    period: str,
+    metric: str = "revenue",
+    limit: int = 50,
+    channel_manager: str = DEFAULT_CHANNEL_MANAGER,
+) -> dict[str, Any]:
+    """Get revenue aggregated by sales rep (owner).
+    
+    Args:
+        sf: SalesforceClient instance
+        period: Time period (e.g., 'THIS_QUARTER')
+        metric: 'revenue' for closed-won, 'pipeline' for open
+        limit: Maximum number of reps to return
+        channel_manager: Filter by channel manager (empty = all)
+    
+    Returns:
+        Dict with reps ranked by revenue/pipeline amount
+    """
+    period = _normalize_period(period)
+    _assert_enum(period, PERIODS, "period")
+    safe_limit = _clamp_limit(limit, 10, 100)
+    range_ = _get_period_range(period)
+    
+    if metric == "revenue":
+        # Closed-won opportunities
+        base = _build_opp_where(closed_mode="won", range_=range_, channel_manager=channel_manager)
+        result = await sf.query(
+            f"SELECT Owner.Name, COUNT(Id) dealCount, SUM(Amount) totalAmount "
+            f"FROM Opportunity WHERE {base} GROUP BY Owner.Name ORDER BY SUM(Amount) DESC LIMIT {safe_limit}"
+        )
+    elif metric == "pipeline":
+        # Open opportunities
+        base = _build_opp_where(closed_mode="open", range_=range_, channel_manager=channel_manager)
+        result = await sf.query(
+            f"SELECT Owner.Name, COUNT(Id) dealCount, SUM(Amount) totalAmount "
+            f"FROM Opportunity WHERE {base} AND StageName NOT IN ('Closed Won','Closed Lost') "
+            f"GROUP BY Owner.Name ORDER BY SUM(Amount) DESC LIMIT {safe_limit}"
+        )
+    else:
+        raise ValueError(f"Invalid metric: {metric}. Must be 'revenue' or 'pipeline'")
+    
+    data = []
+    for record in result.get("records", []):
+        # In SOQL GROUP BY aggregates, Owner.Name comes as "Name" field directly
+        rep_name = record.get("Name") or "Unknown"
+        amount = _num(record, "totalAmount", "expr0")
+        count = _num(record, "dealCount", "expr1")
+        avg_deal = amount / count if count > 0 else 0
+        
+        data.append({
+            "repName": rep_name,
+            "totalAmount": amount,
+            "dealCount": int(count),
+            "avgDealSize": avg_deal,
+        })
+    
+    return {
+        "tool": "get_revenue_by_sales_rep",
+        "metric": metric,
+        "period": _summarize_period(period),
+        "channelManager": channel_manager or None,
+        "data": data,
+    }
+
+
+async def get_revenue_by_sales_rep_by_country(
+    sf,
+    period: str,
+    country: str | None = None,
+    metric: str = "revenue",
+    limit: int = 50,
+    channel_manager: str = DEFAULT_CHANNEL_MANAGER,
+) -> dict[str, Any]:
+    """Get revenue by sales rep, filtered by country.
+    
+    Args:
+        sf: SalesforceClient instance
+        period: Time period (e.g., 'THIS_QUARTER')
+        country: Specific country to filter (None = all countries)
+        metric: 'revenue' for closed-won, 'pipeline' for open
+        limit: Maximum number of reps to return
+        channel_manager: Filter by channel manager (empty = all)
+    
+    Returns:
+        Dict with reps ranked by revenue/pipeline, broken down by country
+    """
+    period = _normalize_period(period)
+    _assert_enum(period, PERIODS, "period")
+    safe_limit = _clamp_limit(limit, 10, 100)
+    range_ = _get_period_range(period)
+    
+    # Build WHERE clause
+    if metric == "revenue":
+        base = _build_opp_where(closed_mode="won", range_=range_, channel_manager=channel_manager)
+    elif metric == "pipeline":
+        base = _build_opp_where(closed_mode="open", range_=range_, channel_manager=channel_manager)
+        base += " AND StageName NOT IN ('Closed Won','Closed Lost')"
+    else:
+        raise ValueError(f"Invalid metric: {metric}. Must be 'revenue' or 'pipeline'")
+    
+    # Add country filter if specified
+    if country:
+        base += f" AND Account.BillingCountry = '{_escape_soql(country)}'"
+    
+    # Query: GROUP BY both owner and country
+    result = await sf.query(
+        f"SELECT Owner.Name, Account.BillingCountry, COUNT(Id) dealCount, SUM(Amount) totalAmount "
+        f"FROM Opportunity WHERE {base} "
+        f"GROUP BY Owner.Name, Account.BillingCountry "
+        f"ORDER BY Owner.Name ASC, SUM(Amount) DESC LIMIT {safe_limit}"
+    )
+    
+    # Organize data by rep
+    rep_data = {}
+    for record in result.get("records", []):
+        # In SOQL GROUP BY aggregates, these come as direct fields
+        rep_name = record.get("Name") or "Unknown"
+        country_name = record.get("BillingCountry") or "Unknown"
+        amount = _num(record, "totalAmount", "expr0")
+        count = _num(record, "dealCount", "expr1")
+        
+        if rep_name not in rep_data:
+            rep_data[rep_name] = {
+                "repName": rep_name,
+                "totalAmount": 0,
+                "dealCount": 0,
+                "byCountry": {}
+            }
+        
+        rep_data[rep_name]["totalAmount"] += amount
+        rep_data[rep_name]["dealCount"] += int(count)
+        rep_data[rep_name]["byCountry"][country_name] = {
+            "amount": amount,
+            "dealCount": int(count),
+            "avgDealSize": amount / count if count > 0 else 0,
+        }
+    
+    # Convert to list and sort
+    data = list(rep_data.values())
+    data.sort(key=lambda x: x["totalAmount"], reverse=True)
+    
+    return {
+        "tool": "get_revenue_by_sales_rep_by_country",
+        "metric": metric,
+        "period": _summarize_period(period),
+        "country": country or None,
+        "channelManager": channel_manager or None,
+        "data": data,
+    }
+
+
+async def get_revenue_by_sales_rep_by_partner(
+    sf,
+    period: str,
+    partner_name: str | None = None,
+    metric: str = "revenue",
+    limit: int = 50,
+    channel_manager: str = DEFAULT_CHANNEL_MANAGER,
+) -> dict[str, Any]:
+    """Get revenue by sales rep, optionally filtered by partner.
+    
+    Args:
+        sf: SalesforceClient instance
+        period: Time period (e.g., 'THIS_QUARTER')
+        partner_name: Specific partner to filter (None = all partners, including non-partnered deals)
+        metric: 'revenue' for closed-won, 'pipeline' for open
+        limit: Maximum number of reps to return
+        channel_manager: Filter by channel manager (empty = all)
+    
+    Returns:
+        Dict with reps ranked by revenue/pipeline, broken down by partner
+    """
+    period = _normalize_period(period)
+    _assert_enum(period, PERIODS, "period")
+    safe_limit = _clamp_limit(limit, 10, 100)
+    range_ = _get_period_range(period)
+    
+    # Build WHERE clause
+    if metric == "revenue":
+        base = _build_opp_where(closed_mode="won", range_=range_, channel_manager=channel_manager)
+    elif metric == "pipeline":
+        base = _build_opp_where(closed_mode="open", range_=range_, channel_manager=channel_manager)
+        base += " AND StageName NOT IN ('Closed Won','Closed Lost')"
+    else:
+        raise ValueError(f"Invalid metric: {metric}. Must be 'revenue' or 'pipeline'")
+    
+    # Add partner filter if specified
+    if partner_name:
+        base += f" AND Partner__r.Name LIKE '%{_escape_soql(partner_name)}%'"
+    
+    # Query: Get non-aggregated data so we can manually group by owner and partner
+    result = await sf.query(
+        f"SELECT Owner.Name, Partner__r.Name, Amount FROM Opportunity WHERE {base} "
+        f"ORDER BY Owner.Name ASC LIMIT 2000"
+    )
+    
+    # Organize data by rep and partner (manual grouping to avoid SOQL duplicate Name issue)
+    rep_data = {}
+    for record in result.get("records", []):
+        rep_name = (record.get("Owner") or {}).get("Name") or "Unknown"
+        partner = (record.get("Partner__r") or {}).get("Name") or "Orphan (No Partner)"
+        amount = _num(record, "Amount", "expr0")
+        count = 1
+        
+        if rep_name not in rep_data:
+            rep_data[rep_name] = {
+                "repName": rep_name,
+                "totalAmount": 0,
+                "dealCount": 0,
+                "byPartner": {}
+            }
+        
+        rep_data[rep_name]["totalAmount"] += amount
+        rep_data[rep_name]["dealCount"] += 1
+        
+        # Aggregate by partner for this rep
+        if partner not in rep_data[rep_name]["byPartner"]:
+            rep_data[rep_name]["byPartner"][partner] = {
+                "amount": 0,
+                "dealCount": 0,
+                "avgDealSize": 0,
+            }
+        
+        rep_data[rep_name]["byPartner"][partner]["amount"] += amount
+        rep_data[rep_name]["byPartner"][partner]["dealCount"] += 1
+    
+    # Calculate avgDealSize for each partner breakdown and convert to list
+    data = []
+    for rep_name, rep_info in rep_data.items():
+        for partner, partner_stats in rep_info["byPartner"].items():
+            if partner_stats["dealCount"] > 0:
+                partner_stats["avgDealSize"] = partner_stats["amount"] / partner_stats["dealCount"]
+        data.append(rep_info)
+    
+    # Sort by total amount
+    data.sort(key=lambda x: x["totalAmount"], reverse=True)
+    
+    # Limit to safe_limit
+    data = data[:safe_limit]
+    
+    return {
+        "tool": "get_revenue_by_sales_rep_by_partner",
+        "metric": metric,
+        "period": _summarize_period(period),
+        "partner": partner_name or None,
+        "channelManager": channel_manager or None,
+        "data": data,
+    }
+
+
+async def get_closed_deals_by_sales_rep(
+    sf,
+    period: str,
+    sales_rep: str | None = None,
+    limit: int = 100,
+    channel_manager: str = DEFAULT_CHANNEL_MANAGER,
+    all_regions: bool = False,
+) -> dict[str, Any]:
+    """Get closed-won deals for each sales rep (or specific rep if provided).
+    
+    Args:
+        sf: SalesforceClient instance
+        period: Time period (e.g., 'THIS_QUARTER')
+        sales_rep: Specific sales rep name to filter (None = all reps)
+        limit: Maximum number of deals to return
+        channel_manager: Filter by channel manager (empty = all)
+        all_regions: If True, include all regions; if False, filter to Southern Europe
+    
+    Returns:
+        Dict with closed deals grouped by sales rep
+    """
+    period = _normalize_period(period)
+    _assert_enum(period, PERIODS, "period")
+    safe_limit = _clamp_limit(limit, 10, 500)
+    range_ = _get_period_range(period)
+    
+    if all_regions:
+        # Query all regions without geographic filter
+        base = f"CloseDate >= {range_['start']} AND CloseDate <= {range_['end']} AND StageName = 'Closed Won'"
+    else:
+        base = _build_opp_where(closed_mode="won", range_=range_, channel_manager=channel_manager)
+    
+    # Add sales rep filter if specified
+    if sales_rep:
+        base += f" AND Owner.Name LIKE '%{_escape_soql(sales_rep)}%'"
+    
+    result = await sf.query(
+        f"SELECT Owner.Name, Name, Amount, StageName, CloseDate, Account.BillingCountry, Partner__r.Name, Probability "
+        f"FROM Opportunity WHERE {base} "
+        f"ORDER BY Owner.Name ASC, Amount DESC LIMIT {safe_limit}"
+    )
+    
+    # Organize by rep
+    rep_deals = {}
+    for record in result.get("records", []):
+        rep_name = (record.get("Owner") or {}).get("Name") or "Unknown"
+        deal_name = record.get("Name") or "Unknown"
+        amount = _num(record, "Amount", "expr0")
+        close_date = record.get("CloseDate", "N/A")
+        country = (record.get("Account") or {}).get("BillingCountry") or "Unknown"
+        partner = (record.get("Partner__r") or {}).get("Name") or "Orphan"
+        
+        if rep_name not in rep_deals:
+            rep_deals[rep_name] = {
+                "repName": rep_name,
+                "closedRevenue": 0,
+                "dealCount": 0,
+                "deals": []
+            }
+        
+        rep_deals[rep_name]["closedRevenue"] += amount
+        rep_deals[rep_name]["dealCount"] += 1
+        rep_deals[rep_name]["deals"].append({
+            "name": deal_name,
+            "amount": amount,
+            "closeDate": close_date,
+            "country": country,
+            "partner": partner,
+        })
+    
+    data = list(rep_deals.values())
+    data.sort(key=lambda x: x["closedRevenue"], reverse=True)
+    
+    return {
+        "tool": "get_closed_deals_by_sales_rep",
+        "period": _summarize_period(period),
+        "salesRep": sales_rep or None,
+        "channelManager": channel_manager or None,
+        "data": data,
+    }
+
+
+async def get_pipeline_deals_by_sales_rep(
+    sf,
+    period: str,
+    sales_rep: str | None = None,
+    limit: int = 100,
+    channel_manager: str = DEFAULT_CHANNEL_MANAGER,
+    all_regions: bool = False,
+) -> dict[str, Any]:
+    """Get open pipeline deals for each sales rep (or specific rep if provided).
+    
+    Args:
+        sf: SalesforceClient instance
+        period: Time period (e.g., 'THIS_QUARTER')
+        sales_rep: Specific sales rep name to filter (None = all reps)
+        limit: Maximum number of deals to return
+        channel_manager: Filter by channel manager (empty = all)
+        all_regions: If True, include all regions; if False, filter to Southern Europe
+    
+    Returns:
+        Dict with pipeline deals grouped by sales rep
+    """
+    period = _normalize_period(period)
+    _assert_enum(period, PERIODS, "period")
+    safe_limit = _clamp_limit(limit, 10, 500)
+    range_ = _get_period_range(period)
+    
+    if all_regions:
+        # Query all regions without geographic filter
+        base = f"CloseDate >= {range_['start']} AND CloseDate <= {range_['end']} AND StageName NOT IN ('Closed Won','Closed Lost')"
+    else:
+        base = _build_opp_where(closed_mode="open", range_=range_, channel_manager=channel_manager)
+        base += " AND StageName NOT IN ('Closed Won','Closed Lost')"
+    
+    # Add sales rep filter if specified
+    if sales_rep:
+        base += f" AND Owner.Name LIKE '%{_escape_soql(sales_rep)}%'"
+    
+    result = await sf.query(
+        f"SELECT Owner.Name, Name, Amount, StageName, CloseDate, Account.BillingCountry, Partner__r.Name, Probability "
+        f"FROM Opportunity WHERE {base} "
+        f"ORDER BY Owner.Name ASC, Amount DESC LIMIT {safe_limit}"
+    )
+    
+    # Organize by rep
+    rep_deals = {}
+    for record in result.get("records", []):
+        rep_name = (record.get("Owner") or {}).get("Name") or "Unknown"
+        deal_name = record.get("Name") or "Unknown"
+        amount = _num(record, "Amount", "expr0")
+        stage = record.get("StageName") or "Unknown"
+        close_date = record.get("CloseDate", "N/A")
+        country = (record.get("Account") or {}).get("BillingCountry") or "Unknown"
+        partner = (record.get("Partner__r") or {}).get("Name") or "Orphan"
+        probability = _num(record, "Probability", "expr0")
+        
+        if rep_name not in rep_deals:
+            rep_deals[rep_name] = {
+                "repName": rep_name,
+                "pipelineAmount": 0,
+                "forecastAmount": 0,  # Amount * (Probability/100)
+                "dealCount": 0,
+                "deals": []
+            }
+        
+        rep_deals[rep_name]["pipelineAmount"] += amount
+        rep_deals[rep_name]["forecastAmount"] += (amount * probability / 100)
+        rep_deals[rep_name]["dealCount"] += 1
+        rep_deals[rep_name]["deals"].append({
+            "name": deal_name,
+            "amount": amount,
+            "stage": stage,
+            "closeDate": close_date,
+            "country": country,
+            "partner": partner,
+            "probability": probability,
+            "forecast": amount * probability / 100,
+         })
+     
+    data = list(rep_deals.values())
+    data.sort(key=lambda x: x["pipelineAmount"], reverse=True)
+    
+    return {
+        "tool": "get_pipeline_deals_by_sales_rep",
+        "period": _summarize_period(period),
+        "salesRep": sales_rep or None,
+        "channelManager": channel_manager or None,
+        "data": data,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Region-Aware Sales Rep Functions (SE/EE multi-region support)
+# ---------------------------------------------------------------------------
+
+async def get_revenue_by_sales_rep_with_region(
+    sf,
+    period: str,
+    region: str | None = None,
+    metric: str = "revenue",
+    limit: int = 50,
+    channel_manager: str = DEFAULT_CHANNEL_MANAGER,
+) -> dict[str, Any]:
+    """Get revenue aggregated by sales rep with optional region filtering.
+    
+    Args:
+        sf: SalesforceClient instance
+        period: Time period (e.g., 'THIS_QUARTER')
+        region: 'SE' (Southern Europe), 'EE' (Eastern Europe), 'all', or None (default=all)
+        metric: 'revenue' for closed-won, 'pipeline' for open
+        limit: Maximum number of reps to return
+        channel_manager: Filter by channel manager (empty = all)
+    
+    Returns:
+        Dict with reps ranked by revenue/pipeline, with region labels [SE]/[EE]
+    """
+    # Get the base data without region filtering
+    result = await get_revenue_by_sales_rep(
+        sf, period, metric=metric, limit=limit, channel_manager=channel_manager
+    )
+    
+    cfg = get_config()
+    
+    # Update tool name to indicate this is the region-aware version
+    result["tool"] = "get_revenue_by_sales_rep_with_region"
+    
+    # If no region filter or region="all", return data with region labels
+    if region is None or region == "all":
+        # Add region labels to rep names
+        for rep in result["data"]:
+            rep_name = rep["repName"]
+            rep_region = cfg.get_rep_region(rep_name)
+            if rep_region == "SE+EE":
+                rep["repName"] = f"{rep_name} [SE+EE]"
+                rep["region"] = "SE+EE"
+            elif rep_region == "SE":
+                rep["repName"] = f"{rep_name} [SE]"
+                rep["region"] = "SE"
+            elif rep_region == "EE":
+                rep["repName"] = f"{rep_name} [EE]"
+                rep["region"] = "EE"
+        result["region"] = "all"
+        return result
+    
+    # If region filter specified, filter reps and their data
+    filtered_data = []
+    for rep in result["data"]:
+        rep_name = rep["repName"]
+        rep_region = cfg.get_rep_region(rep_name)
+        
+        # Include rep if they're in the requested region
+        if region in (rep_region or ""):
+            rep["repName"] = f"{rep_name} [{region}]"
+            rep["region"] = region
+            filtered_data.append(rep)
+    
+    result["data"] = filtered_data
+    result["region"] = region
+    return result
+
+
+async def get_pipeline_by_sales_rep_with_region(
+    sf,
+    period: str,
+    region: str | None = None,
+    limit: int = 50,
+    channel_manager: str = DEFAULT_CHANNEL_MANAGER,
+) -> dict[str, Any]:
+    """Get pipeline aggregated by sales rep with optional region filtering.
+    
+    Args:
+        sf: SalesforceClient instance
+        period: Time period (e.g., 'THIS_QUARTER')
+        region: 'SE', 'EE', 'all', or None (default=all)
+        limit: Maximum number of reps to return
+        channel_manager: Filter by channel manager (empty = all)
+    
+    Returns:
+        Dict with reps ranked by pipeline, with region labels [SE]/[EE]
+    """
+    # Get the pipeline data (metric="pipeline")
+    result = await get_revenue_by_sales_rep(
+        sf, period, metric="pipeline", limit=limit, channel_manager=channel_manager
+    )
+    
+    cfg = get_config()
+    
+    # Update tool name to indicate this is the region-aware version
+    result["tool"] = "get_pipeline_by_sales_rep_with_region"
+    
+    # If no region filter or region="all", return data with region labels
+    if region is None or region == "all":
+        for rep in result["data"]:
+            rep_name = rep["repName"]
+            rep_region = cfg.get_rep_region(rep_name)
+            if rep_region == "SE+EE":
+                rep["repName"] = f"{rep_name} [SE+EE]"
+                rep["region"] = "SE+EE"
+            elif rep_region == "SE":
+                rep["repName"] = f"{rep_name} [SE]"
+                rep["region"] = "SE"
+            elif rep_region == "EE":
+                rep["repName"] = f"{rep_name} [EE]"
+                rep["region"] = "EE"
+        result["region"] = "all"
+        return result
+    
+    # If region filter specified
+    filtered_data = []
+    for rep in result["data"]:
+        rep_name = rep["repName"]
+        rep_region = cfg.get_rep_region(rep_name)
+        if region in (rep_region or ""):
+            rep["repName"] = f"{rep_name} [{region}]"
+            rep["region"] = region
+            filtered_data.append(rep)
+    
+    result["data"] = filtered_data
+    result["region"] = region
+    return result
+
+
+async def get_closed_deals_by_sales_rep_with_region(
+    sf,
+    period: str,
+    region: str | None = None,
+    sales_rep: str | None = None,
+    limit: int = 100,
+    channel_manager: str = DEFAULT_CHANNEL_MANAGER,
+) -> dict[str, Any]:
+    """Get closed-won deals by sales rep with optional region filtering.
+    
+    Args:
+        sf: SalesforceClient instance
+        period: Time period (e.g., 'THIS_QUARTER')
+        region: 'SE', 'EE', 'all', or None (default=all)
+        sales_rep: Specific sales rep name to filter (None = all reps)
+        limit: Maximum number of deals to return
+        channel_manager: Filter by channel manager (empty = all)
+    
+    Returns:
+        Dict with closed deals grouped by sales rep, with region labels
+    """
+    # Get closed deals data
+    result = await get_closed_deals_by_sales_rep(
+        sf, period, sales_rep=sales_rep, limit=limit, channel_manager=channel_manager
+    )
+    
+    cfg = get_config()
+    
+    # Update tool name to indicate this is the region-aware version
+    result["tool"] = "get_closed_deals_by_sales_rep_with_region"
+    
+    # If no region filter or region="all", return data with region labels
+    if region is None or region == "all":
+        for rep in result["data"]:
+            rep_name = rep["repName"]
+            rep_region = cfg.get_rep_region(rep_name)
+            if rep_region == "SE+EE":
+                rep["repName"] = f"{rep_name} [SE+EE]"
+                rep["region"] = "SE+EE"
+            elif rep_region == "SE":
+                rep["repName"] = f"{rep_name} [SE]"
+                rep["region"] = "SE"
+            elif rep_region == "EE":
+                rep["repName"] = f"{rep_name} [EE]"
+                rep["region"] = "EE"
+        result["region"] = "all"
+        return result
+    
+    # If region filter specified
+    filtered_data = []
+    for rep in result["data"]:
+        rep_name = rep["repName"]
+        rep_region = cfg.get_rep_region(rep_name)
+        if region in (rep_region or ""):
+            rep["repName"] = f"{rep_name} [{region}]"
+            rep["region"] = region
+            filtered_data.append(rep)
+    
+    result["data"] = filtered_data
+    result["region"] = region
+    return result
+
+
+async def get_pipeline_deals_by_sales_rep_with_region(
+    sf,
+    period: str,
+    region: str | None = None,
+    sales_rep: str | None = None,
+    limit: int = 100,
+    channel_manager: str = DEFAULT_CHANNEL_MANAGER,
+) -> dict[str, Any]:
+    """Get pipeline deals by sales rep with optional region filtering.
+    
+    Args:
+        sf: SalesforceClient instance
+        period: Time period (e.g., 'THIS_QUARTER')
+        region: 'SE', 'EE', 'all', or None (default=all)
+        sales_rep: Specific sales rep name to filter (None = all reps)
+        limit: Maximum number of deals to return
+        channel_manager: Filter by channel manager (empty = all)
+    
+    Returns:
+        Dict with pipeline deals grouped by sales rep, with region labels
+    """
+    # Get pipeline deals data
+    result = await get_pipeline_deals_by_sales_rep(
+        sf, period, sales_rep=sales_rep, limit=limit, channel_manager=channel_manager
+    )
+    
+    cfg = get_config()
+    
+    # Update tool name to indicate this is the region-aware version
+    result["tool"] = "get_pipeline_deals_by_sales_rep_with_region"
+    
+    # If no region filter or region="all", return data with region labels
+    if region is None or region == "all":
+        for rep in result["data"]:
+            rep_name = rep["repName"]
+            rep_region = cfg.get_rep_region(rep_name)
+            if rep_region == "SE+EE":
+                rep["repName"] = f"{rep_name} [SE+EE]"
+                rep["region"] = "SE+EE"
+            elif rep_region == "SE":
+                rep["repName"] = f"{rep_name} [SE]"
+                rep["region"] = "SE"
+            elif rep_region == "EE":
+                rep["repName"] = f"{rep_name} [EE]"
+                rep["region"] = "EE"
+        result["region"] = "all"
+        return result
+    
+    # If region filter specified
+    filtered_data = []
+    for rep in result["data"]:
+        rep_name = rep["repName"]
+        rep_region = cfg.get_rep_region(rep_name)
+        if region in (rep_region or ""):
+            rep["repName"] = f"{rep_name} [{region}]"
+            rep["region"] = region
+            filtered_data.append(rep)
+    
+    result["data"] = filtered_data
+    result["region"] = region
+    return result

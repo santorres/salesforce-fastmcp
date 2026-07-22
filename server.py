@@ -16,6 +16,7 @@ from salesforce_client import SalesforceClient, SalesforceError
 from auth_provider import create_auth_provider, AuthProvider, Credentials
 import channel_intelligence as ci
 from api import ChannelAnalyticsAPIImpl, DEFAULT_CHANNEL_MANAGER as API_DEFAULT_CHANNEL_MANAGER
+from config.ci_config import MCP_USAGE_MODE
 from prompts import (
     quarterly_pipeline_analysis,
     closed_won_partner_analysis,
@@ -54,6 +55,92 @@ logger = _setup_logger()
 
 # Initialize FastMCP server
 mcp = FastMCP("Salesforce Connector")
+
+# ============================================================================
+# MCP TOOL REGISTRATION HELPER (BASIC vs ADVANCED MODE)
+# ============================================================================
+# 
+# ARCHITECTURE NOTES:
+# ------------------
+# This system conditionally registers 12 Salesforce Data Access tools (raw SOQL)
+# based on MCP_USAGE_MODE environment variable.
+#
+# BASIC MODE (default):
+#   - 50 deterministic, domain-specific tools only
+#   - No raw SOQL access (prevents LLM hallucination)
+#   - Recommended for production
+#
+# ADVANCED MODE (opt-in):
+#   - 50 BASIC + 12 Salesforce Data Access tools (raw SOQL)
+#   - Useful for power users, testing, and observability validation
+#   - Allows arbitrary SOQL execution (research mode)
+#
+# LangSmith Integration:
+#   When you add LangSmith observability (future):
+#   1. Import MCP_USAGE_MODE in langsmith tracking code
+#   2. Log metadata: { "mcp_mode": MCP_USAGE_MODE }
+#   3. Track which tools are called in each mode
+#   4. Use patterns to inform: keep SOQL tools? decommission? improve domain tools?
+#
+#   Example tracking code (future):
+#   ```
+#   from config.ci_config import MCP_USAGE_MODE
+#   metadata = {
+#       "mcp_mode": MCP_USAGE_MODE,
+#       "tool_name": tool_name,
+#       "tool_category": "advanced" if tool in ADVANCED_TOOLS else "basic"
+#   }
+#   # Send to LangSmith...
+#   ```
+#
+# Setup:
+#   - Set via: export MCP_USAGE_MODE=basic|advanced
+#   - Or edit: config/ci_config.py MCP_USAGE_MODE = "basic|advanced"
+# ============================================================================
+
+def _should_register_advanced_tool() -> bool:
+    """Check if advanced/SOQL tools should be registered.
+    
+    Returns True if MCP_USAGE_MODE is "advanced", False if "basic".
+    Advanced mode includes raw Salesforce Data Access tools (salesforce_query, etc.)
+    which allow arbitrary SOQL execution.
+    
+    For LangSmith integration: Observability tools can check this flag to log
+    which mode was used and which tools were invoked.
+    """
+    return MCP_USAGE_MODE == "advanced"
+
+# Log the current MCP mode on startup
+logger.info(f"MCP Server initialized in {MCP_USAGE_MODE.upper()} mode ({48 if MCP_USAGE_MODE == 'basic' else 60} tools available)")
+
+def _register_advanced_tool(func):
+    """Decorator to conditionally register a tool only in ADVANCED mode.
+    
+    This is applied to the 12 Salesforce Data Access tools (salesforce_query,
+    salesforce_describe, salesforce_lookup, salesforce_aggregate, 
+    salesforce_relationships, salesforce_recent, salesforce_hierarchy,
+    salesforce_find_partner, salesforce_case_insights, salesforce_search,
+    salesforce_sobjects, salesforce_describe_fields).
+    
+    Usage:
+        @_register_advanced_tool
+        async def salesforce_query(...):
+            ...
+    
+    Behavior:
+        In BASIC mode: Function is defined but NOT registered as an MCP tool
+        In ADVANCED mode: Function is registered as an MCP tool (via @mcp.tool)
+    
+    Code preservation:
+        Functions remain in codebase even in BASIC mode, allowing easy future
+        re-enablement or LangSmith-based decision making.
+    """
+    if _should_register_advanced_tool():
+        return mcp.tool(func)
+    else:
+        # In BASIC mode, just return the function unregistered
+        # It won't be available via MCP but code remains for reference/future use
+        return func
 
 # Global client instance and auth provider
 _client: SalesforceClient | None = None
@@ -177,7 +264,7 @@ def _coerce_period(period: str | None) -> str | None:
 # =============================================================================
 
 
-@mcp.tool
+@_register_advanced_tool
 async def salesforce_query(
     q: Annotated[str, Field(description="The SOQL query to execute")],
 ) -> str:
@@ -208,7 +295,7 @@ async def salesforce_query(
         return f"Error: {e}"
 
 
-@mcp.tool
+@_register_advanced_tool
 async def salesforce_sobjects() -> str:
     """List all available Salesforce objects."""
     try:
@@ -219,7 +306,7 @@ async def salesforce_sobjects() -> str:
         return f"Error: {e}"
 
 
-@mcp.tool
+@_register_advanced_tool
 async def salesforce_recent(
     limit: Annotated[
         int, Field(description="Maximum number of recent records to return")
@@ -234,7 +321,7 @@ async def salesforce_recent(
         return f"Error: {e}"
 
 
-@mcp.tool
+@_register_advanced_tool
 async def salesforce_search(
     q: Annotated[str, Field(description="The SOSL search query to execute")],
 ) -> str:
@@ -247,7 +334,7 @@ async def salesforce_search(
         return f"Error: {e}"
 
 
-@mcp.tool
+@_register_advanced_tool
 async def salesforce_describe(
     object_name: Annotated[
         str,
@@ -265,7 +352,7 @@ async def salesforce_describe(
         return f"Error: {e}"
 
 
-@mcp.tool
+@_register_advanced_tool
 async def salesforce_describe_fields(
     object_name: Annotated[
         str,
@@ -334,7 +421,7 @@ async def salesforce_describe_fields(
         return f"Error: {e}"
 
 
-@mcp.tool
+@_register_advanced_tool
 async def salesforce_find_partner(
     search_term: Annotated[
         str,
@@ -392,7 +479,7 @@ async def salesforce_find_partner(
 # =============================================================================
 
 
-@mcp.tool
+@_register_advanced_tool
 async def salesforce_relationships(
     object_name: Annotated[
         str,
@@ -419,7 +506,7 @@ async def salesforce_relationships(
         return f"Error: {e}"
 
 
-@mcp.tool
+@_register_advanced_tool
 async def salesforce_lookup(
     object_name: Annotated[
         str,
@@ -454,7 +541,7 @@ async def salesforce_lookup(
         return f"Error: {e}"
 
 
-@mcp.tool
+@_register_advanced_tool
 async def salesforce_hierarchy(
     object_name: Annotated[
         str, Field(description="The Salesforce object (e.g., Account, Contact)")
@@ -481,7 +568,7 @@ async def salesforce_hierarchy(
 # =============================================================================
 
 
-@mcp.tool
+@_register_advanced_tool
 async def salesforce_aggregate(
     object_name: Annotated[
         str,
@@ -607,7 +694,7 @@ async def salesforce_pipeline(
         return f"Error: {e}"
 
 
-@mcp.tool
+@_register_advanced_tool
 async def salesforce_case_insights(
     timeframe: Annotated[
         str,
@@ -955,14 +1042,15 @@ async def get_pipeline(
     channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c (leave blank for all)")] = None,
     partner_name: Annotated[str | None, Field(description="Filter by partner name (partial match)")] = None,
     country: Annotated[str | None, Field(description="Filter by billing country")] = None,
+    region: Annotated[str | None, Field(description="Filter by region: 'SE' (Southern Europe), 'EE' (Eastern Europe), or 'all' for both")] = None,
 ) -> str:
-    """Open pipeline analytics for Southern Europe. Excludes Closed Won and Closed Lost."""
+    """Open pipeline analytics for Southern Europe and Eastern Europe. Excludes Closed Won and Closed Lost."""
     _log_tool_call("get_pipeline")
     try:
         result = await ci.get_pipeline(
             get_client(), _coerce_period(period), breakdown, limit,
             channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
-            partner_name, country,
+            partner_name, country, region,
         )
         return format_result(result)
     except (ValueError, Exception) as e:
@@ -1344,6 +1432,36 @@ async def get_deal_registrations_trend(
 
 
 @mcp.tool
+async def get_opportunities_by_registration_status(
+    period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR, THIS_QUARTER)")] = "THIS_FISCAL_YEAR",
+    registration_status: Annotated[str | None, Field(description="Filter by status: 'Submitted', 'In Review', 'Approved', 'Rejected'. Can use multiple: 'Submitted,In Review'. None for all")] = None,
+    limit: Annotated[int, Field(description="Max opportunities to return (default 50, max 200)")] = 50,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Get opportunities filtered by Partner_Registration_Approval__c status with Allbound partner details.
+
+    Returns detailed list including Allbound_Partner__c (the partner who registered the deal).
+    Useful for identifying and actioning unapproved registrations (Submitted, In Review).
+
+    Examples:
+    - Get unapproved registrations: registration_status="Submitted,In Review"
+    - Get approved only: registration_status="Approved"
+    - Get all registrations: registration_status=None
+    """
+    try:
+        result = await ci.get_opportunities_by_registration_status(
+            get_client(),
+            period,
+            registration_status,
+            channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
+            limit,
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
 async def get_win_rate_by_country(
     period: Annotated[str, Field(description="Fiscal period (e.g. THIS_FISCAL_YEAR)")] = "THIS_FISCAL_YEAR",
     channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
@@ -1465,6 +1583,37 @@ async def get_new_vs_existing(
 
 
 @mcp.tool
+async def get_partner_sourced_influenced_revenue(
+    period: Annotated[str, Field(description="Time period (e.g., THIS_QUARTER, THIS_FISCAL_YEAR, FY27_Q1)")] = "THIS_QUARTER",
+    breakdown: Annotated[str | None, Field(description="Breakdown by: 'country', 'partner', or None for total")] = None,
+    channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
+) -> str:
+    """Get closed-won revenue breakdown by partner involvement type.
+
+    Shows how much revenue came from partner-sourced deals vs. partner-influenced
+    vs. fulfillment-only vs. deals with no partner involvement.
+
+    Data comes from Opportunity.Partner_Source_Influence__c field (synced from
+    Quote.Partner_Deal_Type__c). Some opportunities may not have synced quotes
+    and appear as 'Unassigned/Direct'.
+
+    Parameters:
+    - period: Fiscal period (e.g., THIS_QUARTER, THIS_FISCAL_YEAR, FY27_Q1, FY26_Q4, LAST_QUARTER)
+    - breakdown: None (total), 'country' (per-country split), or 'partner' (per-partner split)
+    - channel_manager: Optional filter by Channel_Manager__c value
+
+    Returns: Markdown-formatted table with sourced/influenced breakdown and percentages
+    """
+    try:
+        result = await ci.get_partner_sourced_influenced_revenue(
+            get_client(), period, breakdown, channel_manager
+        )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
 async def get_stage_risk_profile(
     period: Annotated[str, Field(description="Time period (e.g., THIS_QUARTER)")] = "THIS_QUARTER",
     channel_manager: Annotated[str | None, Field(description="Filter by Channel_Manager__c")] = None,
@@ -1558,6 +1707,207 @@ async def generate_partner_qbr(
             channel_manager if channel_manager is not None else ci.DEFAULT_CHANNEL_MANAGER,
             revenue_target, top_opps_limit,
         )
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_revenue_by_sales_rep(
+    period: Annotated[str, Field(description="Time period (e.g. THIS_QUARTER, THIS_FISCAL_YEAR, FY27_Q1)")] = "THIS_QUARTER",
+    metric: Annotated[str, Field(description="Metric: 'revenue' for closed-won, 'pipeline' for open opportunities")] = "revenue",
+    region: Annotated[str | None, Field(description="Filter by region: 'SE' (Southern Europe), 'EE' (Eastern Europe), 'all', or None for default")] = None,
+    limit: Annotated[int, Field(description="Maximum number of sales reps to return (default 50, max 100)")] = 50,
+) -> str:
+    """Get revenue aggregated by sales rep (opportunity owner) with optional region filtering.
+
+    Returns sales reps ranked by total revenue or pipeline amount, with deal counts
+    and average deal sizes. Optionally filtered by region (SE/EE).
+
+    Example: get_revenue_by_sales_rep(period='THIS_QUARTER', metric='revenue', region='SE', limit=10)
+    """
+    try:
+        api = ChannelAnalyticsAPIImpl(get_client())
+        response = await api.get_revenue_by_sales_rep_with_region(period, region, metric, limit, "")
+        return format_result(response.__dict__)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_revenue_by_sales_rep_by_country(
+    period: Annotated[str, Field(description="Time period (e.g. THIS_QUARTER, THIS_FISCAL_YEAR, FY27_Q1)")] = "THIS_QUARTER",
+    country: Annotated[str | None, Field(description="Optional: Filter by specific country (e.g. Italy, Spain)")] = None,
+    metric: Annotated[str, Field(description="Metric: 'revenue' for closed-won, 'pipeline' for open opportunities")] = "revenue",
+    limit: Annotated[int, Field(description="Maximum number of sales reps to return (default 50, max 100)")] = 50,
+) -> str:
+    """Get revenue by sales rep, broken down by country.
+
+    Shows each sales rep's total revenue/pipeline and how it's distributed across countries.
+
+    Example: get_revenue_by_sales_rep_by_country(period='THIS_QUARTER', country='Italy', metric='revenue')
+    """
+    try:
+        api = ChannelAnalyticsAPIImpl(get_client())
+        response = await api.get_revenue_by_sales_rep_by_country(period, country, metric, limit, "")
+        return format_result(response.__dict__)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_revenue_by_sales_rep_by_partner(
+    period: Annotated[str, Field(description="Time period (e.g. THIS_QUARTER, THIS_FISCAL_YEAR, FY27_Q1)")] = "THIS_QUARTER",
+    partner: Annotated[str | None, Field(description="Optional: Filter by specific partner name (partial match)")] = None,
+    metric: Annotated[str, Field(description="Metric: 'revenue' for closed-won, 'pipeline' for open opportunities")] = "revenue",
+    limit: Annotated[int, Field(description="Maximum number of sales reps to return (default 50, max 100)")] = 50,
+) -> str:
+    """Get revenue by sales rep, broken down by partner.
+
+    Shows each sales rep's total revenue/pipeline and how it's distributed across partners.
+    Includes 'Orphan' deals with no partner assigned.
+
+    Example: get_revenue_by_sales_rep_by_partner(period='THIS_QUARTER', partner='iCubed', metric='revenue')
+    """
+    try:
+        api = ChannelAnalyticsAPIImpl(get_client())
+        response = await api.get_revenue_by_sales_rep_by_partner(period, partner, metric, limit, "")
+        return format_result(response.__dict__)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_closed_deals_by_sales_rep(
+    period: Annotated[str, Field(description="Time period: 'THIS_QUARTER', 'THIS_FISCAL_YEAR', 'LAST_QUARTER', 'LAST_30_DAYS', or 'FY27_Q1', 'FY27_Q2', etc. (Required)")] = "THIS_QUARTER",
+    sales_rep: Annotated[str | None, Field(description="Sales rep name to filter (partial match OK, e.g. 'Ionatan', 'Alessia'). Leave blank to see all reps")] = None,
+    region: Annotated[str | None, Field(description="Optional region filter: 'SE' (Southern Europe), 'EE' (Eastern Europe), 'all', or None for both")] = None,
+    limit: Annotated[int, Field(description="Max deals to return (default 100, max 500)")] = 100,
+) -> str:
+    """Get closed-won opportunities by sales rep with complete deal details.
+
+    Returns each sales rep's closed deals with: opportunity name, amount, close date, partner, country, probability.
+    
+    Use to analyze:
+    - Individual rep performance (closed revenue)
+    - Deal details by rep and period
+    - Sales rep territories and countries
+    - Multi-region rep activity (use region filter for SE/EE breakdown)
+
+    Example queries:
+    - period='THIS_QUARTER' → This quarter's closed deals for all reps
+    - period='THIS_FISCAL_YEAR', sales_rep='Ionatan Ascher' → Ionatan's full year closed deals
+    - period='FY27_Q1', region='SE' → Q1 closed deals for Southern Europe reps only
+    """
+    try:
+        api = ChannelAnalyticsAPIImpl(get_client())
+        response = await api.get_closed_deals_by_sales_rep_with_region(period, region, sales_rep, limit, "")
+        return format_result(response.__dict__)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_pipeline_deals_by_sales_rep(
+    period: Annotated[str, Field(description="Time period (e.g. THIS_QUARTER, THIS_FISCAL_YEAR, FY27_Q1)")] = "THIS_QUARTER",
+    sales_rep: Annotated[str | None, Field(description="Optional: Filter by specific sales rep name (partial match)")] = None,
+    region: Annotated[str | None, Field(description="Filter by region: 'SE' (Southern Europe), 'EE' (Eastern Europe), 'all', or None for default")] = None,
+    limit: Annotated[int, Field(description="Maximum number of deals to return (default 100, max 500)")] = 100,
+) -> str:
+    """Get open pipeline deals by sales rep with probability and forecast.
+
+    Shows each sales rep's open pipeline with opportunity names, amounts, stages,
+    probability, close dates, partners, and weighted forecast (amount × probability).
+    Optionally filtered by region (SE/EE).
+
+    Example: get_pipeline_deals_by_sales_rep(period='THIS_QUARTER', region='SE', sales_rep='Andrew')
+    """
+    try:
+        api = ChannelAnalyticsAPIImpl(get_client())
+        response = await api.get_pipeline_deals_by_sales_rep_with_region(period, region, sales_rep, limit, "")
+        return format_result(response.__dict__)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_sales_rep_regions(
+    rep_name: Annotated[str, Field(description="Sales rep name (e.g. 'Alessia Ashkenazi', 'Ray Mills')")],
+) -> str:
+    """Get region(s) and countries covered by a sales rep.
+    
+    Returns the region abbreviation(s), list of countries, and whether the rep
+    covers multiple regions. Useful for understanding rep territory scope.
+    
+    Example: get_sales_rep_regions(rep_name='Alessia Ashkenazi')
+    """
+    try:
+        from config.ci_config import get_config, SALES_REPS
+        
+        cfg = get_config()
+        
+        if rep_name not in SALES_REPS:
+            return format_result({
+                "error": f"Sales rep '{rep_name}' not found",
+                "available_reps": list(SALES_REPS.keys()),
+            })
+        
+        region = cfg.get_rep_region(rep_name)
+        countries = cfg.get_rep_countries(rep_name)
+        is_multi = cfg.is_multi_region_rep(rep_name)
+        
+        result = {
+            "rep_name": rep_name,
+            "region": region,
+            "countries": countries,
+            "is_multi_region": is_multi,
+            "region_abbreviation": "[SE+EE]" if is_multi else f"[{region}]" if region else None,
+        }
+        return format_result(result)
+    except (ValueError, Exception) as e:
+        return f"Error: {e}"
+
+
+@mcp.tool
+async def get_region_sales_reps(
+    region: Annotated[str, Field(description="Region code: 'SE' (Southern Europe) or 'EE' (Eastern Europe)")],
+) -> str:
+    """Get all sales reps assigned to a region.
+    
+    Returns a list of all sales reps who cover the specified region, including
+    their assigned countries and whether they're multi-region reps.
+    
+    Example: get_region_sales_reps(region='SE')
+    """
+    try:
+        from config.ci_config import get_config, SALES_REPS, REGIONS
+        
+        if region not in REGIONS:
+            return format_result({
+                "error": f"Invalid region: {region}",
+                "valid_regions": list(REGIONS.keys()),
+            })
+        
+        cfg = get_config()
+        reps = cfg.get_region_sales_reps(region)
+        
+        rep_list = []
+        for rep_name in sorted(reps):
+            rep_data = SALES_REPS.get(rep_name, {})
+            rep_list.append({
+                "rep_name": rep_name,
+                "region": rep_data.get("region"),
+                "countries": rep_data.get("countries", []),
+                "multi_region": rep_data.get("multi_region", False),
+            })
+        
+        result = {
+            "region": region,
+            "region_name": REGIONS[region]["name"],
+            "abbreviation": REGIONS[region]["abbreviation"],
+            "sales_reps": rep_list,
+            "rep_count": len(rep_list),
+        }
         return format_result(result)
     except (ValueError, Exception) as e:
         return f"Error: {e}"

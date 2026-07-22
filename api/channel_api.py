@@ -27,12 +27,14 @@ class AnalyticsRequest:
         breakdown: How to break down results (e.g., 'partner', 'country', 'stage')
         limit: Maximum number of records to return
         channel_manager: Which channel manager's territory to analyze
+        region: Regional filter ('SE', 'EE', 'all', or None for default)
     """
 
     period: str
     breakdown: str | None = None
     limit: int | None = None
     channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    region: str | None = None
 
     def __post_init__(self):
         """Validate request fields."""
@@ -40,6 +42,8 @@ class AnalyticsRequest:
             raise ValueError("period is required")
         if self.limit is not None and self.limit < 1:
             raise ValueError("limit must be >= 1")
+        if self.region and self.region not in ["SE", "EE", "all"]:
+            raise ValueError("region must be 'SE', 'EE', 'all', or None")
 
 
 @dataclass
@@ -167,6 +171,181 @@ class ChannelAnalyticsAPI(ABC):
         """
         pass
 
+    @abstractmethod
+    async def get_revenue_by_sales_rep(
+        self, period: str, metric: str = "revenue", limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get revenue aggregated by sales rep.
+
+        Args:
+            period: Time period for analysis
+            metric: 'revenue' (closed-won) or 'pipeline' (open)
+            limit: Maximum number of reps to return
+            channel_manager: Which channel manager's territory
+
+        Returns:
+            AnalyticsResponse with sales rep rankings
+        """
+        pass
+
+    @abstractmethod
+    async def get_revenue_by_sales_rep_by_country(
+        self, period: str, country: str | None = None, metric: str = "revenue", limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get revenue by sales rep, filtered by country.
+
+        Args:
+            period: Time period for analysis
+            country: Specific country to filter (None = all)
+            metric: 'revenue' (closed-won) or 'pipeline' (open)
+            limit: Maximum number of reps to return
+            channel_manager: Which channel manager's territory
+
+        Returns:
+            AnalyticsResponse with sales rep rankings by country
+        """
+        pass
+
+    @abstractmethod
+    async def get_revenue_by_sales_rep_by_partner(
+        self, period: str, partner_name: str | None = None, metric: str = "revenue", limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get revenue by sales rep, filtered by partner.
+
+        Args:
+            period: Time period for analysis
+            partner_name: Specific partner to filter (None = all)
+            metric: 'revenue' (closed-won) or 'pipeline' (open)
+            limit: Maximum number of reps to return
+            channel_manager: Which channel manager's territory
+
+        Returns:
+            AnalyticsResponse with sales rep rankings by partner
+        """
+        pass
+
+    @abstractmethod
+    async def get_closed_deals_by_sales_rep(
+        self, period: str, sales_rep: str | None = None, limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get closed-won deals by sales rep with opportunity details.
+
+        Args:
+            period: Time period for analysis
+            sales_rep: Specific sales rep to filter (None = all)
+            limit: Maximum number of deals to return
+            channel_manager: Which channel manager's territory
+
+        Returns:
+            AnalyticsResponse with closed deals grouped by sales rep
+        """
+        pass
+
+    @abstractmethod
+    async def get_pipeline_deals_by_sales_rep(
+        self, period: str, sales_rep: str | None = None, limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get open pipeline deals by sales rep with opportunity details.
+
+        Args:
+            period: Time period for analysis
+            sales_rep: Specific sales rep to filter (None = all)
+            limit: Maximum number of deals to return
+            channel_manager: Which channel manager's territory
+
+        Returns:
+            AnalyticsResponse with pipeline deals grouped by sales rep
+        """
+        pass
+
+    @abstractmethod
+    async def get_revenue_by_sales_rep_with_region(
+        self, period: str, region: str | None = None, metric: str = "revenue", limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get revenue aggregated by sales rep with optional region filtering.
+
+        Args:
+            period: Time period for analysis
+            region: 'SE', 'EE', 'all', or None (default=all)
+            metric: 'revenue' (closed-won) or 'pipeline' (open)
+            limit: Maximum number of reps to return
+            channel_manager: Which channel manager's territory
+
+        Returns:
+            AnalyticsResponse with sales rep rankings by region
+        """
+        pass
+
+    @abstractmethod
+    async def get_pipeline_by_sales_rep_with_region(
+        self, period: str, region: str | None = None, limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get pipeline aggregated by sales rep with optional region filtering.
+
+        Args:
+            period: Time period for analysis
+            region: 'SE', 'EE', 'all', or None (default=all)
+            limit: Maximum number of reps to return
+            channel_manager: Which channel manager's territory
+
+        Returns:
+            AnalyticsResponse with sales rep pipeline by region
+        """
+        pass
+
+    @abstractmethod
+    async def get_closed_deals_by_sales_rep_with_region(
+        self, period: str, region: str | None = None, sales_rep: str | None = None, limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get closed-won deals by sales rep with optional region filtering.
+
+        Args:
+            period: Time period for analysis
+            region: 'SE', 'EE', 'all', or None (default=all)
+            sales_rep: Specific sales rep to filter (None = all)
+            limit: Maximum number of deals to return
+            channel_manager: Which channel manager's territory
+
+        Returns:
+            AnalyticsResponse with closed deals by sales rep and region
+        """
+        pass
+
+    @abstractmethod
+    async def get_pipeline_deals_by_sales_rep_with_region(
+        self, period: str, region: str | None = None, sales_rep: str | None = None, limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get pipeline deals by sales rep with optional region filtering.
+
+        Args:
+            period: Time period for analysis
+            region: 'SE', 'EE', 'all', or None (default=all)
+            sales_rep: Specific sales rep to filter (None = all)
+            limit: Maximum number of deals to return
+            channel_manager: Which channel manager's territory
+
+        Returns:
+            AnalyticsResponse with pipeline deals by sales rep and region
+        """
+        pass
+
+    @abstractmethod
+    async def get_opportunities_by_registration_status(
+        self, period: str, registration_status: str | None = None, limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get opportunities filtered by Partner_Registration_Approval__c status.
+
+        Args:
+            period: Time period for analysis
+            registration_status: Status filter ('Submitted', 'In Review', 'Approved', 'Rejected', or None for all)
+            limit: Maximum number of opportunities to return
+            channel_manager: Which channel manager's territory
+
+        Returns:
+            AnalyticsResponse with opportunities grouped by registration status
+        """
+        pass
+
 
 class ChannelAnalyticsAPIImpl(ChannelAnalyticsAPI):
     """Implementation of Channel Analytics API.
@@ -252,17 +431,169 @@ class ChannelAnalyticsAPIImpl(ChannelAnalyticsAPI):
             breakdown=result.get("breakdown"),
             data=result.get("data", {}),
             truncationWarning=result.get("truncationWarning"),
-        )
+         )
 
     async def get_kpi_snapshot(self, period: str | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER) -> AnalyticsResponse:
         """Get KPI snapshot via channel_intelligence."""
         import channel_intelligence as ci
 
-        result = await ci.get_kpi_snapshot(self.sf, period, channel_manager)
+        result = await ci.get_kpi_snapshot(self.sf, period, channel_manager=channel_manager)
         return AnalyticsResponse(
             tool=result.get("tool", "get_kpi_snapshot"),
             period=result.get("period", period or "current"),
             breakdown=result.get("breakdown"),
+            data=result.get("data", {}),
+            truncationWarning=result.get("truncationWarning"),
+        )
+
+    async def get_revenue_by_sales_rep(
+        self, period: str, metric: str = "revenue", limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get revenue aggregated by sales rep via channel_intelligence."""
+        import channel_intelligence as ci
+
+        result = await ci.get_revenue_by_sales_rep(self.sf, period, metric, limit or 50, channel_manager)
+        return AnalyticsResponse(
+            tool=result.get("tool", "get_revenue_by_sales_rep"),
+            period=result.get("period", period),
+            breakdown=None,
+            data=result.get("data", []),
+            truncationWarning=result.get("truncationWarning"),
+        )
+
+    async def get_revenue_by_sales_rep_by_country(
+        self, period: str, country: str | None = None, metric: str = "revenue", limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get revenue by sales rep, filtered by country via channel_intelligence."""
+        import channel_intelligence as ci
+
+        result = await ci.get_revenue_by_sales_rep_by_country(self.sf, period, country, metric, limit or 50, channel_manager)
+        return AnalyticsResponse(
+            tool=result.get("tool", "get_revenue_by_sales_rep_by_country"),
+            period=result.get("period", period),
+            breakdown=None,
+            data=result.get("data", []),
+            truncationWarning=result.get("truncationWarning"),
+        )
+
+    async def get_revenue_by_sales_rep_by_partner(
+        self, period: str, partner_name: str | None = None, metric: str = "revenue", limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get revenue by sales rep, filtered by partner via channel_intelligence."""
+        import channel_intelligence as ci
+
+        result = await ci.get_revenue_by_sales_rep_by_partner(self.sf, period, partner_name, metric, limit or 50, channel_manager)
+        return AnalyticsResponse(
+            tool=result.get("tool", "get_revenue_by_sales_rep_by_partner"),
+            period=result.get("period", period),
+            breakdown=None,
+            data=result.get("data", []),
+            truncationWarning=result.get("truncationWarning"),
+        )
+
+    async def get_closed_deals_by_sales_rep(
+        self, period: str, sales_rep: str | None = None, limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER, all_regions: bool = False
+    ) -> AnalyticsResponse:
+        """Get closed-won deals by sales rep via channel_intelligence."""
+        import channel_intelligence as ci
+
+        result = await ci.get_closed_deals_by_sales_rep(self.sf, period, sales_rep, limit or 100, channel_manager, all_regions)
+        return AnalyticsResponse(
+            tool=result.get("tool", "get_closed_deals_by_sales_rep"),
+            period=result.get("period", period),
+            breakdown=None,
+            data=result.get("data", []),
+            truncationWarning=result.get("truncationWarning"),
+        )
+
+    async def get_pipeline_deals_by_sales_rep(
+        self, period: str, sales_rep: str | None = None, limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER, all_regions: bool = False
+    ) -> AnalyticsResponse:
+        """Get open pipeline deals by sales rep via channel_intelligence."""
+        import channel_intelligence as ci
+
+        result = await ci.get_pipeline_deals_by_sales_rep(self.sf, period, sales_rep, limit or 100, channel_manager, all_regions)
+        return AnalyticsResponse(
+            tool=result.get("tool", "get_pipeline_deals_by_sales_rep"),
+            period=result.get("period", period),
+            breakdown=None,
+            data=result.get("data", []),
+            truncationWarning=result.get("truncationWarning"),
+        )
+
+    async def get_revenue_by_sales_rep_with_region(
+        self, period: str, region: str | None = None, metric: str = "revenue", limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get revenue by sales rep with region filtering via channel_intelligence."""
+        import channel_intelligence as ci
+
+        result = await ci.get_revenue_by_sales_rep_with_region(self.sf, period, region, metric, limit or 50, channel_manager)
+        return AnalyticsResponse(
+            tool=result.get("tool", "get_revenue_by_sales_rep_with_region"),
+            period=result.get("period", period),
+            breakdown=None,
+            data=result.get("data", []),
+            truncationWarning=result.get("truncationWarning"),
+        )
+
+    async def get_pipeline_by_sales_rep_with_region(
+        self, period: str, region: str | None = None, limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get pipeline by sales rep with region filtering via channel_intelligence."""
+        import channel_intelligence as ci
+
+        result = await ci.get_pipeline_by_sales_rep_with_region(self.sf, period, region, limit or 50, channel_manager)
+        return AnalyticsResponse(
+            tool=result.get("tool", "get_pipeline_by_sales_rep_with_region"),
+            period=result.get("period", period),
+            breakdown=None,
+            data=result.get("data", []),
+            truncationWarning=result.get("truncationWarning"),
+        )
+
+    async def get_closed_deals_by_sales_rep_with_region(
+        self, period: str, region: str | None = None, sales_rep: str | None = None, limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get closed deals by sales rep with region filtering via channel_intelligence."""
+        import channel_intelligence as ci
+
+        result = await ci.get_closed_deals_by_sales_rep_with_region(self.sf, period, region, sales_rep, limit or 100, channel_manager)
+        return AnalyticsResponse(
+            tool=result.get("tool", "get_closed_deals_by_sales_rep_with_region"),
+            period=result.get("period", period),
+            breakdown=None,
+            data=result.get("data", []),
+            truncationWarning=result.get("truncationWarning"),
+        )
+
+    async def get_pipeline_deals_by_sales_rep_with_region(
+        self, period: str, region: str | None = None, sales_rep: str | None = None, limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get pipeline deals by sales rep with region filtering via channel_intelligence."""
+        import channel_intelligence as ci
+
+        result = await ci.get_pipeline_deals_by_sales_rep_with_region(self.sf, period, region, sales_rep, limit or 100, channel_manager)
+        return AnalyticsResponse(
+            tool=result.get("tool", "get_pipeline_deals_by_sales_rep_with_region"),
+            period=result.get("period", period),
+            breakdown=None,
+            data=result.get("data", []),
+            truncationWarning=result.get("truncationWarning"),
+        )
+
+    async def get_opportunities_by_registration_status(
+        self, period: str, registration_status: str | None = None, limit: int | None = None, channel_manager: str = DEFAULT_CHANNEL_MANAGER
+    ) -> AnalyticsResponse:
+        """Get opportunities filtered by registration status via channel_intelligence."""
+        import channel_intelligence as ci
+
+        result = await ci.get_opportunities_by_registration_status(
+            self.sf, period, registration_status, channel_manager, limit or 50
+        )
+        return AnalyticsResponse(
+            tool=result.get("tool", "get_opportunities_by_registration_status"),
+            period=result.get("period", period),
+            breakdown=result.get("registration_status"),
             data=result.get("data", {}),
             truncationWarning=result.get("truncationWarning"),
         )

@@ -187,7 +187,7 @@ def _get_period_range(period: str, now: date | None = None) -> dict[str, Any]:
             if m:
                 fy_short = int(m.group(1))
                 quarter_num = int(m.group(2))
-                fy_year = 2000 + fy_short
+                fy_year = 2000 + fy_short - 1
                 q_name = f"Q{quarter_num}"
 
                 if quarter_num == 1:

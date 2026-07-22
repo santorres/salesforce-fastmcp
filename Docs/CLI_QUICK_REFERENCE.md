@@ -1,6 +1,6 @@
 # Channel Intelligence CLI - Quick Reference
 
-**Version**: 2.0 | **Updated**: June 16, 2026
+**Version**: 2.1 | **Updated**: June 21, 2026 | **Multi-Region Support**: SE/EE Territory Management
 
 ---
 
@@ -23,7 +23,7 @@ python3 -m cli.channel_cli kpi
 
 ---
 
-## All 10 Commands
+## All 16 Commands
 
 | Command | Purpose | Example |
 |---------|---------|---------|
@@ -34,9 +34,15 @@ python3 -m cli.channel_cli kpi
 | **partner** | Partner scorecard | `python3 -m cli.channel_cli partner "Accenture"` |
 | **qbr** | Quarterly business review | `python3 -m cli.channel_cli qbr "Accenture"` |
 | **registrations** | Deal registrations trend | `python3 -m cli.channel_cli registrations` |
+| **opportunities-by-status** | Unapproved registrations with details | `python3 -m cli.channel_cli opportunities-by-status` |
+| **partner-metrics** ⭐ NEW | Partner sourcing breakdown | `python3 -m cli.channel_cli partner-metrics` |
 | **top-partners** | Partner leaderboard | `python3 -m cli.channel_cli top-partners --limit 10` |
 | **search** | Search opportunities | `python3 -m cli.channel_cli search "deal name"` |
 | **list-opps** | List open opportunities | `python3 -m cli.channel_cli list-opps --partner "Accenture"` |
+| **sales-rep-revenue** | Sales rep performance | `python3 -m cli.channel_cli sales-rep-revenue --region SE` |
+| **closed-deals-by-rep** | Closed deals by sales rep | `python3 -m cli.channel_cli closed-deals-by-rep --region SE` |
+| **pipeline-deals-by-rep** | Pipeline deals by sales rep | `python3 -m cli.channel_cli pipeline-deals-by-rep --region EE` |
+| **sales-rep-by-country** | Sales rep metrics by country | `python3 -m cli.channel_cli sales-rep-by-country --country Italy` |
 
 ---
 
@@ -46,17 +52,21 @@ python3 -m cli.channel_cli kpi
 |--------|----------|---------|
 | `--period PERIOD` | All | `--period THIS_FISCAL_YEAR` |
 | `--json` | All | `--json` |
-| `--breakdown TYPE` | revenue, pipeline | `--breakdown country` |
-| `--limit N` | top-partners, search, list-opps | `--limit 20` |
-| `--channel-manager NAME` | kpi, revenue, risk, registrations | `--channel-manager "John Doe"` |
+| `--status STATUS` | opportunities-by-status | `--status Submitted` or `--status "Submitted,In Review"` |
+| `--breakdown TYPE` | revenue, pipeline, partner-metrics | `--breakdown country` or `--breakdown partner` |
+| `--region REGION` | sales-rep-revenue, closed-deals-by-rep, pipeline-deals-by-rep | `--region SE` or `--region EE` |
+| `--limit N` | top-partners, search, list-opps, sales-rep-*, opportunities-by-status | `--limit 20` |
+| `--channel-manager NAME` | kpi, revenue, risk, registrations, opportunities-by-status, partner-metrics | `--channel-manager "John Doe"` |
 | `--stage STAGE` | search, list-opps | `--stage "Closed Won"` |
-| `--partner NAME` | search, list-opps | `--partner "Accenture"` |
-| `--country COUNTRY` | search, list-opps | `--country "Spain"` |
+| `--partner NAME` | search, list-opps, sales-rep-by-partner | `--partner "Accenture"` |
+| `--country COUNTRY` | search, list-opps, sales-rep-by-country | `--country "Spain"` |
+| `--sales-rep NAME` | list-opps | `--sales-rep "Nuno"` |
 | `--min-amount N` | list-opps | `--min-amount 100000` |
-| `--metric METRIC` | top-partners | `--metric pipeline` |
+| `--metric METRIC` | top-partners, sales-rep-revenue | `--metric pipeline` |
 | `--probability-threshold N` | risk | `--probability-threshold 50` |
 | `--prior-period PERIOD` | qbr | `--prior-period LAST_QUARTER` |
 | `--revenue-target N` | qbr | `--revenue-target 500000` |
+| `--rep NAME` | closed-deals-by-rep, pipeline-deals-by-rep | `--rep "Alessia Ashkenazi"` |
 
 ---
 
@@ -123,6 +133,140 @@ python3 -m cli.channel_cli list-opps --partner "TCS" --stage Validation
 
 # Search for deals
 python3 -m cli.channel_cli search "cloud" --stage "Closed Won"
+
+# Sales rep's opportunities (THIS_QUARTER only)
+python3 -m cli.channel_cli list-opps --sales-rep Nuno --period THIS_QUARTER
+
+# Sales rep's opportunities (NEXT_QUARTER)
+python3 -m cli.channel_cli list-opps --sales-rep Nuno --period NEXT_QUARTER
+
+# Sales rep's pipeline deals by region
+python3 -m cli.channel_cli list-opps --sales-rep "Alessia Ashkenazi" --region SE --period THIS_QUARTER
+```
+
+### Sales Rep Analytics (Multi-Region SE/EE)
+
+```bash
+# Revenue by sales rep (all regions combined)
+python3 -m cli.channel_cli sales-rep-revenue
+
+# Revenue by sales rep - Southern Europe only
+python3 -m cli.channel_cli sales-rep-revenue --region SE
+
+# Revenue by sales rep - Eastern Europe only
+python3 -m cli.channel_cli sales-rep-revenue --region EE
+
+# Pipeline by sales rep - specific region
+python3 -m cli.channel_cli sales-rep-revenue --region SE --metric pipeline
+
+# Closed deals by sales rep - SE only
+python3 -m cli.channel_cli closed-deals-by-rep --region SE
+
+# Open pipeline deals by sales rep - EE only
+python3 -m cli.channel_cli pipeline-deals-by-rep --region EE
+
+# Sales rep performance by country
+python3 -m cli.channel_cli sales-rep-by-country --country Italy
+
+# Specific sales rep's deals (all regions)
+python3 -m cli.channel_cli closed-deals-by-rep --rep "Alessia Ashkenazi"
+
+# Alessia's deals - SE only
+python3 -m cli.channel_cli pipeline-deals-by-rep --rep "Alessia Ashkenazi" --region SE
+
+# Alessia's deals - EE only
+python3 -m cli.channel_cli pipeline-deals-by-rep --rep "Alessia Ashkenazi" --region EE
+```
+
+### Sales Rep Opportunity Filtering (list-opps)
+
+**Filter open opportunities by sales rep with time period:**
+
+```bash
+# Nuno's opportunities this quarter
+python3 -m cli.channel_cli list-opps --sales-rep Nuno --period THIS_QUARTER
+
+# Nuno's opportunities next quarter
+python3 -m cli.channel_cli list-opps --sales-rep Nuno --period NEXT_QUARTER
+
+# Both quarters (run both commands)
+python3 -m cli.channel_cli list-opps --sales-rep Nuno --period THIS_QUARTER && \
+python3 -m cli.channel_cli list-opps --sales-rep Nuno --period NEXT_QUARTER
+
+# As JSON (for filtering/export)
+python3 -m cli.channel_cli list-opps --sales-rep Nuno --period THIS_QUARTER --json
+
+# With additional stage filter
+python3 -m cli.channel_cli list-opps --sales-rep Nuno --period THIS_QUARTER --stage "Business Case"
+
+# By region (all countries in SE/EE + sales rep)
+python3 -m cli.channel_cli list-opps --sales-rep Nuno --period THIS_QUARTER --region SE
+
+# Alessia's opportunities (all regions)
+python3 -m cli.channel_cli list-opps --sales-rep "Alessia Ashkenazi" --period THIS_QUARTER
+
+# Alessia's SE only
+python3 -m cli.channel_cli list-opps --sales-rep "Alessia Ashkenazi" --period THIS_QUARTER --region SE
+
+# Alessia's EE only
+python3 -m cli.channel_cli list-opps --sales-rep "Alessia Ashkenazi" --period THIS_QUARTER --region EE
+
+# High-value opportunities for sales rep
+python3 -m cli.channel_cli list-opps --sales-rep Nuno --period THIS_QUARTER --min-amount 100000
+
+# Sales rep's opportunities in specific country
+python3 -m cli.channel_cli list-opps --sales-rep Nuno --country Portugal --period THIS_QUARTER
+
+# Combine multiple filters
+python3 -m cli.channel_cli list-opps --sales-rep Nuno --period THIS_QUARTER --stage Negotiation --min-amount 50000
+```
+
+---
+
+## Multi-Region Territory Support
+
+**New in v2.1:** Sales rep analytics now support regional filtering for Southern Europe (SE) and Eastern Europe (EE).
+
+### Territories
+
+| Region | Code | Countries | Reps |
+|--------|------|-----------|------|
+| **Southern Europe** | `SE` | Italy, Spain, Portugal, Greece, Cyprus, Malta | 7 (including Alessia) |
+| **Eastern Europe** | `EE` | Poland, Czech Republic, Hungary, Slovakia, Romania, Bulgaria, Croatia, Serbia, Slovenia, Turkey | 1 (Alessia Ashkenazi) |
+
+### Sales Reps by Region
+
+**Southern Europe (SE):**
+- Ray Mills (Spain, Greece)
+- Daniel Gaspar (Spain)
+- Bruno Filippelli (Italy)
+- Jacopo Zumerle (Italy)
+- Nuno Antunes (Portugal)
+- Ionatan Ascher (Spain)
+- Alessia Ashkenazi (Italy, Greece) ⭐ Multi-region
+
+**Eastern Europe (EE):**
+- Alessia Ashkenazi (All 10 EE countries) ⭐ Multi-region
+
+**Note:** Alessia is the only multi-region rep, covering both SE (Italy + Greece) and all EE countries. Use `--region` flag to isolate her performance by region.
+
+### Regional Filter Examples
+
+```bash
+# Default: Show all regions combined with region labels [SE]/[EE]
+python3 -m cli.channel_cli sales-rep-revenue
+# Output: Ray Mills [SE], Alessia Ashkenazi [SE+EE], etc.
+
+# SE only: Filter to Southern Europe reps
+python3 -m cli.channel_cli sales-rep-revenue --region SE
+# Output: Ray Mills, Alessia Ashkenazi, Bruno Filippelli, etc. (Alessia shows [SE] label)
+
+# EE only: Filter to Eastern Europe (only Alessia)
+python3 -m cli.channel_cli sales-rep-revenue --region EE
+# Output: Alessia Ashkenazi [EE]
+
+# All: Explicit "all regions" (same as default)
+python3 -m cli.channel_cli sales-rep-revenue --region all
 ```
 
 ---
@@ -266,6 +410,85 @@ deactivate
 
 ---
 
+## Advanced Filtering Examples
+
+Combine multiple filters for powerful queries:
+
+```bash
+# Complex filter: Southern Europe, specific partner, specific stage
+python3 -m cli.channel_cli list-opps \
+  --region SE \
+  --partner "Accenture" \
+  --stage "Negotiation" \
+  --min-amount 100000 \
+  --period THIS_QUARTER
+
+# Large deals by rep in EE
+python3 -m cli.channel_cli list-opps \
+  --region EE \
+  --min-amount 500000 \
+  --limit 50
+
+# High-risk deals (< 40% probability) over next 30 days
+python3 -m cli.channel_cli high-risk-deals \
+  --probability-threshold 40 \
+  --period FY27_Q4
+
+# Stalled Accenture deals (90+ days)
+python3 -m cli.channel_cli stalled-deals \
+  --days-threshold 90 \
+  --format json | \
+  jq '.data[] | select(.partner | contains("Accenture"))'
+
+# Export opportunities with complex filters as CSV
+python3 -m cli.channel_cli list-opps \
+  --partner "Inetum" \
+  --stage "Qualification" \
+  --min-amount 50000 \
+  --max-amount 500000 \
+  --format json | \
+  jq -r '.data[] | [.name, .partner, .amount, .stage] | @csv' > deals.csv
+
+# SE team opportunities by stage (group by stage)
+python3 -m cli.channel_cli list-opps \
+  --region SE \
+  --format json | \
+  jq '.data | group_by(.stage) | map({stage: .[0].stage, count: length, total: (map(.amount) | add)})'
+
+# Southern Europe - Ray Mills' high-value negotiations
+python3 -m cli.channel_cli list-opps \
+  --rep "Ray Mills" \
+  --stage "Negotiation" \
+  --min-amount 200000 \
+  --format json
+```
+
+### Using jq for Advanced Processing
+
+```bash
+# Filter to opportunities closing in next 30 days and over $100K
+python3 -m cli.channel_cli list-opps --format json | \
+  jq '.data[] | select(.days_to_close <= 30 and .amount > 100000)'
+
+# Get deal statistics (count, avg size, total)
+python3 -m cli.channel_cli list-opps --partner "Accenture" --format json | \
+  jq '{count: (.data|length), avg_size: ((.data|map(.amount)|add)/(.data|length)), total: (.data|map(.amount)|add)}'
+
+# Find partners with deals in both Qualification and Proposal
+python3 -m cli.channel_cli list-opps --format json | \
+  jq '.data | group_by(.partner) | map(select(map(.stage) | contains(["Qualification", "Proposal"])) | {partner: .[0].partner, stages: [.[].stage]|unique})'
+
+# Sort opportunities by close date
+python3 -m cli.channel_cli get-pipeline --breakdown total --format json | \
+  jq '.data | sort_by(.close_date)'
+
+# Get revenue by partner and stage
+python3 -m cli.channel_cli list-opps --format json | \
+  jq '[.data[] | {partner: .partner, stage: .stage, amount: .amount}] | group_by(.partner) | map({partner: .[0].partner, by_stage: (group_by(.stage) | map({stage: .[0].stage, revenue: (map(.amount)|add)}))})'
+```
+
+---
+
 ## Real Data (Current Org)
 
 **Top Partners (FY27):**
@@ -286,12 +509,15 @@ deactivate
 ## Tips
 
 ✅ Always use `--period` for explicit control  
+✅ Use `--region SE|EE|all` to isolate regional performance  
 ✅ Use `--json` for data processing and export  
 ✅ Use `--limit` to speed up large queries  
 ✅ Check help text: `COMMAND --help`  
 ✅ Verify period in output: `--json | jq '.period'`  
+✅ For Alessia (multi-region rep): Use `--region SE` or `--region EE` to see her breakdown by region  
+✅ Regional labels in output: `[SE]` = Southern Europe, `[EE]` = Eastern Europe, `[SE+EE]` = both regions  
 
 ---
 
-**Status:** ✅ Production Ready | **Security:** ✅ SF CLI Encrypted Auth
+**Status:** ✅ Production Ready | **Security:** ✅ SF CLI Encrypted Auth | **Multi-Region:** ✅ SE/EE Territory Management
 
